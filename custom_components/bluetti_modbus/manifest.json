@@ -1,0 +1,13 @@
+{
+    "domain": "bluetti_modbus",
+    "name": "Bluetti Modbus",
+    "codeowners": ["@Patrick762"],
+    "config_flow": true,
+    "dependencies": [],
+    "documentation": "https://github.com/Patrick762/hassio-bluetti-modbus",
+    "integration_type": "device",
+    "iot_class": "local_polling",
+    "issue_tracker": "https://github.com/Patrick762/hassio-bluetti-modbus/issues",
+    "requirements": ["bluetti-modbus-lib==0.0.4"],
+    "version": "0.0.1"
+}

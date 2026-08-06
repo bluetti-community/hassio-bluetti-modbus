@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "address": "IP-Addresse",
+          "port": "Port",
+          "type": "Gerätetyp"
+        }
+      }
+    },
+    "abort": {
+      "no_unconfigured_devices": "Keine Geräte gefunden"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "d_num_inverters": {
+        "name": "Inverter Anzahl"
+      }
+    }
+  }
+}
