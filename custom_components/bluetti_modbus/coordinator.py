@@ -22,23 +22,26 @@ class PollingCoordinator(DataUpdateCoordinator):
         """Initialize coordinator."""
         super().__init__(
             hass,
-            logging.getLogger(f"{__name__}.{config.address.replace('.', '_')}"),
+            logging.getLogger(f"{__name__}.{config.address}"),
             name="Bluetti polling coordinator",
             update_interval=timedelta(seconds=10),
         )
 
         self.config = config
 
-        # Create client
-        self.logger.info("Creating client for %s", config.name)
-
-        self.reader = BluettiModbusClient(
-            config.address,
-            config.port,
-            config.dev_type,
-        )
-
     async def _async_update_data(self):
         """Fetch data from device."""
 
-        return await self.reader.read()
+        # Create client
+        self.logger.debug("Creating client for %s", self.config.name)
+        self.logger.debug("Address: %s, Port: %s, Device Type: %s", self.config.address, str(self.config.port), self.config.dev_type)
+
+        reader = BluettiModbusClient(
+            self.config.address,
+            self.config.port,
+            self.config.dev_type,
+        )
+
+        data = await reader.read()
+
+        return {k:v for k,v in [[d.name, d.value] for d in data]}
