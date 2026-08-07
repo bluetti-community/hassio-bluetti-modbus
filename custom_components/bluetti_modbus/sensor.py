@@ -27,7 +27,7 @@ async def async_setup_entry(
     config = FullDeviceConfig.from_dict(entry.data)
     coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
-    logger = logging.getLogger(f"{__name__}.{config.address.replace('.', '_')}")
+    logger = logging.getLogger(f"{__name__}.{config.address}")
 
     if config is None or not isinstance(coordinator, PollingCoordinator):
         logger.error("No coordinator found")
