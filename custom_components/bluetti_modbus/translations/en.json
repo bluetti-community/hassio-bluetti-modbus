@@ -27,6 +27,9 @@
       "g_i_p_total": {
         "name": "Total Grid Input Power"
       },
+      "d_inverter_total": {
+        "name": "Total Inverter Power"
+      },
       "pv_ac_p": {
         "name": "PV AC Power"
       },
@@ -44,6 +47,18 @@
       },
       "pv_ac_e": {
         "name": "PV AC Energy"
+      },
+      "d_inverter_status": {
+        "name": "Inverter Status"
+      },
+      "d_inverter_warning": {
+        "name": "Inverter Warning"
+      },
+      "d_inverter_fault": {
+        "name": "Inverter Fault"
+      },
+      "d_inverter_type": {
+        "name": "Inverter Type"
       },
       "g_i_f": {
         "name": "Grid Frequency"
