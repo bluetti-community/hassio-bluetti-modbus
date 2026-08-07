@@ -15,8 +15,74 @@
   },
   "entity": {
     "sensor": {
-       "d_num_inverters": {
-        "name": "Number of inverters"
+      "d_num_inverters": {
+        "name": "Inverter Count"
+      },
+      "ac_o_p_total": {
+        "name": "Total AC Output Power"
+      },
+      "pv_i_p_total": {
+        "name": "Total PV Input Power"
+      },
+      "g_i_p_total": {
+        "name": "Total Grid Input Power"
+      },
+      "pv_ac_p": {
+        "name": "PV AC Power"
+      },
+      "ac_o_e_total": {
+        "name": "Total AC Output Energy"
+      },
+      "pv_i_e_total": {
+        "name": "Total PV Input Energy"
+      },
+      "g_i_e_total": {
+        "name": "Total Grid Import Energy"
+      },
+      "g_o_e_total": {
+        "name": "Total Grid Export Energy"
+      },
+      "pv_ac_e": {
+        "name": "PV AC Energy"
+      },
+      "g_i_f": {
+        "name": "Grid Frequency"
+      },
+      "pv_1_i_p": {
+        "name": "PV 1 Input Power"
+      },
+      "pv_1_i_v": {
+        "name": "PV 1 Input Voltage"
+      },
+      "pv_1_i_c": {
+        "name": "PV 1 Input Current"
+      },
+      "pv_2_i_p": {
+        "name": "PV 2 Input Power"
+      },
+      "pv_2_i_v": {
+        "name": "PV 2 Input Voltage"
+      },
+      "pv_2_i_c": {
+        "name": "PV 2 Input Current"
+      },
+      "pv_3_i_p": {
+        "name": "PV 3 Input Power"
+      },
+      "pv_3_i_v": {
+        "name": "PV 3 Input Voltage"
+      },
+      "pv_3_i_c": {
+        "name": "PV 3 Input Current"
+      },
+      "pv_4_i_p": {
+        "name": "PV 4 Input Power"
+      },
+      "pv_4_i_v": {
+        "name": "PV 4 Input Voltage"
+      },
+      "pv_4_i_c": {
+        "name": "PV 4 Input Current"
       }
     }
   }

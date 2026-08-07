@@ -17,6 +17,72 @@
     "sensor": {
       "d_num_inverters": {
         "name": "Inverter Anzahl"
+      },
+      "ac_o_p_total": {
+        "name": "AC-Ausgangsleistung Gesamt"
+      },
+      "pv_i_p_total": {
+        "name": "PV-Eingangsleistung Gesamt"
+      },
+      "g_i_p_total": {
+        "name": "Netzeinspeiseleistung Gesamt"
+      },
+      "pv_ac_p": {
+        "name": "PV AC-Leistung"
+      },
+      "ac_o_e_total": {
+        "name": "AC-Ausgangsenergie Gesamt"
+      },
+      "pv_i_e_total": {
+        "name": "PV-Eingangsenergie Gesamt"
+      },
+      "g_i_e_total": {
+        "name": "Netzbezugsenergie Gesamt"
+      },
+      "g_o_e_total": {
+        "name": "Netzeinspeiseenergie Gesamt"
+      },
+      "pv_ac_e": {
+        "name": "PV AC-Energie"
+      },
+      "g_i_f": {
+        "name": "Netzfrequenz"
+      },
+      "pv_1_i_p": {
+        "name": "PV 1 Eingangsleistung"
+      },
+      "pv_1_i_v": {
+        "name": "PV 1 Eingangsspannung"
+      },
+      "pv_1_i_c": {
+        "name": "PV 1 Eingangsstrom"
+      },
+      "pv_2_i_p": {
+        "name": "PV 2 Eingangsleistung"
+      },
+      "pv_2_i_v": {
+        "name": "PV 2 Eingangsspannung"
+      },
+      "pv_2_i_c": {
+        "name": "PV 2 Eingangsstrom"
+      },
+      "pv_3_i_p": {
+        "name": "PV 3 Eingangsleistung"
+      },
+      "pv_3_i_v": {
+        "name": "PV 3 Eingangsspannung"
+      },
+      "pv_3_i_c": {
+        "name": "PV 3 Eingangsstrom"
+      },
+      "pv_4_i_p": {
+        "name": "PV 4 Eingangsleistung"
+      },
+      "pv_4_i_v": {
+        "name": "PV 4 Eingangsspannung"
+      },
+      "pv_4_i_c": {
+        "name": "PV 4 Eingangsstrom"
       }
     }
   }
