@@ -27,6 +27,9 @@
       "g_i_p_total": {
         "name": "Netzeinspeiseleistung Gesamt"
       },
+      "d_inverter_total": {
+        "name": "Inverterleistung Gesamt"
+      },
       "pv_ac_p": {
         "name": "PV AC-Leistung"
       },
@@ -44,6 +47,18 @@
       },
       "pv_ac_e": {
         "name": "PV AC-Energie"
+      },
+      "d_inverter_status": {
+        "name": "Inverter Status"
+      },
+      "d_inverter_warning": {
+        "name": "Inverter Warnung"
+      },
+      "d_inverter_fault": {
+        "name": "Inverter Fehler"
+      },
+      "d_inverter_type": {
+        "name": "Inverter Typ"
       },
       "g_i_f": {
         "name": "Netzfrequenz"

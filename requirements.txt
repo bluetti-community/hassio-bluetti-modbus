@@ -1,2 +1,2 @@
 homeassistant
-bluetti-modbus-lib==0.0.5
+bluetti-modbus-lib==0.0.6
