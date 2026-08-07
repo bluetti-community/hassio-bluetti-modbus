@@ -34,7 +34,12 @@ class PollingCoordinator(DataUpdateCoordinator):
 
         # Create client
         self.logger.debug("Creating client for %s", self.config.name)
-        self.logger.debug("Address: %s, Port: %s, Device Type: %s", self.config.address, str(self.config.port), self.config.dev_type)
+        self.logger.debug(
+            "Address: %s, Port: %s, Device Type: %s",
+            self.config.address,
+            str(self.config.port),
+            self.config.dev_type,
+        )
 
         reader = BluettiModbusClient(
             self.config.address,
@@ -44,4 +49,4 @@ class PollingCoordinator(DataUpdateCoordinator):
 
         data = await reader.read()
 
-        return {k:v for k,v in [[d.name, d.value] for d in data]}
+        return {k: v for k, v in [[d.name, d.value] for d in data]}
