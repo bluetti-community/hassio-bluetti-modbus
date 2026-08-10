@@ -98,6 +98,69 @@
       },
       "pv_4_i_c": {
         "name": "PV 4 Input Current"
+      },
+      "ac_o_switch": {
+        "name": "AC Output Switch"
+      },
+      "g_i_switch": {
+        "name": "Grid Charging Switch"
+      },
+      "g_o_switch": {
+        "name": "Grid Feed-in Switch"
+      },
+      "b_soc_low": {
+        "name": "Min Discharge Limit (SoC Low)"
+      },
+      "b_soc_high": {
+        "name": "Max Charge Limit (SoC High)"
+      },
+      "d_num_battery_packs": {
+        "name": "Number of Battery Packs"
+      },
+      "b_v_total": {
+        "name": "Total Battery Voltage"
+      },
+      "b_c_total": {
+        "name": "Total Battery Current"
+      },
+      "b_soc_total": {
+        "name": "Total Battery SoC"
+      },
+      "b_soh_total": {
+        "name": "Total Battery SoH"
+      },
+      "d_battery_type": {
+        "name": "Battery Type"
+      },
+      "b_v": {
+        "name": "Battery Voltage"
+      },
+      "b_c": {
+        "name": "Battery Current"
+      },
+      "b_soc": {
+        "name": "Battery SoC"
+      },
+      "b_soh": {
+        "name": "Battery SoH"
+      },
+      "b_cycle_count": {
+        "name": "Battery Cycle Count"
+      },
+      "b_t_avg": {
+        "name": "Average Battery Temperature"
+      },
+      "b_cell_count": {
+        "name": "Cell Count"
+      },
+      "b_ntc_count": {
+        "name": "Temperature Sensor Count"
+      },
+      "b_i_e": {
+        "name": "Total Battery Charged Energy"
+      },
+      "b_o_e": {
+        "name": "Total Battery Discharged Energy"
       }
     }
   }
