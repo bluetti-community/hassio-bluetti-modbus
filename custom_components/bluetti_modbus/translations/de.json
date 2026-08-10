@@ -98,6 +98,69 @@
       },
       "pv_4_i_c": {
         "name": "PV 4 Eingangsstrom"
+      },
+      "ac_o_switch": {
+        "name": "AC-Ausgang Schalter"
+      },
+      "g_i_switch": {
+        "name": "Netzbezug Schalter"
+      },
+      "g_o_switch": {
+        "name": "Netzeinspeisung Schalter"
+      },
+      "b_soc_low": {
+        "name": "Minimale Entladegrenze (SoC Low)"
+      },
+      "b_soc_high": {
+        "name": "Maximale Ladegrenze (SoC High)"
+      },
+      "d_num_battery_packs": {
+        "name": "Anzahl Batteriemodule"
+      },
+      "b_v_total": {
+        "name": "Batteriespannung Gesamt"
+      },
+      "b_c_total": {
+        "name": "Batteriestrom Gesamt"
+      },
+      "b_soc_total": {
+        "name": "Batterieladezustand Gesamt (SoC)"
+      },
+      "b_soh_total": {
+        "name": "Batteriezustand Gesamt (SoH)"
+      },
+      "d_battery_type": {
+        "name": "Batterietyp"
+      },
+      "b_v": {
+        "name": "Batteriespannung"
+      },
+      "b_c": {
+        "name": "Batteriestrom"
+      },
+      "b_soc": {
+        "name": "Batterieladezustand (SoC)"
+      },
+      "b_soh": {
+        "name": "Batteriezustand (SoH)"
+      },
+      "b_cycle_count": {
+        "name": "Ladezyklen"
+      },
+      "b_t_avg": {
+        "name": "Durchschnittliche Batterietemperatur"
+      },
+      "b_cell_count": {
+        "name": "Anzahl Batteriezellen"
+      },
+      "b_ntc_count": {
+        "name": "Anzahl Temperatursensoren"
+      },
+      "b_i_e": {
+        "name": "Geladene Batterieenergie Gesamt"
+      },
+      "b_o_e": {
+        "name": "Entladene Batterieenergie Gesamt"
       }
     }
   }
