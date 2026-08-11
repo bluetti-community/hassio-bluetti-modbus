@@ -51,6 +51,9 @@ async def async_setup_entry(
                 field.address,
                 field.name,
                 unit_of_measurement=field.unit,
+                category=getattr(field, "category", None),
+                device_class=getattr(field, "device_class", None),
+                state_class=getattr(field, "state_class", None),
                 logger=logger,
             )
         )
@@ -68,9 +71,9 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         address,
         response_key: str,
         unit_of_measurement: str | None = None,
-        device_class: str | None = None,
-        state_class: str | None = None,
-        category: EntityCategory | None = None,
+        device_class: Enum | None = None,
+        state_class: Enum | None = None,
+        category: Enum | None = None,
         options: list[str] | None = None,
         pack_num: int | None = None,
         cell_num: int | None = None,
@@ -107,9 +110,12 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self._attr_available = False
         self._attr_unique_id = get_unique_id(e_name)
         self._attr_native_unit_of_measurement = unit_of_measurement
-        self._attr_device_class = device_class
-        self._attr_state_class = state_class
-        self._attr_entity_category = category
+        if device_class is not None:
+            self._attr_device_class = device_class.value
+        if state_class is not None:
+            self._attr_state_class = state_class.value
+        if category is not None:
+            self._attr_entity_category = EntityCategory(category.value)
         self._options = options
 
     @property
