@@ -121,7 +121,9 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         """Set sensor as available."""
         self._attr_available = True
         self._unavailable_counter = 0
-        self._attr_extra_state_attributes = {}
+        self._attr_extra_state_attributes = {
+            "register": self._address,
+        }
         self.async_write_ha_state()
 
     def _set_unavailable(self, cause: str = "Unknown"):
@@ -129,6 +131,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self._unavailable_counter += 1
 
         self._attr_extra_state_attributes = {
+            "register": self._address,
             "unavailable_counter": self._unavailable_counter,
             "unavailable_cause": cause,
         }

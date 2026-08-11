@@ -64,7 +64,10 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_PORT,
                     default=502,
                 ): int,
-                vol.Required(CONF_TYPE, default="balco260",): SelectSelector(
+                vol.Required(
+                    CONF_TYPE,
+                    default="balco260",
+                ): SelectSelector(
                     SelectSelectorConfig(
                         options=["balco260"],
                         mode=SelectSelectorMode.DROPDOWN,
