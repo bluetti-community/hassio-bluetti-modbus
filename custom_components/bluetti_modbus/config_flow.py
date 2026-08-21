@@ -69,7 +69,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     default="balco260",
                 ): SelectSelector(
                     SelectSelectorConfig(
-                        options=["balco260"],
+                        options=["balco260", "ep2000"],
                         mode=SelectSelectorMode.DROPDOWN,
                     ),
                 ),
