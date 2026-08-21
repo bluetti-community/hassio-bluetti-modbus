@@ -129,7 +129,7 @@
       "b_soh_total": {
         "name": "Total Battery SoH"
       },
-      "d_battery_type": {
+      "b_type": {
         "name": "Battery Type"
       },
       "b_v": {
