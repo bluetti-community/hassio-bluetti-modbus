@@ -9,6 +9,6 @@
     "integration_type": "device",
     "iot_class": "local_polling",
     "issue_tracker": "https://github.com/Patrick762/hassio-bluetti-modbus/issues",
-    "requirements": ["bluetti-modbus-lib==0.0.14"],
-    "version": "0.0.6"
+    "requirements": ["bluetti-modbus-lib==0.0.15"],
+    "version": "0.0.7"
 }
