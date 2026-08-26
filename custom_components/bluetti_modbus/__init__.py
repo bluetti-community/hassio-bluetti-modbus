@@ -64,6 +64,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+    if unloaded:
+        data = hass.data[DOMAIN].pop(entry.entry_id)
+        coordinator: PollingCoordinator = data[DATA_COORDINATOR]
+        await coordinator.async_shutdown()
+
+    return unloaded
+
+
 def device_info(entry: ConfigEntry):
     """Device info."""
     config = FullDeviceConfig.from_dict(entry.data)
