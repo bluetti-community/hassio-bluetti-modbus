@@ -38,6 +38,18 @@ registers the library marks as writable.
 3. Add the integration the same way as above (Settings -> Devices &
    services -> Add Integration -> "Bluetti Modbus").
 
+## Testing
+
+The test suite (100% coverage enforced) runs automatically in CI on every
+pull request. To run it locally without installing anything but Docker:
+
+```bash
+./test.sh
+```
+
+This builds `Dockerfile.test` and runs the same `coverage run` /
+`coverage report --fail-under=100` steps CI does.
+
 ## Affiliate links (Anzeige / Ad)
 
 If you want to support this project and buy a Bluetti device, you can use the following affiliate links:
