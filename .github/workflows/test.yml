@@ -18,3 +18,9 @@ jobs:
         pip install -r requirements.txt
     - name: Run unittests
       run: python3 -m unittest discover -s tests -p "*.py"
+
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6 # v3.6.1
