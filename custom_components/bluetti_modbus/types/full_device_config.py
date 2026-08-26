@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import Any
 
 from .initial_device_config import InitialDeviceConfig
@@ -14,7 +15,7 @@ class FullDeviceConfig:
         self.dev_type = initial.dev_type
 
     @staticmethod
-    def from_dict(raw: dict[str, Any]):
+    def from_dict(raw: Mapping[str, Any]) -> "FullDeviceConfig | None":
         initial = InitialDeviceConfig.from_dict(raw)
 
         if initial is None:

@@ -11,7 +11,7 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -29,15 +29,18 @@ async def async_setup_entry(
     config = FullDeviceConfig.from_dict(entry.data)
     coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
-    logger = logging.getLogger(f"{__name__}.{config.address}")
-
     if config is None or not isinstance(coordinator, PollingCoordinator):
-        logger.error("No coordinator found")
+        logging.getLogger(__name__).error("No coordinator found")
         return
+
+    logger = logging.getLogger(f"{__name__}.{config.address}")
 
     # Generate device info
     logger.info("Creating sensors for device with address %s", config.address)
     device_info = dev_info(entry)
+    # dev_info() re-parses entry.data itself; it can only return None for the
+    # same "invalid data" case already ruled out by the config check above.
+    assert device_info is not None
 
     # Add sensors
     bluetti_device = get_device(config.dev_type)
@@ -70,7 +73,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self,
         coordinator: PollingCoordinator,
         device_info: DeviceInfo,
-        address,
+        address: int,
         response_key: str,
         unit_of_measurement: str | None = None,
         device_class: Enum | None = None,
@@ -80,7 +83,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         pack_num: int | None = None,
         cell_num: int | None = None,
         logger: logging.Logger | None = None,
-    ):
+    ) -> None:
         """Init sensor entity."""
         super().__init__(coordinator)
         self.coordinator = coordinator
@@ -107,7 +110,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
 
         if cell_num is not None:
             self._attr_translation_key = f"pack_{response_key}"
-            self._attr_translation_placeholders = {"cell_num": cell_num}
+            self._attr_translation_placeholders = {"cell_num": str(cell_num)}
 
         self._attr_available = False
         self._attr_unique_id = get_unique_id(e_name)
@@ -125,7 +128,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         """Return if entity is available."""
         return self._attr_available
 
-    def _set_available(self):
+    def _set_available(self) -> None:
         """Set sensor as available."""
         self._attr_available = True
         self._unavailable_counter = 0
@@ -134,7 +137,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         }
         self.async_write_ha_state()
 
-    def _set_unavailable(self, cause: str = "Unknown"):
+    def _set_unavailable(self, cause: str = "Unknown") -> None:
         """Set sensor as unavailable."""
         self._unavailable_counter += 1
 
@@ -182,7 +185,6 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         if (
             not isinstance(response_data, int)
             and not isinstance(response_data, float)
-            and not isinstance(response_data, complex)
             and not isinstance(response_data, Decimal)
             and not isinstance(response_data, Enum)
             and not isinstance(response_data, str)
@@ -197,8 +199,9 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
             self._set_unavailable("Invalid data type")
             return
 
+        cell_num = self._cell_num
         if isinstance(response_data, list) and (
-            self._cell_num is None or len(response_data) < self._cell_num
+            cell_num is None or len(response_data) < cell_num
         ):
             self._set_unavailable("Invalid list length")
             return
@@ -210,7 +213,8 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
             # Enum
             self._attr_native_value = response_data.name
         elif isinstance(response_data, list):
-            self._attr_native_value = response_data[self._cell_num - 1]
+            assert cell_num is not None
+            self._attr_native_value = response_data[cell_num - 1]
         else:
             # Numeric
             self._attr_native_value = response_data
