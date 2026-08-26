@@ -1,25 +1,48 @@
 # hassio-bluetti-modbus
 
-Inofficial Bluetti Modbus Integration for Home Assistant
+Unofficial Bluetti Modbus Integration for Home Assistant
 
 The current [Roadmap for this project and the library can be found here](https://github.com/users/Patrick762/projects/4)
 
 ## Disclaimer
 This integration is provided without any warranty or support by Bluetti. I do not take responsibility for any problems it may cause in all cases. Use it at your own risk.
 
+## Supported devices
+
+- Balco260
+- EP2000
+
+You have to enable Modbus TCP in your device's web interface first. Field
+names and available data come from
+[bluetti-modbus-lib](https://github.com/Patrick762/bluetti-modbus-lib), which
+this integration depends on. This integration currently only reads data
+(sensors) - it does not yet expose any switches or other controls, even for
+registers the library marks as writable.
+
 ## Installation
-TBD
 
-### Supported devices:
+### Via HACS
 
-See [bluetti-modbus-lib](https://github.com/Patrick762/bluetti-modbus-lib)
+1. Add this repository as a HACS custom repository (HACS -> Integrations ->
+   the "..." menu in the top right -> Custom repositories), category
+   "Integration".
+2. Find "Bluetti Modbus" in HACS and install it.
+3. Restart Home Assistant.
+4. Go to Settings -> Devices & services -> Add Integration -> "Bluetti
+   Modbus", and enter your device's IP address, port (502 by default), and
+   type.
 
-### Available controls:
-See [bluetti-modbus-lib](https://github.com/Patrick762/bluetti-modbus-lib)
+### Manually
+
+1. Copy `custom_components/bluetti_modbus` into your Home Assistant
+   configuration's `custom_components/` directory.
+2. Restart Home Assistant.
+3. Add the integration the same way as above (Settings -> Devices &
+   services -> Add Integration -> "Bluetti Modbus").
 
 ## Affiliate links (Anzeige / Ad)
 
-If you want to support this project and buy a bluetti device, you can use the following affiliate links:
+If you want to support this project and buy a Bluetti device, you can use the following affiliate links:
 
 - <a href="https://tidd.ly/4xJPHDn" target="_blank" rel="sponsored">Balco 260</a>
 
