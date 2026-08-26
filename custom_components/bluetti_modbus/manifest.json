@@ -1,7 +1,6 @@
 {
     "domain": "bluetti_modbus",
     "name": "Bluetti Modbus",
-    "after_dependencies": ["ssdp", "dhcp", "http"],
     "codeowners": ["@Patrick762", "@chpego"],
     "config_flow": true,
     "dependencies": [],
