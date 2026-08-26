@@ -44,7 +44,17 @@ async def async_setup_entry(
 
     # Add sensors
     bluetti_device = get_device(config.dev_type)
-    sensor_fields = [bluetti_device.get_field(f) for f in bluetti_device.get_sensors()]
+    # get_device() only returns None for a dev_type it doesn't recognize -
+    # config.dev_type was chosen from config_flow's fixed dropdown of known
+    # types when this entry was set up, so it's always one of those.
+    assert bluetti_device is not None
+    sensor_fields = []
+    for f in bluetti_device.get_sensors():
+        field = bluetti_device.get_field(f)
+        # get_sensors() only yields names that are keys in this same
+        # device's registered fields, so get_field() always finds them.
+        assert field is not None
+        sensor_fields.append(field)
 
     sensors_to_add = []
 

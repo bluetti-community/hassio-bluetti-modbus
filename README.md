@@ -9,6 +9,7 @@ This integration is provided without any warranty or support by Bluetti. I do no
 
 - Balco260
 - EP2000
+- SMeter (untested against real hardware so far)
 
 You have to enable Modbus TCP in your device's web interface first. Field
 names and available data come from
@@ -16,6 +17,12 @@ names and available data come from
 this integration depends on. This integration currently only reads data
 (sensors) - it does not yet expose any switches or other controls, even for
 registers the library marks as writable.
+
+Note: `requirements` currently points `bluetti-modbus-lib` at this fork's
+GitHub repo directly rather than PyPI, since the PyPI project of that name
+is still Patrick762's original, unmaintained package. This is a temporary
+arrangement until a proper release under `bluetti-community` (or a renamed
+package) is set up.
 
 ## Installation
 
