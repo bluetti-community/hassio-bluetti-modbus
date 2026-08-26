@@ -2,7 +2,7 @@
     "domain": "bluetti_modbus",
     "name": "Bluetti Modbus",
     "after_dependencies": ["ssdp", "dhcp", "http"],
-    "codeowners": ["@Patrick762"],
+    "codeowners": ["@Patrick762", "@chpego"],
     "config_flow": true,
     "dependencies": [],
     "documentation": "https://github.com/bluetti-community/hassio-bluetti-modbus",
