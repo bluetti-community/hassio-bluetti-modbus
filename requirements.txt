@@ -1,2 +1,2 @@
 homeassistant
-bluetti-modbus-lib @ git+https://github.com/bluetti-community/bluetti-modbus-lib.git@main
+bluetti-modbus-lib@git+https://github.com/bluetti-community/bluetti-modbus-lib.git@main
