@@ -46,7 +46,7 @@ class TestBluettiSensorInit(unittest.TestCase):
     def test_cell_num_sets_translation_placeholders(self):
         sensor = _sensor(response_key="b_v", cell_num=3)
         self.assertEqual(sensor._attr_translation_key, "pack_b_v")
-        self.assertEqual(sensor._attr_translation_placeholders, {"cell_num": 3})
+        self.assertEqual(sensor._attr_translation_placeholders, {"cell_num": "3"})
 
     def test_device_class_state_class_category_use_enum_value(self):
         sensor = _sensor(

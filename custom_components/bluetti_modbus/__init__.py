@@ -9,7 +9,7 @@ import re
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
     DATA_COORDINATOR,
@@ -18,7 +18,7 @@ from .const import (
     MANUFACTURER,
 )
 from .coordinator import PollingCoordinator
-from .types import FullDeviceConfig
+from .types import FullDeviceConfig as FullDeviceConfig
 
 PLATFORMS: list[Platform] = [
     Platform.SENSOR,
@@ -78,7 +78,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unloaded
 
 
-def device_info(entry: ConfigEntry):
+def device_info(entry: ConfigEntry) -> DeviceInfo | None:
     """Device info."""
     config = FullDeviceConfig.from_dict(entry.data)
 
@@ -93,7 +93,7 @@ def device_info(entry: ConfigEntry):
     )
 
 
-def get_unique_id(name: str, sensor_type: str | None = None):
+def get_unique_id(name: str, sensor_type: str | None = None) -> str:
     """Generate an unique id."""
     res = re.sub("[^A-Za-z0-9]+", "_", name).lower()
     if sensor_type is not None:
