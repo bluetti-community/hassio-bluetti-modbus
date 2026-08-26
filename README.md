@@ -2,8 +2,6 @@
 
 Unofficial Bluetti Modbus Integration for Home Assistant
 
-The current [Roadmap for this project and the library can be found here](https://github.com/users/Patrick762/projects/4)
-
 ## Disclaimer
 This integration is provided without any warranty or support by Bluetti. I do not take responsibility for any problems it may cause in all cases. Use it at your own risk.
 
@@ -14,7 +12,7 @@ This integration is provided without any warranty or support by Bluetti. I do no
 
 You have to enable Modbus TCP in your device's web interface first. Field
 names and available data come from
-[bluetti-modbus-lib](https://github.com/Patrick762/bluetti-modbus-lib), which
+[bluetti-modbus-lib](https://github.com/bluetti-community/bluetti-modbus-lib), which
 this integration depends on. This integration currently only reads data
 (sensors) - it does not yet expose any switches or other controls, even for
 registers the library marks as writable.
