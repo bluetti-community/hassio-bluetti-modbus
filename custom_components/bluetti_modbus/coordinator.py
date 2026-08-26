@@ -7,6 +7,7 @@ import logging
 from datetime import timedelta
 
 from bluetti_modbus_lib.modbus.client import BluettiModbusClient
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -19,6 +20,7 @@ class PollingCoordinator(DataUpdateCoordinator):
     def __init__(
         self,
         hass: HomeAssistant,
+        config_entry: ConfigEntry,
         config: FullDeviceConfig,
         lock: asyncio.Lock,
     ):
@@ -26,6 +28,7 @@ class PollingCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             logging.getLogger(f"{__name__}.{config.address}"),
+            config_entry=config_entry,
             name="Bluetti polling coordinator",
             update_interval=timedelta(seconds=10),
         )

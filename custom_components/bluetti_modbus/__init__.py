@@ -48,6 +48,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     logger.debug("Creating coordinator")
     coordinator = PollingCoordinator(
         hass,
+        entry,
         config,
         lock,
     )
