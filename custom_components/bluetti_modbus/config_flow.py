@@ -37,7 +37,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             address = user_input.get(CONF_ADDRESS)
             port = user_input.get(CONF_PORT, 502)
             dev_type = user_input.get(CONF_TYPE, "balco260")
-            name = re.sub("[^A-Z0-9]+", "", address + str(port))
+            name = re.sub("[^A-Za-z0-9]+", "", address + str(port))
 
             await self.async_set_unique_id(address, raise_on_progress=False)
             self._abort_if_unique_id_configured()
