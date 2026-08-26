@@ -1,9 +1,10 @@
 FROM python:3
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+COPY requirements.txt requirements_test.txt ./
+RUN pip install -r requirements.txt -r requirements_test.txt
 
 COPY tests ./tests
 COPY custom_components/bluetti_modbus ./custom_components/bluetti_modbus
 
-RUN python3 -m unittest discover -s tests -p "*.py"
+RUN coverage run -m unittest discover -s tests -p "*.py" && \
+    coverage report -m --include="custom_components/*" --fail-under=100
