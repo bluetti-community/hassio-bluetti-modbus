@@ -13,6 +13,7 @@ class _FakeDeviceClass(Enum):
 
 class _FakeCategory(Enum):
     DIAGNOSTIC = "diagnostic"
+    CONFIG = "config"
 
 
 def _device_info():
@@ -56,6 +57,14 @@ class TestBluettiSensorInit(unittest.TestCase):
         )
         self.assertEqual(sensor._attr_device_class, "power")
         self.assertEqual(sensor._attr_state_class, "power")
+        self.assertEqual(sensor._attr_entity_category, EntityCategory.DIAGNOSTIC)
+
+    def test_config_category_becomes_diagnostic(self):
+        # SensorEntity refuses entity_category=CONFIG outright - this
+        # integration only exposes read-only sensors, so config-tagged
+        # fields (e.g. b_soc_low/b_soc_high) must surface as diagnostic
+        # instead, or adding the entity raises HomeAssistantError.
+        sensor = _sensor(category=_FakeCategory.CONFIG)
         self.assertEqual(sensor._attr_entity_category, EntityCategory.DIAGNOSTIC)
 
     def test_starts_unavailable(self):
