@@ -1,10 +1,11 @@
 """Bluetti Modbus Integration"""
 
 from __future__ import annotations
+
 import asyncio
-import re
 import logging
-from typing import List
+import re
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -19,7 +20,7 @@ from .const import (
 from .coordinator import PollingCoordinator
 from .types import FullDeviceConfig
 
-PLATFORMS: List[Platform] = [
+PLATFORMS: list[Platform] = [
     Platform.SENSOR,
 ]
 
