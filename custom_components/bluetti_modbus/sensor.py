@@ -197,7 +197,9 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
             self._set_unavailable("Invalid data type")
             return
 
-        if isinstance(response_data, list) and len(response_data) < self._cell_num:
+        if isinstance(response_data, list) and (
+            self._cell_num is None or len(response_data) < self._cell_num
+        ):
             self._set_unavailable("Invalid list length")
             return
 
