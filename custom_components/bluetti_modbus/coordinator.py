@@ -31,7 +31,11 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             logging.getLogger(f"{__name__}.{config.address}"),
             config_entry=config_entry,
             name="Bluetti polling coordinator",
-            update_interval=timedelta(seconds=10),
+            # Bluetti's Modbus TCP stack is fragile under frequent connections -
+            # a rapid burst of TCP connections during testing once made the
+            # device's web interface unresponsive and required a factory
+            # reset to recover. Keep this conservative.
+            update_interval=timedelta(seconds=30),
         )
 
         self.config = config
