@@ -1,11 +1,3 @@
 [tool.mypy]
 strict = true
 packages = ["custom_components.bluetti_modbus"]
-
-[[tool.mypy.overrides]]
-# bluetti-modbus-lib is fully typed internally (mypy --strict clean in its
-# own repo) but doesn't ship a py.typed marker yet, so type checkers can't
-# see its inline hints from here - see
-# https://github.com/bluetti-community/bluetti-modbus-lib.
-module = "bluetti_modbus_lib.*"
-ignore_missing_imports = true
