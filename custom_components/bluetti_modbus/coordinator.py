@@ -1,12 +1,15 @@
 """Coordinator for Bluetti integration."""
 
 from __future__ import annotations
+
 import asyncio
-from datetime import timedelta
 import logging
+from datetime import timedelta
+
+from bluetti_modbus_lib.modbus.client import BluettiModbusClient
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from bluetti_modbus_lib.modbus.client import BluettiModbusClient
+
 from .types import FullDeviceConfig
 
 

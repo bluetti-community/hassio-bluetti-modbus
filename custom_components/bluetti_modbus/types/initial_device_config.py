@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 CONF_ADDRESS = "address"
 CONF_PORT = "port"
@@ -20,7 +20,7 @@ class InitialDeviceConfig:
         self.dev_type = dev_type
 
     @staticmethod
-    def from_dict(raw: Dict[str, Any]):
+    def from_dict(raw: dict[str, Any]):
         if not InitialDeviceConfig.has_values(raw):
             return None
 
@@ -32,7 +32,7 @@ class InitialDeviceConfig:
         )
 
     @property
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             CONF_ADDRESS: self.address,
             CONF_PORT: self.port,
@@ -41,7 +41,7 @@ class InitialDeviceConfig:
         }
 
     @staticmethod
-    def has_values(raw: Dict[str, Any]) -> bool:
+    def has_values(raw: dict[str, Any]) -> bool:
         return (
             isinstance(raw.get(CONF_ADDRESS), str)
             and isinstance(raw.get(CONF_PORT), int)

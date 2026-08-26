@@ -1,9 +1,11 @@
 """Bluetti Modbus Config Flow"""
 
 from __future__ import annotations
-import re
+
 import logging
+import re
 from typing import Any
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_ADDRESS, CONF_PORT, CONF_TYPE
@@ -14,8 +16,8 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
 )
 
-from .types import InitialDeviceConfig
 from .const import DOMAIN
+from .types import InitialDeviceConfig
 
 _LOGGER = logging.getLogger(__name__)
 
