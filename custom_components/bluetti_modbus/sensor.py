@@ -130,7 +130,17 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         if state_class is not None:
             self._attr_state_class = state_class.value
         if category is not None:
-            self._attr_entity_category = EntityCategory(category.value)
+            entity_category = EntityCategory(category.value)
+            if entity_category == EntityCategory.CONFIG:
+                # SensorEntity refuses to be added with entity_category
+                # CONFIG (homeassistant/components/sensor/__init__.py) -
+                # it's reserved for entities that can be adjusted, and
+                # this integration only exposes read-only sensors today
+                # (no number/switch entities for writeable registers
+                # yet). Surface config-tagged fields as diagnostic
+                # instead of crashing entity registration.
+                entity_category = EntityCategory.DIAGNOSTIC
+            self._attr_entity_category = entity_category
         self._options = options
 
     @property
