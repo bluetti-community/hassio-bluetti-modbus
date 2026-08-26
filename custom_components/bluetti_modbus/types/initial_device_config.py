@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import Any
 
 CONF_ADDRESS = "address"
@@ -20,15 +21,15 @@ class InitialDeviceConfig:
         self.dev_type = dev_type
 
     @staticmethod
-    def from_dict(raw: dict[str, Any]):
+    def from_dict(raw: Mapping[str, Any]) -> "InitialDeviceConfig | None":
         if not InitialDeviceConfig.has_values(raw):
             return None
 
         return InitialDeviceConfig(
-            raw.get(CONF_ADDRESS),
-            raw.get(CONF_PORT),
-            raw.get(CONF_NAME),
-            raw.get(CONF_TYPE),
+            raw[CONF_ADDRESS],
+            raw[CONF_PORT],
+            raw[CONF_NAME],
+            raw[CONF_TYPE],
         )
 
     @property
@@ -41,7 +42,7 @@ class InitialDeviceConfig:
         }
 
     @staticmethod
-    def has_values(raw: dict[str, Any]) -> bool:
+    def has_values(raw: Mapping[str, Any]) -> bool:
         return (
             isinstance(raw.get(CONF_ADDRESS), str)
             and isinstance(raw.get(CONF_PORT), int)

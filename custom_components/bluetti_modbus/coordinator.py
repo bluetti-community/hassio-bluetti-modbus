@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import timedelta
+from typing import Any
 
 from bluetti_modbus_lib.modbus.client import BluettiModbusClient
 from homeassistant.config_entries import ConfigEntry
@@ -14,7 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .types import FullDeviceConfig
 
 
-class PollingCoordinator(DataUpdateCoordinator):
+class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Polling coordinator."""
 
     def __init__(
@@ -35,7 +36,7 @@ class PollingCoordinator(DataUpdateCoordinator):
 
         self.config = config
 
-    async def _async_update_data(self):
+    async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
 
         # Create client

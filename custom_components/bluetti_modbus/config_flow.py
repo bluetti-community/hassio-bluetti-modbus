@@ -8,8 +8,8 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS, CONF_PORT, CONF_TYPE
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
@@ -30,11 +30,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle user input."""
 
         if user_input is not None:
-            address = user_input.get(CONF_ADDRESS)
+            address = user_input[CONF_ADDRESS]
             port = user_input.get(CONF_PORT, 502)
             dev_type = user_input.get(CONF_TYPE, "balco260")
             name = re.sub("[^A-Za-z0-9]+", "", address + str(port))
