@@ -1,21 +1,23 @@
 """Bluetti Modbus sensors."""
 
 from __future__ import annotations
-from enum import Enum
+
 import logging
 from decimal import Decimal
-from typing import List
+from enum import Enum
+
+from bluetti_modbus_lib import get_device
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
 from homeassistant.const import EntityCategory
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from bluetti_modbus_lib import get_device
 
-from . import device_info as dev_info, get_unique_id, FullDeviceConfig
-from .const import DATA_COORDINATOR, DOMAIN, MANUFACTURER
+from . import FullDeviceConfig, get_unique_id
+from . import device_info as dev_info
+from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import PollingCoordinator
 
 
@@ -31,7 +33,7 @@ async def async_setup_entry(
 
     if config is None or not isinstance(coordinator, PollingCoordinator):
         logger.error("No coordinator found")
-        return None
+        return
 
     # Generate device info
     logger.info("Creating sensors for device with address %s", config.address)
@@ -77,14 +79,14 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         options: list[str] | None = None,
         pack_num: int | None = None,
         cell_num: int | None = None,
-        logger: logging.Logger = logging.getLogger(),
+        logger: logging.Logger | None = None,
     ):
         """Init sensor entity."""
         super().__init__(coordinator)
         self.coordinator = coordinator
         self._pack_num = pack_num
         self._cell_num = cell_num
-        self._logger = logger
+        self._logger = logger or logging.getLogger(__name__)
 
         self._attr_has_entity_name = True
         e_name = f"{device_info.get('name')} {response_key}"
@@ -184,7 +186,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
             and not isinstance(response_data, Decimal)
             and not isinstance(response_data, Enum)
             and not isinstance(response_data, str)
-            and not isinstance(response_data, List)
+            and not isinstance(response_data, list)
         ):
             self._logger.warning(
                 "Invalid response data type from coordinator (sensor.%s): %s has type %s",
@@ -195,7 +197,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
             self._set_unavailable("Invalid data type")
             return
 
-        if isinstance(response_data, List) and len(response_data) < self._cell_num:
+        if isinstance(response_data, list) and len(response_data) < self._cell_num:
             self._set_unavailable("Invalid list length")
             return
 
@@ -205,7 +207,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         if isinstance(response_data, Enum):
             # Enum
             self._attr_native_value = response_data.name
-        elif isinstance(response_data, List):
+        elif isinstance(response_data, list):
             self._attr_native_value = response_data[self._cell_num - 1]
         else:
             # Numeric

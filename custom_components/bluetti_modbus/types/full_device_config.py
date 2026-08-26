@@ -1,6 +1,6 @@
-from typing import Any, Dict
+from typing import Any
 
-from .InitialDeviceConfig import InitialDeviceConfig
+from .initial_device_config import InitialDeviceConfig
 
 
 class FullDeviceConfig:
@@ -14,7 +14,7 @@ class FullDeviceConfig:
         self.dev_type = initial.dev_type
 
     @staticmethod
-    def from_dict(raw: Dict[str, Any]):
+    def from_dict(raw: dict[str, Any]):
         initial = InitialDeviceConfig.from_dict(raw)
 
         if initial is None:
