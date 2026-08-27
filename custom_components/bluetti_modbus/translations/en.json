@@ -9,6 +9,9 @@
         }
       }
     },
+    "error": {
+      "cannot_connect": "Failed to connect to the device: {error}"
+    },
     "abort": {
       "no_unconfigured_devices": "No devices found"
     }

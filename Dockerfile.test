@@ -7,4 +7,4 @@ COPY tests ./tests
 COPY custom_components/bluetti_modbus ./custom_components/bluetti_modbus
 
 RUN coverage run -m unittest discover -s tests -p "*.py" && \
-    coverage report -m --include="custom_components/*" --fail-under=100
+    coverage report -m --include="custom_components/*" --omit="custom_components/bluetti_modbus/vendor/*" --fail-under=100
