@@ -1,0 +1,134 @@
+rules:
+  # Bronze
+  action-setup:
+    status: exempt
+    comment: This integration does not register any service actions.
+  appropriate-polling: done
+  brands:
+    status: todo
+    comment: Needs a home-assistant/brands entry - a separate repo/process.
+  common-modules: done
+  config-flow-test-coverage: done
+  config-flow: done
+  dependency-transparency:
+    status: todo
+    comment: >-
+      manifest.json's bluetti-modbus-lib requirement is a placeholder pending
+      resolution of the PyPI project name (still owned by the original
+      author's account) - see bluetti-modbus-lib's README.
+  docs-actions:
+    status: exempt
+    comment: This integration does not register any service actions.
+  docs-conditions:
+    status: exempt
+    comment: This integration does not provide any conditions.
+  docs-high-level-description:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-installation-instructions:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-removal-instructions:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-triggers:
+    status: exempt
+    comment: This integration does not provide any triggers.
+  entity-event-setup:
+    status: exempt
+    comment: >-
+      local_polling; entities rely solely on CoordinatorEntity's built-in
+      lifecycle, no manual event subscriptions.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions:
+    status: exempt
+    comment: This integration does not register any service actions.
+  config-entry-unloading: done
+  docs-configuration-parameters:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-installation-parameters:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable:
+    status: todo
+    comment: >-
+      UpdateFailed's translated message covers the failure itself; a
+      dedicated "device unavailable" log distinct from that hasn't been
+      added yet.
+  parallel-updates:
+    status: todo
+    comment: PARALLEL_UPDATES has not been set in sensor.py yet.
+  reauthentication-flow:
+    status: exempt
+    comment: Local Modbus TCP; there is no authentication that can expire or be invalidated.
+  test-coverage: todo
+
+  # Gold
+  devices: done
+  diagnostics: todo
+  discovery-update-info:
+    status: exempt
+    comment: Modbus TCP devices have no discovery protocol to update network info from.
+  discovery:
+    status: exempt
+    comment: Modbus TCP devices are not announced over any discoverable protocol.
+  docs-data-update:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-examples:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-known-limitations:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-supported-devices:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-supported-functions:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-troubleshooting:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-use-cases:
+    status: todo
+    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  dynamic-devices:
+    status: exempt
+    comment: One config entry always maps to exactly one physical device.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default:
+    status: todo
+    comment: Every field is currently enabled by default; not yet reviewed against this rule's criteria.
+  entity-translations: done
+  exception-translations: done
+  icon-translations:
+    status: todo
+    comment: No icons.json yet - entities rely on device_class defaults only.
+  reconfiguration-flow:
+    status: todo
+    comment: Only initial setup is implemented; no reconfigure step yet.
+  repair-issues:
+    status: todo
+    comment: No repair issues are raised yet.
+  stale-devices:
+    status: exempt
+    comment: One config entry always maps to exactly one physical device; there is nothing to go stale independently.
+
+  # Platinum
+  async-dependency: done
+  inject-websession:
+    status: exempt
+    comment: This integration communicates over Modbus TCP, not HTTP.
+  strict-typing: todo

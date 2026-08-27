@@ -1,0 +1,11 @@
+{
+  "domain": "bluetti_modbus",
+  "name": "Bluetti Modbus",
+  "codeowners": ["@chpego"],
+  "config_flow": true,
+  "dependencies": ["modbus"],
+  "documentation": "https://www.home-assistant.io/integrations/bluetti_modbus",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "requirements": ["bluetti-modbus-lib==0.0.0"]
+}

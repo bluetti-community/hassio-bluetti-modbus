@@ -1,0 +1,272 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+    },
+    "error": {
+      "cannot_connect": "Failed to connect: {error}"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]",
+          "port": "[%key:common::config_flow::data::port%]",
+          "unit_id": "Modbus unit ID",
+          "device_type": "Device type"
+        },
+        "data_description": {
+          "host": "The hostname or IP address of the device.",
+          "port": "The Modbus TCP port to connect on.",
+          "unit_id": "The device's Modbus unit ID, also called its Modbus device address.",
+          "device_type": "Which Bluetti device this is."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "ac_a_c": {
+        "name": "AC phase A current"
+      },
+      "ac_a_p": {
+        "name": "AC phase A active power"
+      },
+      "ac_a_p_apparent": {
+        "name": "AC phase A apparent power"
+      },
+      "ac_a_p_reactive": {
+        "name": "AC phase A reactive power"
+      },
+      "ac_a_pf": {
+        "name": "AC phase A power factor"
+      },
+      "ac_a_v": {
+        "name": "AC phase A voltage"
+      },
+      "ac_b_c": {
+        "name": "AC phase B current"
+      },
+      "ac_b_p": {
+        "name": "AC phase B active power"
+      },
+      "ac_b_p_apparent": {
+        "name": "AC phase B apparent power"
+      },
+      "ac_b_p_reactive": {
+        "name": "AC phase B reactive power"
+      },
+      "ac_b_pf": {
+        "name": "AC phase B power factor"
+      },
+      "ac_b_v": {
+        "name": "AC phase B voltage"
+      },
+      "ac_c_avg": {
+        "name": "AC average line current"
+      },
+      "ac_c_c": {
+        "name": "AC phase C current"
+      },
+      "ac_c_p": {
+        "name": "AC phase C active power"
+      },
+      "ac_c_p_apparent": {
+        "name": "AC phase C apparent power"
+      },
+      "ac_c_p_reactive": {
+        "name": "AC phase C reactive power"
+      },
+      "ac_c_pf": {
+        "name": "AC phase C power factor"
+      },
+      "ac_c_total": {
+        "name": "AC total line current"
+      },
+      "ac_c_unbalance": {
+        "name": "AC line current unbalance"
+      },
+      "ac_c_v": {
+        "name": "AC phase C voltage"
+      },
+      "ac_o_e_total": {
+        "name": "Total AC energy output"
+      },
+      "ac_o_p_total": {
+        "name": "Total AC power output"
+      },
+      "ac_o_switch": {
+        "name": "AC output switch"
+      },
+      "ac_p_apparent_total": {
+        "name": "AC total apparent power"
+      },
+      "ac_p_reactive_total": {
+        "name": "AC total reactive power"
+      },
+      "ac_p_total": {
+        "name": "AC total active power"
+      },
+      "ac_pf_total": {
+        "name": "AC total power factor"
+      },
+      "ac_v_avg": {
+        "name": "AC average phase voltage"
+      },
+      "b_c": {
+        "name": "Battery current"
+      },
+      "b_c_total": {
+        "name": "Total battery current"
+      },
+      "b_cell_count": {
+        "name": "Battery cell count"
+      },
+      "b_cycle_count": {
+        "name": "Battery cycle count"
+      },
+      "b_i_e": {
+        "name": "Battery energy input"
+      },
+      "b_ntc_count": {
+        "name": "Battery NTC count"
+      },
+      "b_o_e": {
+        "name": "Battery energy output"
+      },
+      "b_soc": {
+        "name": "Battery state of charge"
+      },
+      "b_soc_high": {
+        "name": "Battery SOC high threshold"
+      },
+      "b_soc_low": {
+        "name": "Battery SOC low threshold"
+      },
+      "b_soc_total": {
+        "name": "Total battery state of charge"
+      },
+      "b_soh": {
+        "name": "Battery state of health"
+      },
+      "b_soh_total": {
+        "name": "Total battery state of health"
+      },
+      "b_t_avg": {
+        "name": "Battery average temperature"
+      },
+      "b_type": {
+        "name": "Battery type"
+      },
+      "b_v": {
+        "name": "Battery voltage"
+      },
+      "b_v_total": {
+        "name": "Total battery voltage"
+      },
+      "d_inverter_fault": {
+        "name": "Inverter fault"
+      },
+      "d_inverter_status": {
+        "name": "Inverter status"
+      },
+      "d_inverter_total": {
+        "name": "Total power output of all inverters"
+      },
+      "d_inverter_type": {
+        "name": "Inverter type"
+      },
+      "d_inverter_warning": {
+        "name": "Inverter warning"
+      },
+      "d_num_battery_packs": {
+        "name": "Number of battery packs"
+      },
+      "d_num_inverters": {
+        "name": "Number of inverters"
+      },
+      "d_status": {
+        "name": "Device status"
+      },
+      "d_timestamp": {
+        "name": "Device timestamp (Unix time)"
+      },
+      "g_i_e_total": {
+        "name": "Total grid energy input"
+      },
+      "g_i_f": {
+        "name": "Grid input frequency"
+      },
+      "g_i_p_total": {
+        "name": "Total grid power input"
+      },
+      "g_i_switch": {
+        "name": "Grid input switch"
+      },
+      "g_o_e_total": {
+        "name": "Total grid energy output"
+      },
+      "g_o_switch": {
+        "name": "Grid output switch"
+      },
+      "pv_1_i_c": {
+        "name": "PV 1 input current"
+      },
+      "pv_1_i_p": {
+        "name": "PV 1 input power"
+      },
+      "pv_1_i_v": {
+        "name": "PV 1 input voltage"
+      },
+      "pv_2_i_c": {
+        "name": "PV 2 input current"
+      },
+      "pv_2_i_p": {
+        "name": "PV 2 input power"
+      },
+      "pv_2_i_v": {
+        "name": "PV 2 input voltage"
+      },
+      "pv_3_i_c": {
+        "name": "PV 3 input current"
+      },
+      "pv_3_i_p": {
+        "name": "PV 3 input power"
+      },
+      "pv_3_i_v": {
+        "name": "PV 3 input voltage"
+      },
+      "pv_4_i_c": {
+        "name": "PV 4 input current"
+      },
+      "pv_4_i_p": {
+        "name": "PV 4 input power"
+      },
+      "pv_4_i_v": {
+        "name": "PV 4 input voltage"
+      },
+      "pv_ac_e": {
+        "name": "PV to AC energy (direct)"
+      },
+      "pv_ac_p": {
+        "name": "PV to AC power (direct)"
+      },
+      "pv_i_e_total": {
+        "name": "Total PV energy input"
+      },
+      "pv_i_p_total": {
+        "name": "Total PV power input"
+      }
+    }
+  },
+  "exceptions": {
+    "modbus_error": {
+      "message": "{error}"
+    },
+    "conflicting_connection": {
+      "message": "{error}"
+    },
+    "unsupported_device_type": {
+      "message": "Unsupported device type: {device_type}."
+    }
+  }
+}
