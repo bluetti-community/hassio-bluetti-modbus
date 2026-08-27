@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
 
@@ -13,7 +12,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
     DATA_COORDINATOR,
-    DATA_LOCK,
     DOMAIN,
     MANUFACTURER,
 )
@@ -41,20 +39,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN].setdefault(entry.entry_id, {})
 
-    # Create lock
-    lock = asyncio.Lock()
-
     # Create coordinator for polling
     logger.debug("Creating coordinator")
     coordinator = PollingCoordinator(
         hass,
         entry,
         config,
-        lock,
     )
     await coordinator.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id].setdefault(DATA_COORDINATOR, coordinator)
-    hass.data[DOMAIN][entry.entry_id].setdefault(DATA_LOCK, lock)
 
     logger.debug("Creating entities")
     # Setup platforms
@@ -74,6 +67,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data = hass.data[DOMAIN].pop(entry.entry_id)
         coordinator: PollingCoordinator = data[DATA_COORDINATOR]
         await coordinator.async_shutdown()
+        await coordinator.aclose()
 
     return unloaded
 

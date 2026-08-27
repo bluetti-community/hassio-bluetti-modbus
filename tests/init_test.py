@@ -17,6 +17,7 @@ class TestAsyncUnloadEntry(unittest.IsolatedAsyncioTestCase):
 
         coordinator = MagicMock()
         coordinator.async_shutdown = AsyncMock()
+        coordinator.aclose = AsyncMock()
 
         hass = MagicMock()
         hass.data = {DOMAIN: {"test_entry": {DATA_COORDINATOR: coordinator}}}
@@ -26,6 +27,7 @@ class TestAsyncUnloadEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         coordinator.async_shutdown.assert_awaited_once()
+        coordinator.aclose.assert_awaited_once()
         self.assertNotIn("test_entry", hass.data[DOMAIN])
 
     async def test_unload_failure_leaves_data_and_coordinator_untouched(self):
