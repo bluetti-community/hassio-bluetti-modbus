@@ -8,7 +8,8 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from modbus_connection.exceptions import ModbusError
 
 from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
@@ -48,7 +49,18 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
-        data = await self._client.read()
+        try:
+            data = await self._client.read()
+        except ModbusError as err:
+            # bluetti-modbus-lib already retries once on transient
+            # ACKNOWLEDGE/SERVER_DEVICE_BUSY responses this device is known
+            # to occasionally return - reaching here means either a real
+            # connectivity problem or a second consecutive transient one.
+            # Surface it as an ordinary failed update rather than letting it
+            # fall through to DataUpdateCoordinator's "unexpected exception"
+            # path, which would log a full traceback for an expected,
+            # recoverable condition.
+            raise UpdateFailed(str(err)) from err
 
         return {k: v for k, v in [[d.name, d.value] for d in data]}
 
