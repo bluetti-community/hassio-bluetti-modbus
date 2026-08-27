@@ -15,13 +15,25 @@ def _config():
 
 class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_async_update_data_builds_client_with_config_values(self, client_cls):
+    async def test_client_is_built_once_from_config_values(self, client_cls):
         client_cls.return_value.read = AsyncMock(return_value=[])
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config(), MagicMock())
 
-        await coordinator._async_update_data()
+        PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         client_cls.assert_called_once_with("10.2.1.60", 502, "balco260")
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_repeated_updates_reuse_the_same_client(self, client_cls):
+        client_cls.return_value.read = AsyncMock(return_value=[])
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        await coordinator._async_update_data()
+        await coordinator._async_update_data()
+
+        # A fresh connection on every poll is exactly the pattern that has
+        # made the device's Modbus TCP stack unresponsive under load.
+        client_cls.assert_called_once_with("10.2.1.60", 502, "balco260")
+        self.assertEqual(client_cls.return_value.read.await_count, 2)
 
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_async_update_data_maps_results_by_name(self, client_cls):
@@ -32,7 +44,7 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         r2.name = "b_soc"
         r2.value = 89
         client_cls.return_value.read = AsyncMock(return_value=[r1, r2])
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config(), MagicMock())
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         result = await coordinator._async_update_data()
 
@@ -41,8 +53,17 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_async_update_data_with_no_fields_returns_empty_dict(self, client_cls):
         client_cls.return_value.read = AsyncMock(return_value=[])
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config(), MagicMock())
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         result = await coordinator._async_update_data()
 
         self.assertEqual(result, {})
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_aclose_closes_the_underlying_client(self, client_cls):
+        client_cls.return_value.aclose = AsyncMock()
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        await coordinator.aclose()
+
+        client_cls.return_value.aclose.assert_awaited_once()
