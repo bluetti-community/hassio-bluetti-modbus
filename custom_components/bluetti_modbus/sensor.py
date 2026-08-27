@@ -6,7 +6,6 @@ import logging
 from decimal import Decimal
 from enum import Enum
 
-from bluetti_modbus_lib import get_device
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
@@ -19,6 +18,7 @@ from . import FullDeviceConfig, get_unique_id
 from . import device_info as dev_info
 from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import PollingCoordinator
+from .vendor.bluetti_modbus_lib import get_device
 
 
 async def async_setup_entry(

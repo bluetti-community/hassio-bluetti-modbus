@@ -9,6 +9,9 @@
         }
       }
     },
+    "error": {
+      "cannot_connect": "Verbindung zum Gerät fehlgeschlagen: {error}"
+    },
     "abort": {
       "no_unconfigured_devices": "Keine Geräte gefunden"
     }
