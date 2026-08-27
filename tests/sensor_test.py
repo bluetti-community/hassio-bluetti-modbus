@@ -2,18 +2,10 @@ import unittest
 from enum import Enum
 from unittest.mock import MagicMock, patch
 
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 
 from custom_components.bluetti_modbus.sensor import BluettiSensor, async_setup_entry
-
-
-class _FakeDeviceClass(Enum):
-    POWER = "power"
-
-
-class _FakeCategory(Enum):
-    DIAGNOSTIC = "diagnostic"
-    CONFIG = "config"
 
 
 def _device_info():
@@ -49,14 +41,14 @@ class TestBluettiSensorInit(unittest.TestCase):
         self.assertEqual(sensor._attr_translation_key, "pack_b_v")
         self.assertEqual(sensor._attr_translation_placeholders, {"cell_num": "3"})
 
-    def test_device_class_state_class_category_use_enum_value(self):
+    def test_device_class_state_class_category_are_set_from_ha_enums(self):
         sensor = _sensor(
-            device_class=_FakeDeviceClass.POWER,
-            state_class=_FakeDeviceClass.POWER,
-            category=_FakeCategory.DIAGNOSTIC,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+            category=EntityCategory.DIAGNOSTIC,
         )
-        self.assertEqual(sensor._attr_device_class, "power")
-        self.assertEqual(sensor._attr_state_class, "power")
+        self.assertEqual(sensor._attr_device_class, SensorDeviceClass.POWER)
+        self.assertEqual(sensor._attr_state_class, SensorStateClass.MEASUREMENT)
         self.assertEqual(sensor._attr_entity_category, EntityCategory.DIAGNOSTIC)
 
     def test_config_category_becomes_diagnostic(self):
@@ -64,7 +56,7 @@ class TestBluettiSensorInit(unittest.TestCase):
         # integration only exposes read-only sensors, so config-tagged
         # fields (e.g. b_soc_low/b_soc_high) must surface as diagnostic
         # instead, or adding the entity raises HomeAssistantError.
-        sensor = _sensor(category=_FakeCategory.CONFIG)
+        sensor = _sensor(category=EntityCategory.CONFIG)
         self.assertEqual(sensor._attr_entity_category, EntityCategory.DIAGNOSTIC)
 
     def test_starts_unavailable(self):
@@ -171,12 +163,14 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
 
-        field = MagicMock(address=50001, name="d_num_inverters", unit=None)
-        del field.category
-        del field.device_class
-        del field.state_class
+        # MagicMock(name=...) sets the mock's own repr, not a `.name`
+        # attribute - must be assigned after construction to actually be
+        # readable as field.name (this is what async_setup_entry now uses
+        # to look metadata up by field name).
+        field = MagicMock(address=50001, unit="W")
+        field.name = "ac_o_p_total"
         bluetti_device = MagicMock()
-        bluetti_device.get_sensors.return_value = ["d_num_inverters"]
+        bluetti_device.get_sensors.return_value = ["ac_o_p_total"]
         bluetti_device.get_field.return_value = field
         get_device_fn.return_value = bluetti_device
 
@@ -191,7 +185,13 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         self.assertEqual(len(added), 1)
-        self.assertIsInstance(added[0], BluettiSensor)
+        sensor = added[0]
+        self.assertIsInstance(sensor, BluettiSensor)
+        # ac_o_p_total is in field_metadata.FIELD_METADATA as a power
+        # measurement - proves async_setup_entry actually looks metadata up
+        # by field name, not from the (now removed) field object itself.
+        self.assertEqual(sensor._attr_device_class, SensorDeviceClass.POWER)
+        self.assertEqual(sensor._attr_state_class, SensorStateClass.MEASUREMENT)
 
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_no_coordinator_does_not_add_entities(self, config_cls):
