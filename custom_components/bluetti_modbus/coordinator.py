@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import timedelta
 from typing import Any
@@ -23,7 +22,6 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         hass: HomeAssistant,
         config_entry: ConfigEntry,
         config: FullDeviceConfig,
-        lock: asyncio.Lock,
     ):
         """Initialize coordinator."""
         super().__init__(
@@ -39,25 +37,21 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         self.config = config
+        # One persistent client for the lifetime of this coordinator, not one
+        # per poll - a fresh connection on every poll is exactly the pattern
+        # that has made the device's Modbus TCP stack unresponsive under load.
+        self._client = BluettiModbusClient(
+            config.address,
+            config.port,
+            config.dev_type,
+        )
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
-
-        # Create client
-        self.logger.debug("Creating client for %s", self.config.name)
-        self.logger.debug(
-            "Address: %s, Port: %s, Device Type: %s",
-            self.config.address,
-            str(self.config.port),
-            self.config.dev_type,
-        )
-
-        reader = BluettiModbusClient(
-            self.config.address,
-            self.config.port,
-            self.config.dev_type,
-        )
-
-        data = await reader.read()
+        data = await self._client.read()
 
         return {k: v for k, v in [[d.name, d.value] for d in data]}
+
+    async def aclose(self) -> None:
+        """Close the underlying Modbus connection."""
+        await self._client.aclose()
