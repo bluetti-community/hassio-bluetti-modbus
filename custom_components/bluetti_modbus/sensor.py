@@ -6,7 +6,11 @@ import logging
 from decimal import Decimal
 from enum import Enum
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
@@ -18,6 +22,7 @@ from . import FullDeviceConfig, get_unique_id
 from . import device_info as dev_info
 from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import PollingCoordinator
+from .field_metadata import metadata_for
 from .vendor.bluetti_modbus_lib import get_device
 
 
@@ -59,6 +64,7 @@ async def async_setup_entry(
     sensors_to_add = []
 
     for field in sensor_fields:
+        metadata = metadata_for(field.name)
         sensors_to_add.append(
             BluettiSensor(
                 coordinator,
@@ -66,9 +72,9 @@ async def async_setup_entry(
                 field.address,
                 field.name,
                 unit_of_measurement=field.unit,
-                category=getattr(field, "category", None),
-                device_class=getattr(field, "device_class", None),
-                state_class=getattr(field, "state_class", None),
+                category=metadata.category,
+                device_class=metadata.device_class,
+                state_class=metadata.state_class,
                 logger=logger,
             )
         )
@@ -86,9 +92,9 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         address: int,
         response_key: str,
         unit_of_measurement: str | None = None,
-        device_class: Enum | None = None,
-        state_class: Enum | None = None,
-        category: Enum | None = None,
+        device_class: SensorDeviceClass | None = None,
+        state_class: SensorStateClass | None = None,
+        category: EntityCategory | None = None,
         options: list[str] | None = None,
         pack_num: int | None = None,
         cell_num: int | None = None,
@@ -126,21 +132,19 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = get_unique_id(e_name)
         self._attr_native_unit_of_measurement = unit_of_measurement
         if device_class is not None:
-            self._attr_device_class = device_class.value
+            self._attr_device_class = device_class
         if state_class is not None:
-            self._attr_state_class = state_class.value
+            self._attr_state_class = state_class
         if category is not None:
-            entity_category = EntityCategory(category.value)
-            if entity_category == EntityCategory.CONFIG:
-                # SensorEntity refuses to be added with entity_category
-                # CONFIG (homeassistant/components/sensor/__init__.py) -
-                # it's reserved for entities that can be adjusted, and
-                # this integration only exposes read-only sensors today
-                # (no number/switch entities for writeable registers
-                # yet). Surface config-tagged fields as diagnostic
-                # instead of crashing entity registration.
-                entity_category = EntityCategory.DIAGNOSTIC
-            self._attr_entity_category = entity_category
+            # SensorEntity refuses to be added with entity_category CONFIG
+            # (homeassistant/components/sensor/__init__.py) - it's reserved
+            # for entities that can be adjusted, and this integration only
+            # exposes read-only sensors today (no number/switch entities
+            # for writeable registers yet). Surface config-tagged fields as
+            # diagnostic instead of crashing entity registration.
+            self._attr_entity_category = (
+                EntityCategory.DIAGNOSTIC if category == EntityCategory.CONFIG else category
+            )
         self._options = options
 
     @property
