@@ -13,16 +13,16 @@ This integration is provided without any warranty or support by Bluetti. I do no
 
 You have to enable Modbus TCP in your device's web interface first. Field
 names and available data come from
-[bluetti-modbus-lib](https://github.com/bluetti-community/bluetti-modbus-lib), which
-this integration depends on. This integration currently only reads data
-(sensors) - it does not yet expose any switches or other controls, even for
-registers the library marks as writable.
+[bluetti-modbus-lib](https://github.com/bluetti-community/bluetti-modbus-lib).
+This integration currently only reads data (sensors) - it does not yet expose
+any switches or other controls, even for registers the library marks as
+writable.
 
-Note: `requirements` currently points `bluetti-modbus-lib` at this fork's
-GitHub repo directly rather than PyPI, since the PyPI project of that name
-is still Patrick762's original, unmaintained package. This is a temporary
-arrangement until a proper release under `bluetti-community` (or a renamed
-package) is set up.
+Note: this integration bundles its own copy of `bluetti-modbus-lib`
+(`custom_components/bluetti_modbus/vendor/`) rather than depending on it via
+PyPI, since the PyPI project of that name is still Patrick762's original,
+unmaintained package. Run `scripts/vendor_bluetti_modbus_lib.sh` to pick up
+a newer version.
 
 ## Installation
 

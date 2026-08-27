@@ -6,12 +6,12 @@ import logging
 from datetime import timedelta
 from typing import Any
 
-from bluetti_modbus_lib.modbus.client import BluettiModbusClient
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .types import FullDeviceConfig
+from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
 
 class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
