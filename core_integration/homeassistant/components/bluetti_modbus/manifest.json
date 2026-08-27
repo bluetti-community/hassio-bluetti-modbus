@@ -7,5 +7,5 @@
   "documentation": "https://www.home-assistant.io/integrations/bluetti_modbus",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "requirements": ["bluetti-modbus-lib==0.0.0"]
+  "requirements": ["bluetti-modbus>=0.1.0"]
 }

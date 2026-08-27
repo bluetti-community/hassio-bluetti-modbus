@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import BluettiConfigEntry, BluettiDataUpdateCoordinator
 from .entity import BluettiEntity
+from .field_metadata import metadata_for
 
 
 async def async_setup_entry(
@@ -45,23 +46,20 @@ class BluettiSensor(BluettiEntity, SensorEntity):
         self._attr_translation_key = field_name
         self._attr_native_unit_of_measurement = field.unit
 
-        device_class = getattr(field, "device_class", None)
-        if device_class is not None:
-            self._attr_device_class = device_class.value
-
-        state_class = getattr(field, "state_class", None)
-        if state_class is not None:
-            self._attr_state_class = state_class.value
-
-        category = getattr(field, "category", None)
-        if category is not None:
-            entity_category = EntityCategory(category.value)
-            if entity_category == EntityCategory.CONFIG:
-                # SensorEntity refuses entity_category=CONFIG - reserved for
-                # entities that can be adjusted, and this integration only
-                # exposes read-only sensors so far.
-                entity_category = EntityCategory.DIAGNOSTIC
-            self._attr_entity_category = entity_category
+        metadata = metadata_for(field_name)
+        if metadata.device_class is not None:
+            self._attr_device_class = metadata.device_class
+        if metadata.state_class is not None:
+            self._attr_state_class = metadata.state_class
+        if metadata.category is not None:
+            # SensorEntity refuses entity_category=CONFIG - reserved for
+            # entities that can be adjusted, and this integration only
+            # exposes read-only sensors so far.
+            self._attr_entity_category = (
+                EntityCategory.DIAGNOSTIC
+                if metadata.category == EntityCategory.CONFIG
+                else metadata.category
+            )
 
         self._update_value()
 
