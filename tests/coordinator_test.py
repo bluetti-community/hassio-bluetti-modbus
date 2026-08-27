@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from homeassistant.helpers.update_coordinator import UpdateFailed
+from modbus_connection.exceptions import ModbusConnectionError
+
 from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
 
@@ -58,6 +61,16 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         result = await coordinator._async_update_data()
 
         self.assertEqual(result, {})
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_modbus_error_becomes_update_failed(self, client_cls):
+        client_cls.return_value.read = AsyncMock(
+            side_effect=ModbusConnectionError("no route to host")
+        )
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        with self.assertRaises(UpdateFailed):
+            await coordinator._async_update_data()
 
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_aclose_closes_the_underlying_client(self, client_cls):
