@@ -9,8 +9,8 @@ HA UI, which is this integration's job, not the device library's. (Feedback
 from Paul Schoutsen, applied by removing the library's own
 FieldCategory/FieldStateClass/DeviceClass enums.)
 
-Built from bluetti-registers' modbus-tcp/{balco260,ep2000}.json schemas,
-which still carry this classification as data.
+Built from bluetti-registers' modbus-tcp/balco260.json schema, which still
+carries this classification as data.
 """
 
 from __future__ import annotations
