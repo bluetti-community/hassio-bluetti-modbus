@@ -1,13 +1,11 @@
-import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Any
 
 from modbus_connection import ModbusTcpParams
-from modbus_connection.exceptions import AcknowledgeError, ServerDeviceBusyError
 from modbus_connection.pymodbus import ModbusConnection
 
-from ..devices import EP2000, Balco260, SMeter, get_device
+from ..devices import Balco260, SMeter, get_device
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +26,7 @@ class BluettiModbusClient:
         device = get_device(device_type, self.conn.for_unit(1))
         if device is None:
             raise ValueError(f"Unsupported device type: {device_type!r}")
-        self.device: Balco260 | EP2000 | SMeter = device
+        self.device: Balco260 | SMeter = device
 
     async def aclose(self) -> None:
         """Close the connection permanently. Call when actually done with this client."""
@@ -42,28 +40,14 @@ class BluettiModbusClient:
         # the past. Call aclose() when actually done with this client.
         await self.conn.connect()
 
-        try:
-            await self._update_with_timeout()
-        except (AcknowledgeError, ServerDeviceBusyError):
-            # Codes 5/6: the device accepted the request but wants more time,
-            # or is momentarily busy - both are explicitly meant to be retried,
-            # not treated as a hard failure. Seen in practice on registers that
-            # otherwise read fine, so it's transient device behavior, not a
-            # permanently bad address. Retry exactly once.
-            LOGGER.debug("Device asked for a retry, trying once more")
-            await self._update_with_timeout()
+        LOGGER.debug("Reading device data")
+        await self.device.async_update_with_retry()
 
         results = []
-        for name, value in self.device._values.items():
+        for name, value in self.device.values.items():
             field = self.device.get_field(name)
             assert field is not None, (
-                f"{name} is in _values, so it must be a registered field"
+                f"{name} is in values, so it must be a registered field"
             )
             results.append(ClientReturnValue(name=name, unit=field.unit, value=value))
         return results
-
-    async def _update_with_timeout(self) -> None:
-        async with asyncio.timeout(10):
-            LOGGER.debug("Reading device data")
-
-            await self.device.async_update()

@@ -8,8 +8,11 @@ This integration is provided without any warranty or support by Bluetti. I do no
 ## Supported devices
 
 - Balco260
-- EP2000
 - SMeter (untested against real hardware so far)
+
+EP2000 support was pulled pending confirmation that it actually exposes
+Modbus TCP at all - see
+[bluetti-official/bluetti-home-assistant#125](https://github.com/bluetti-official/bluetti-home-assistant/issues/125).
 
 You have to enable Modbus TCP in your device's web interface first. Field
 names and available data come from
