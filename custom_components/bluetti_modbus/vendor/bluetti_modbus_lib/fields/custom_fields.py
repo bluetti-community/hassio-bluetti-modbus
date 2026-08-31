@@ -64,11 +64,49 @@ def bluetti_string(
     )
 
 
+def reference_offset_current(
+    address: int,
+    *,
+    reference: int,
+    unit: str = "A",
+) -> NumberField[Any]:
+    """A current reported as a magnitude relative to a fixed reference point.
+
+    Confirmed by BLUETTI support for ``b_c`` (address 51220): raw values
+    below the reference mean discharging, above mean charging, but only the
+    magnitude is available at this register - the direction isn't encoded
+    here (see https://github.com/bluetti-community/bluetti-modbus/issues/8).
+    """
+    return NumberField(
+        address,
+        convert=lambda raw: abs(raw - reference) * 0.1,
+        word_order="little",
+        unit=unit,
+    )
+
+
+def uint64(
+    address: int,
+    *,
+    writable: bool | WriteValidator = False,
+    unit: str | None = None,
+) -> NumberField[Any]:
+    return NumberField(
+        address,
+        count=4,
+        word_order="little",
+        signed=False,
+        writable=writable,
+        unit=unit,
+    )
+
+
 @unique
 class FieldType(Enum):
     INT16 = "int16"
     UINT16 = "uint16"
     UINT32 = "uint32"
+    UINT64 = "uint64"
     FLOAT32 = "float32"
     STRING = "str"
     ENUM = "enum"
@@ -94,6 +132,8 @@ def field(
             return uint32(
                 address, scale=scale, writable=writable, unit=unit, word_order="little"
             )
+        case FieldType.UINT64:
+            return uint64(address, writable=writable, unit=unit)
         case FieldType.FLOAT32:
             return float32(
                 address, scale=scale, writable=writable, unit=unit, word_order="little"
@@ -101,8 +141,8 @@ def field(
         case FieldType.STRING:
             return bluetti_string(address, length)
         case FieldType.ENUM:
-            # Every real caller (balco260.py, ep2000.py) passes enum_type
-            # for FieldType.ENUM - the None default only exists because the
+            # Every real caller (balco260.py) passes enum_type for
+            # FieldType.ENUM - the None default only exists because the
             # other FieldTypes don't use this parameter at all.
             assert enum_type is not None, "FieldType.ENUM requires enum_type"
             return enum(address, enum_type, count=count, word_order="little")

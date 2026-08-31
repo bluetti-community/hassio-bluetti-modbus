@@ -87,6 +87,18 @@ class Balco260(BluettiDevice):
         address=50200,
         length=6,
     )
+    d_serial = field(
+        t=FieldType.UINT64,
+        address=50206,
+    )
+    d_ver_arm = field(
+        t=FieldType.UINT32,
+        address=50210,
+    )
+    d_ver_dsp = field(
+        t=FieldType.UINT32,
+        address=50212,
+    )
     g_i_f = field(
         t=FieldType.UINT16,
         address=50214,
