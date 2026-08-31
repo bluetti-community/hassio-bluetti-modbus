@@ -4,41 +4,30 @@ rules:
     status: exempt
     comment: This integration does not register any service actions.
   appropriate-polling: done
-  brands:
-    status: todo
-    comment: Needs a home-assistant/brands entry - a separate repo/process.
+  brands: done
   common-modules: done
-  config-flow-test-coverage: done
   config-flow: done
-  dependency-transparency:
-    status: todo
-    comment: >-
-      manifest.json's bluetti-modbus-lib requirement is a placeholder pending
-      resolution of the PyPI project name (still owned by the original
-      author's account) - see bluetti-modbus-lib's README.
+  config-flow-test-coverage: done
+  dependency-transparency: done
+  # ^ bluetti-modbus is a properly published, versioned PyPI package
+  #   (bluetti-community/bluetti-modbus on GitHub) - no vendored code.
   docs-actions:
     status: exempt
     comment: This integration does not register any service actions.
   docs-conditions:
     status: exempt
-    comment: This integration does not provide any conditions.
-  docs-high-level-description:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-installation-instructions:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-removal-instructions:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
+    comment: This integration provides no conditions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
   docs-triggers:
     status: exempt
-    comment: This integration does not provide any triggers.
+    comment: This integration provides no triggers.
   entity-event-setup:
     status: exempt
     comment: >-
-      local_polling; entities rely solely on CoordinatorEntity's built-in
-      lifecycle, no manual event subscriptions.
+      Entities read cached state from the coordinator; they subscribe via
+      CoordinatorEntity and register no other event handlers.
   entity-unique-id: done
   has-entity-name: done
   runtime-data: done
@@ -51,84 +40,67 @@ rules:
     status: exempt
     comment: This integration does not register any service actions.
   config-entry-unloading: done
-  docs-configuration-parameters:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-installation-parameters:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
+  docs-configuration-parameters: todo
+  docs-installation-parameters: todo
   entity-unavailable: done
   integration-owner: done
-  log-when-unavailable:
-    status: todo
-    comment: >-
-      UpdateFailed's translated message covers the failure itself; a
-      dedicated "device unavailable" log distinct from that hasn't been
-      added yet.
-  parallel-updates:
-    status: todo
-    comment: PARALLEL_UPDATES has not been set in sensor.py yet.
+  log-when-unavailable: done
+  parallel-updates: done
   reauthentication-flow:
     status: exempt
-    comment: Local Modbus TCP; there is no authentication that can expire or be invalidated.
-  test-coverage: todo
+    comment: A Modbus link has no authentication.
+  test-coverage: done
 
   # Gold
   devices: done
   diagnostics: todo
-  discovery-update-info:
-    status: exempt
-    comment: Modbus TCP devices have no discovery protocol to update network info from.
   discovery:
-    status: exempt
-    comment: Modbus TCP devices are not announced over any discoverable protocol.
-  docs-data-update:
     status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-examples:
+    comment: >-
+      Devices are added by entering a host, port and unit ID directly - no
+      mDNS on the one device tested so far, and a MAC-vendor lookup alone
+      isn't specific enough to this product. The device's DHCP hostname may
+      be distinctive enough to discover on, but that's unverified across
+      more than one device/model - picking this up once confirmed.
+  discovery-update-info:
     status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-known-limitations:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-supported-devices:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-supported-functions:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-troubleshooting:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
-  docs-use-cases:
-    status: todo
-    comment: Needs a home-assistant.io doc page - a separate repo/process.
+    comment: Depends on discovery above landing first.
+  docs-data-update: todo
+  docs-examples: todo
+  docs-known-limitations: todo
+  docs-supported-devices: todo
+  docs-supported-functions: todo
+  docs-troubleshooting: todo
+  docs-use-cases: todo
   dynamic-devices:
     status: exempt
-    comment: One config entry always maps to exactly one physical device.
+    comment: A config entry is one power station, which is one device.
   entity-category: done
   entity-device-class: done
   entity-disabled-by-default:
     status: todo
-    comment: Every field is currently enabled by default; not yet reviewed against this rule's criteria.
+    comment: >-
+      Several diagnostic entities (cell/cycle/NTC counts, pack count) are
+      plausible candidates to disable by default; not yet triaged.
   entity-translations: done
+  # ^ Unlike the cloud bluetti integration, these register names are known at
+  #   dev time (bluetti-modbus's generated device classes), not supplied
+  #   dynamically by the cloud API - real translations are possible here.
   exception-translations: done
-  icon-translations:
-    status: todo
-    comment: No icons.json yet - entities rely on device_class defaults only.
+  icon-translations: done
   reconfiguration-flow:
     status: todo
-    comment: Only initial setup is implemented; no reconfigure step yet.
+    comment: Split off to a follow-up PR to keep this one reviewable.
   repair-issues:
-    status: todo
-    comment: No repair issues are raised yet.
+    status: exempt
+    comment: No repairable issues are raised.
   stale-devices:
     status: exempt
-    comment: One config entry always maps to exactly one physical device; there is nothing to go stale independently.
+    comment: A config entry is one power station, so no device can go stale.
 
   # Platinum
   async-dependency: done
   inject-websession:
     status: exempt
-    comment: This integration communicates over Modbus TCP, not HTTP.
-  strict-typing: todo
+    comment: This integration talks Modbus, not HTTP.
+  strict-typing: done

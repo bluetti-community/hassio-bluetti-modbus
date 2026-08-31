@@ -1,116 +1,36 @@
 {
   "config": {
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]"
     },
     "error": {
-      "cannot_connect": "Failed to connect: {error}"
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "link_settings_in_use": "This address and device ID are already in use with different Modbus settings by another entry."
     },
     "step": {
       "user": {
         "data": {
           "host": "[%key:common::config_flow::data::host%]",
           "port": "[%key:common::config_flow::data::port%]",
-          "unit_id": "Modbus unit ID",
-          "device_type": "Device type"
+          "unit_id": "Device ID"
         },
         "data_description": {
-          "host": "The hostname or IP address of the device.",
-          "port": "The Modbus TCP port to connect on.",
-          "unit_id": "The device's Modbus unit ID, also called its Modbus device address.",
-          "device_type": "Which Bluetti device this is."
-        }
+          "host": "The hostname or IP address of your BLUETTI power station.",
+          "port": "The TCP port the device listens on for Modbus requests. The BLUETTI default is 502.",
+          "unit_id": "The Modbus device ID of the power station. The BLUETTI default is 1."
+        },
+        "description": "Connect to your BLUETTI power station over Modbus to monitor it locally."
       }
     }
   },
   "entity": {
     "sensor": {
-      "ac_a_c": {
-        "name": "AC phase A current"
-      },
-      "ac_a_p": {
-        "name": "AC phase A active power"
-      },
-      "ac_a_p_apparent": {
-        "name": "AC phase A apparent power"
-      },
-      "ac_a_p_reactive": {
-        "name": "AC phase A reactive power"
-      },
-      "ac_a_pf": {
-        "name": "AC phase A power factor"
-      },
-      "ac_a_v": {
-        "name": "AC phase A voltage"
-      },
-      "ac_b_c": {
-        "name": "AC phase B current"
-      },
-      "ac_b_p": {
-        "name": "AC phase B active power"
-      },
-      "ac_b_p_apparent": {
-        "name": "AC phase B apparent power"
-      },
-      "ac_b_p_reactive": {
-        "name": "AC phase B reactive power"
-      },
-      "ac_b_pf": {
-        "name": "AC phase B power factor"
-      },
-      "ac_b_v": {
-        "name": "AC phase B voltage"
-      },
-      "ac_c_avg": {
-        "name": "AC average line current"
-      },
-      "ac_c_c": {
-        "name": "AC phase C current"
-      },
-      "ac_c_p": {
-        "name": "AC phase C active power"
-      },
-      "ac_c_p_apparent": {
-        "name": "AC phase C apparent power"
-      },
-      "ac_c_p_reactive": {
-        "name": "AC phase C reactive power"
-      },
-      "ac_c_pf": {
-        "name": "AC phase C power factor"
-      },
-      "ac_c_total": {
-        "name": "AC total line current"
-      },
-      "ac_c_unbalance": {
-        "name": "AC line current unbalance"
-      },
-      "ac_c_v": {
-        "name": "AC phase C voltage"
-      },
       "ac_o_e_total": {
-        "name": "Total AC energy output"
+        "name": "Total AC output energy"
       },
       "ac_o_p_total": {
-        "name": "Total AC power output"
-      },
-      "ac_o_switch": {
-        "name": "AC output switch"
-      },
-      "ac_p_apparent_total": {
-        "name": "AC total apparent power"
-      },
-      "ac_p_reactive_total": {
-        "name": "AC total reactive power"
-      },
-      "ac_p_total": {
-        "name": "AC total active power"
-      },
-      "ac_pf_total": {
-        "name": "AC total power factor"
-      },
-      "ac_v_avg": {
-        "name": "AC average phase voltage"
+        "name": "AC output power"
       },
       "b_c": {
         "name": "Battery current"
@@ -119,40 +39,34 @@
         "name": "Total battery current"
       },
       "b_cell_count": {
-        "name": "Battery cell count"
+        "name": "Cell count"
       },
       "b_cycle_count": {
         "name": "Battery cycle count"
       },
       "b_i_e": {
-        "name": "Battery energy input"
+        "name": "Total battery charged energy"
       },
       "b_ntc_count": {
-        "name": "Battery NTC count"
+        "name": "Temperature sensor count"
       },
       "b_o_e": {
-        "name": "Battery energy output"
+        "name": "Total battery discharged energy"
       },
       "b_soc": {
-        "name": "Battery state of charge"
-      },
-      "b_soc_high": {
-        "name": "Battery SOC high threshold"
-      },
-      "b_soc_low": {
-        "name": "Battery SOC low threshold"
+        "name": "Battery SoC"
       },
       "b_soc_total": {
-        "name": "Total battery state of charge"
+        "name": "Total battery SoC"
       },
       "b_soh": {
-        "name": "Battery state of health"
+        "name": "Battery SoH"
       },
       "b_soh_total": {
-        "name": "Total battery state of health"
+        "name": "Total battery SoH"
       },
       "b_t_avg": {
-        "name": "Battery average temperature"
+        "name": "Average battery temperature"
       },
       "b_type": {
         "name": "Battery type"
@@ -163,50 +77,42 @@
       "b_v_total": {
         "name": "Total battery voltage"
       },
-      "d_inverter_fault": {
-        "name": "Inverter fault"
-      },
       "d_inverter_status": {
-        "name": "Inverter status"
+        "name": "Inverter status",
+        "state": {
+          "abnormal_off_grid": "Off-grid (abnormal)",
+          "grid_connected_charging": "Grid-connected (charging)",
+          "grid_connected_discharging": "Grid-connected (discharging)",
+          "grid_connected_load": "Grid-connected (load)",
+          "grid_connected_operation": "Grid-connected",
+          "inverter_fault": "Fault",
+          "off_grid": "Off-grid",
+          "stop": "Stopped"
+        }
       },
       "d_inverter_total": {
-        "name": "Total power output of all inverters"
+        "name": "Total inverter power"
       },
       "d_inverter_type": {
         "name": "Inverter type"
-      },
-      "d_inverter_warning": {
-        "name": "Inverter warning"
       },
       "d_num_battery_packs": {
         "name": "Number of battery packs"
       },
       "d_num_inverters": {
-        "name": "Number of inverters"
-      },
-      "d_status": {
-        "name": "Device status"
-      },
-      "d_timestamp": {
-        "name": "Device timestamp (Unix time)"
+        "name": "Inverter count"
       },
       "g_i_e_total": {
-        "name": "Total grid energy input"
+        "name": "Total grid import energy"
       },
       "g_i_f": {
-        "name": "Grid input frequency"
+        "name": "Grid frequency"
       },
       "g_i_p_total": {
-        "name": "Total grid power input"
-      },
-      "g_i_switch": {
-        "name": "Grid input switch"
+        "name": "Grid input power"
       },
       "g_o_e_total": {
-        "name": "Total grid energy output"
-      },
-      "g_o_switch": {
-        "name": "Grid output switch"
+        "name": "Total grid export energy"
       },
       "pv_1_i_c": {
         "name": "PV 1 input current"
@@ -245,28 +151,28 @@
         "name": "PV 4 input voltage"
       },
       "pv_ac_e": {
-        "name": "PV to AC energy (direct)"
+        "name": "PV AC energy"
       },
       "pv_ac_p": {
-        "name": "PV to AC power (direct)"
+        "name": "PV AC power"
       },
       "pv_i_e_total": {
-        "name": "Total PV energy input"
+        "name": "Total PV input energy"
       },
       "pv_i_p_total": {
-        "name": "Total PV power input"
+        "name": "Total PV input power"
       }
     }
   },
   "exceptions": {
-    "modbus_error": {
-      "message": "{error}"
+    "communication_error": {
+      "message": "An error occurred while communicating with the BLUETTI power station: {error}"
     },
-    "conflicting_connection": {
-      "message": "{error}"
+    "link_settings_in_use": {
+      "message": "The device cannot be set up with these link settings: {error}"
     },
-    "unsupported_device_type": {
-      "message": "Unsupported device type: {device_type}."
+    "wrong_device": {
+      "message": "The device at this address is a different device than the one this entry was set up for."
     }
   }
 }
