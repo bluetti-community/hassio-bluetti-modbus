@@ -1,8 +1,11 @@
 [tool.mypy]
 strict = true
 packages = ["custom_components.bluetti_modbus"]
-exclude = ["custom_components/bluetti_modbus/vendor/"]
+exclude = ["custom_components/bluetti_modbus/vendor/", "core_integration/"]
 
 [tool.ruff]
 # Vendored from bluetti-modbus-lib, which lints/tests itself in its own repo.
-extend-exclude = ["custom_components/bluetti_modbus/vendor"]
+# core_integration is a mirror of home-assistant/core#180602's own branch
+# content, which lints/tests itself there too - not this repo's convention
+# to enforce on a byte-for-byte copy of someone else's PR.
+extend-exclude = ["custom_components/bluetti_modbus/vendor", "core_integration"]
