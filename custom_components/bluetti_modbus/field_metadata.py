@@ -102,8 +102,8 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "g_o_switch": FieldMetadata(),
     "b_soc_low": _CONFIG,
     "b_soc_high": _CONFIG,
-    # SMeter (modbus-tcp/smeter.json) - g_i_f/g_i_e_total/g_o_e_total above are
-    # shared field names with Balco260 and already covered.
+    # S Meter (modbus-tcp/smeter.json) - g_i_f/g_i_e_total/g_o_e_total above
+    # are shared field names with Balco260 and already covered.
     "d_status": _DIAGNOSTIC,
     "d_timestamp": _DIAGNOSTIC,
     "ac_a_v": _VOLTAGE,
