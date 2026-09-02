@@ -29,48 +29,50 @@ class TestBluettiOnlineBinarySensorInit(unittest.TestCase):
         self.assertEqual(sensor._attr_translation_key, "d_status")
         self.assertEqual(sensor.unique_id, "test_device_d_status")
 
-    def test_starts_unavailable(self):
+    def test_is_on_starts_unknown(self):
+        # No available/_attr_available override here - that's
+        # CoordinatorEntity's own (coordinator.last_update_success), not
+        # reimplemented on this class. is_on itself starts unknown (None),
+        # BinarySensorEntity's own default.
         sensor = _sensor()
-        self.assertFalse(sensor.available)
+        self.assertIsNone(sensor.is_on)
 
 
 class TestHandleCoordinatorUpdate(unittest.TestCase):
-    def test_data_none_is_unavailable(self):
+    def test_data_none_leaves_is_on_unknown(self):
         sensor = _sensor()
         sensor.coordinator.data = None
         sensor._handle_coordinator_update()
-        self.assertFalse(sensor.available)
+        self.assertIsNone(sensor.is_on)
 
-    def test_data_not_a_dict_is_unavailable(self):
+    def test_data_not_a_dict_leaves_is_on_unknown(self):
         sensor = _sensor()
         sensor.coordinator.data = "not-a-dict"
         sensor._handle_coordinator_update()
-        self.assertFalse(sensor.available)
+        self.assertIsNone(sensor.is_on)
 
-    def test_missing_d_status_is_unavailable(self):
+    def test_missing_d_status_leaves_is_on_unknown(self):
         sensor = _sensor()
         sensor.coordinator.data = {}
         sensor._handle_coordinator_update()
-        self.assertFalse(sensor.available)
+        self.assertIsNone(sensor.is_on)
 
-    def test_non_int_d_status_is_unavailable(self):
+    def test_non_int_d_status_leaves_is_on_unknown(self):
         sensor = _sensor()
         sensor.coordinator.data = {"d_status": None}
         sensor._handle_coordinator_update()
-        self.assertFalse(sensor.available)
+        self.assertIsNone(sensor.is_on)
 
     def test_bit2_clear_is_offline(self):
         sensor = _sensor()
         sensor.coordinator.data = {"d_status": 0}
         sensor._handle_coordinator_update()
-        self.assertTrue(sensor.available)
         self.assertFalse(sensor.is_on)
 
     def test_bit2_set_is_online(self):
         sensor = _sensor()
         sensor.coordinator.data = {"d_status": 0b100}
         sensor._handle_coordinator_update()
-        self.assertTrue(sensor.available)
         self.assertTrue(sensor.is_on)
 
     def test_reserved_bits_are_ignored(self):
@@ -79,7 +81,6 @@ class TestHandleCoordinatorUpdate(unittest.TestCase):
         sensor = _sensor()
         sensor.coordinator.data = {"d_status": 0b111}
         sensor._handle_coordinator_update()
-        self.assertTrue(sensor.available)
         self.assertTrue(sensor.is_on)
 
 

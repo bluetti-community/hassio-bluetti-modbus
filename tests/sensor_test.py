@@ -201,14 +201,21 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sensor._attr_device_class, SensorDeviceClass.POWER)
         self.assertEqual(sensor._attr_state_class, SensorStateClass.MEASUREMENT)
 
+    @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_d_status_is_skipped_it_is_a_binary_sensor_field(
-        self, config_cls, dev_info_fn, get_device_fn
+        self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
     ):
-        config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
+        # d_status/d_timestamp (55111/55112) are S Meter-only fields (see
+        # const.py) - dev_type must actually be "smeter" here, not some
+        # other device, for this fixture to mean what it claims.
+        config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+            "name": f"Test Device Phase {phase.upper()}"
+        }
 
         field = MagicMock(address=55112, unit=None)
         field.name = "d_timestamp"

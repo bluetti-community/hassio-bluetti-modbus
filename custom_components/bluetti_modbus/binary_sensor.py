@@ -63,22 +63,20 @@ class BluettiOnlineBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_device_info = device_info
         e_name = f"{device_info.get('name')} d_status"
         self._attr_unique_id = get_unique_id(e_name)
-        self._attr_available = False
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self._attr_available
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        data = self.coordinator.data
-        if not isinstance(data, dict) or not isinstance(data.get("d_status"), int):
-            self._attr_available = False
-            self.async_write_ha_state()
-            return
+        """Handle updated data from the coordinator.
 
-        self._attr_available = True
-        self._attr_is_on = bool(data["d_status"] & ONLINE_STATUS_BIT)
+        Entity availability is CoordinatorEntity's own (coordinator.
+        last_update_success) - not overridden here. d_status missing from an
+        otherwise-successful update is a narrower, separate condition: is_on
+        just goes back to unknown (None) rather than dragging the whole
+        entity unavailable over one field.
+        """
+        data = self.coordinator.data
+        if isinstance(data, dict) and isinstance(data.get("d_status"), int):
+            self._attr_is_on = bool(data["d_status"] & ONLINE_STATUS_BIT)
+        else:
+            self._attr_is_on = None
         self.async_write_ha_state()
