@@ -16,7 +16,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import FullDeviceConfig, get_unique_id
 from . import device_info as dev_info
-from .const import DATA_COORDINATOR, DOMAIN, ONLINE_STATUS_BIT
+from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import PollingCoordinator
 
 
@@ -48,9 +48,9 @@ async def async_setup_entry(
 class BluettiOnlineBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Whether S Meter reports itself online (d_status, register 55111, bit2).
 
-    bits 0/1 of that register are "reserved" per the official spec - only
-    bit2 is documented, so this decodes just that bit rather than exposing
-    the raw register value as a confusing plain-number sensor.
+    bluetti_modbus_lib decodes this to a bool already (bit_flag() in
+    custom_fields.py) - protocol/register decoding belongs in that library,
+    not here.
     """
 
     _attr_has_entity_name = True
@@ -75,8 +75,8 @@ class BluettiOnlineBinarySensor(CoordinatorEntity, BinarySensorEntity):
         entity unavailable over one field.
         """
         data = self.coordinator.data
-        if isinstance(data, dict) and isinstance(data.get("d_status"), int):
-            self._attr_is_on = bool(data["d_status"] & ONLINE_STATUS_BIT)
+        if isinstance(data, dict) and isinstance(data.get("d_status"), bool):
+            self._attr_is_on = data["d_status"]
         else:
             self._attr_is_on = None
         self.async_write_ha_state()

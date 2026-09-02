@@ -57,29 +57,26 @@ class TestHandleCoordinatorUpdate(unittest.TestCase):
         sensor._handle_coordinator_update()
         self.assertIsNone(sensor.is_on)
 
-    def test_non_int_d_status_leaves_is_on_unknown(self):
+    def test_non_bool_d_status_leaves_is_on_unknown(self):
+        # bluetti_modbus_lib decodes d_status to a bool (bit_flag()) - a
+        # raw int here would mean a stale/unexpected vendored copy, not a
+        # value this entity should trust or try to interpret itself. Bit
+        # extraction is that library's job, not this integration's - see
+        # bit_flag()'s own tests for that.
         sensor = _sensor()
-        sensor.coordinator.data = {"d_status": None}
+        sensor.coordinator.data = {"d_status": 4}
         sensor._handle_coordinator_update()
         self.assertIsNone(sensor.is_on)
 
-    def test_bit2_clear_is_offline(self):
+    def test_d_status_false_is_offline(self):
         sensor = _sensor()
-        sensor.coordinator.data = {"d_status": 0}
+        sensor.coordinator.data = {"d_status": False}
         sensor._handle_coordinator_update()
         self.assertFalse(sensor.is_on)
 
-    def test_bit2_set_is_online(self):
+    def test_d_status_true_is_online(self):
         sensor = _sensor()
-        sensor.coordinator.data = {"d_status": 0b100}
-        sensor._handle_coordinator_update()
-        self.assertTrue(sensor.is_on)
-
-    def test_reserved_bits_are_ignored(self):
-        # bit0/1 are "reserved" per the official spec - only bit2 decides
-        # online/offline, regardless of what the reserved bits carry.
-        sensor = _sensor()
-        sensor.coordinator.data = {"d_status": 0b111}
+        sensor.coordinator.data = {"d_status": True}
         sensor._handle_coordinator_update()
         self.assertTrue(sensor.is_on)
 
