@@ -26,6 +26,7 @@ class FieldMetadata:
     device_class: SensorDeviceClass | None = None
     state_class: SensorStateClass | None = None
     category: EntityCategory | None = None
+    enabled_by_default: bool = True
 
 
 _POWER = FieldMetadata(device_class=SensorDeviceClass.POWER, state_class=SensorStateClass.MEASUREMENT)
@@ -37,6 +38,11 @@ _ENERGY_DIAGNOSTIC = FieldMetadata(
     category=EntityCategory.DIAGNOSTIC,
 )
 _DIAGNOSTIC = FieldMetadata(category=EntityCategory.DIAGNOSTIC)
+# The official register spec (55112, "Unix timestamp") has no remark beyond
+# "Read" - it's the meter's own internal clock reading, not something anyone
+# watches day to day. Off by default so it doesn't add to entity clutter;
+# still available to enable manually for whoever does want it.
+_DIAGNOSTIC_DISABLED = FieldMetadata(category=EntityCategory.DIAGNOSTIC, enabled_by_default=False)
 _DIAGNOSTIC_MEASUREMENT = FieldMetadata(
     state_class=SensorStateClass.MEASUREMENT, category=EntityCategory.DIAGNOSTIC
 )
@@ -104,8 +110,13 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "b_soc_high": _CONFIG,
     # SMeter (modbus-tcp/smeter.json) - g_i_f/g_i_e_total/g_o_e_total above are
     # shared field names with Balco260 and already covered.
+    # d_status (55111): official spec documents only bit2 (0=offline,
+    # 1=online), bits 0/1 "reserved" - left as a raw uint16, same as this
+    # project's other undecoded bitmap/status registers (e.g. Balco260's
+    # d_online_component), rather than assuming the reserved bits are
+    # always 0 and inventing a decoded boolean from unconfirmed data.
     "d_status": _DIAGNOSTIC,
-    "d_timestamp": _DIAGNOSTIC,
+    "d_timestamp": _DIAGNOSTIC_DISABLED,
     "ac_a_v": _VOLTAGE,
     "ac_b_v": _VOLTAGE,
     "ac_c_v": _VOLTAGE,
