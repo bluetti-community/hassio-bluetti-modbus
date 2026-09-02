@@ -27,3 +27,11 @@ SMETER_PHASE_FIELDS: dict[str, tuple[str, ...]] = {
     "b": ("ac_b_v", "ac_b_c", "ac_b_p", "ac_b_p_reactive", "ac_b_p_apparent", "ac_b_pf"),
     "c": ("ac_c_v", "ac_c_c", "ac_c_p", "ac_c_p_reactive", "ac_c_p_apparent", "ac_c_pf"),
 }
+
+# d_status (55111): the official spec's only decoded bit is bit2 (online
+# status) - bits 0/1 are "reserved". Unlike this project's other undecoded
+# bitmap/status registers (whose full bit layout genuinely isn't known), this
+# one has exactly one confirmed, meaningful bit - a raw uint sensor just shows
+# a confusing "4" or "0". Routed to binary_sensor.py instead of sensor.py.
+FIELDS_SHOWN_VIA_BINARY_SENSOR = {"d_status"}
+ONLINE_STATUS_BIT = 0b100

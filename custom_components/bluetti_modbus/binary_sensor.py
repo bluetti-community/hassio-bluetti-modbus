@@ -1,0 +1,84 @@
+"""Bluetti Modbus binary sensors."""
+
+from __future__ import annotations
+
+import logging
+
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from . import FullDeviceConfig, get_unique_id
+from . import device_info as dev_info
+from .const import DATA_COORDINATOR, DOMAIN, ONLINE_STATUS_BIT
+from .coordinator import PollingCoordinator
+
+
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
+    """Setup binary sensor entities."""
+
+    config = FullDeviceConfig.from_dict(entry.data)
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+
+    if config is None or not isinstance(coordinator, PollingCoordinator):
+        logging.getLogger(__name__).error("No coordinator found")
+        return
+
+    # d_status (55111, online status) only exists on S Meter - see
+    # const.py's FIELDS_SHOWN_VIA_BINARY_SENSOR.
+    if config.dev_type != "smeter":
+        return
+
+    device_info = dev_info(entry)
+    # dev_info() re-parses entry.data itself; it can only return None for the
+    # same "invalid data" case already ruled out by the config check above.
+    assert device_info is not None
+
+    async_add_entities([BluettiOnlineBinarySensor(coordinator, device_info)])
+
+
+class BluettiOnlineBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    """Whether S Meter reports itself online (d_status, register 55111, bit2).
+
+    bits 0/1 of that register are "reserved" per the official spec - only
+    bit2 is documented, so this decodes just that bit rather than exposing
+    the raw register value as a confusing plain-number sensor.
+    """
+
+    _attr_has_entity_name = True
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_translation_key = "d_status"
+
+    def __init__(self, coordinator: PollingCoordinator, device_info: DeviceInfo) -> None:
+        """Init binary sensor entity."""
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        e_name = f"{device_info.get('name')} d_status"
+        self._attr_unique_id = get_unique_id(e_name)
+        self._attr_available = False
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return self._attr_available
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        data = self.coordinator.data
+        if not isinstance(data, dict) or not isinstance(data.get("d_status"), int):
+            self._attr_available = False
+            self.async_write_ha_state()
+            return
+
+        self._attr_available = True
+        self._attr_is_on = bool(data["d_status"] & ONLINE_STATUS_BIT)
+        self.async_write_ha_state()
