@@ -110,12 +110,8 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "b_soc_high": _CONFIG,
     # S Meter (modbus-tcp/smeter.json) - g_i_f/g_i_e_total/g_o_e_total above
     # are shared field names with Balco260 and already covered.
-    # d_status (55111): official spec documents only bit2 (0=offline,
-    # 1=online), bits 0/1 "reserved" - left as a raw uint16, same as this
-    # project's other undecoded bitmap/status registers (e.g. Balco260's
-    # d_online_component), rather than assuming the reserved bits are
-    # always 0 and inventing a decoded boolean from unconfirmed data.
-    "d_status": _DIAGNOSTIC,
+    # d_status (55111) isn't here - it's a binary_sensor (see const.py's
+    # FIELDS_SHOWN_VIA_BINARY_SENSOR), not a sensor.
     "d_timestamp": _DIAGNOSTIC_DISABLED,
     "ac_a_v": _VOLTAGE,
     "ac_b_v": _VOLTAGE,

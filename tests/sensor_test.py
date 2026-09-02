@@ -205,6 +205,43 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_d_status_is_skipped_it_is_a_binary_sensor_field(
+        self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
+    ):
+        # d_status/d_timestamp (55111/55112) are S Meter-only fields (see
+        # const.py) - dev_type must actually be "smeter" here, not some
+        # other device, for this fixture to mean what it claims.
+        config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+            "name": f"Test Device Phase {phase.upper()}"
+        }
+
+        field = MagicMock(address=55112, unit=None)
+        field.name = "d_timestamp"
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = ["d_status", "d_timestamp"]
+        bluetti_device.get_field.side_effect = lambda name: {"d_timestamp": field}[name]
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator)
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        # get_field("d_status") would raise (not in the side_effect dict) if
+        # d_status weren't skipped before it's ever looked up.
+        self.assertEqual([s._response_key for s in added], ["d_timestamp"])
+
+    @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_smeter_routes_phase_fields_to_their_own_sub_device(
         self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
     ):
@@ -214,14 +251,14 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             "name": f"Test Device Phase {phase.upper()}"
         }
 
-        main_field = MagicMock(address=55111, unit=None)
-        main_field.name = "d_status"
+        main_field = MagicMock(address=55112, unit=None)
+        main_field.name = "d_timestamp"
         phase_a_field = MagicMock(address=55114, unit="V")
         phase_a_field.name = "ac_a_v"
         bluetti_device = MagicMock()
-        bluetti_device.get_sensors.return_value = ["d_status", "ac_a_v"]
+        bluetti_device.get_sensors.return_value = ["d_timestamp", "ac_a_v"]
         bluetti_device.get_field.side_effect = lambda name: {
-            "d_status": main_field,
+            "d_timestamp": main_field,
             "ac_a_v": phase_a_field,
         }[name]
         get_device_fn.return_value = bluetti_device
@@ -237,7 +274,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         by_key = {s._response_key: s for s in added}
-        self.assertEqual(by_key["d_status"].device_info, _device_info())
+        self.assertEqual(by_key["d_timestamp"].device_info, _device_info())
         self.assertEqual(
             by_key["ac_a_v"].device_info, {"name": "Test Device Phase A"}
         )

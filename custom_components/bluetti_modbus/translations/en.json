@@ -165,9 +165,6 @@
       "b_o_e": {
         "name": "Total Battery Discharged Energy"
       },
-      "d_status": {
-        "name": "Status"
-      },
       "d_timestamp": {
         "name": "Timestamp"
       },
@@ -248,6 +245,11 @@
       },
       "ac_pf_total": {
         "name": "Total Power Factor"
+      }
+    },
+    "binary_sensor": {
+      "d_status": {
+        "name": "Online"
       }
     }
   }
