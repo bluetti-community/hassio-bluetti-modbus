@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from custom_components.bluetti_modbus import (
+    async_migrate_entry,
     async_setup_entry,
     async_unload_entry,
     device_info,
@@ -95,6 +96,99 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         result = await async_setup_entry(hass, entry)
 
         self.assertFalse(result)
+
+
+class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
+    def _entry(self, *, version=1, dev_type="smeter"):
+        entry = MagicMock()
+        entry.version = version
+        entry.title = "My S Meter"
+        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": dev_type}
+        return entry
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_disables_an_already_enabled_d_timestamp_entity(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = "sensor.my_s_meter_d_timestamp"
+        registry.async_get.return_value = MagicMock(disabled_by=None)
+        hass = MagicMock()
+        entry = self._entry()
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        registry.async_get_entity_id.assert_called_once_with(
+            "sensor", DOMAIN, get_unique_id("My S Meter d_timestamp")
+        )
+        registry.async_update_entity.assert_called_once_with(
+            "sensor.my_s_meter_d_timestamp",
+            disabled_by=er_module.RegistryEntryDisabler.INTEGRATION,
+        )
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=2)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_does_not_touch_an_already_disabled_entity(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = "sensor.my_s_meter_d_timestamp"
+        registry.async_get.return_value = MagicMock(disabled_by="user")
+        hass = MagicMock()
+        entry = self._entry()
+
+        await async_migrate_entry(hass, entry)
+
+        registry.async_update_entity.assert_not_called()
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=2)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_entity_not_yet_registered_is_a_no_op(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = None
+        hass = MagicMock()
+        entry = self._entry()
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        registry.async_get.assert_not_called()
+        registry.async_update_entity.assert_not_called()
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=2)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_non_smeter_device_skips_the_registry_entirely(self, er_module):
+        hass = MagicMock()
+        entry = self._entry(dev_type="balco260")
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        er_module.async_get.assert_not_called()
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=2)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_invalid_entry_data_still_bumps_the_version(self, er_module):
+        hass = MagicMock()
+        entry = self._entry()
+        entry.data = {}
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        er_module.async_get.assert_not_called()
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=2)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_already_current_version_is_a_no_op(self, er_module):
+        hass = MagicMock()
+        entry = self._entry(version=2)
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        er_module.async_get.assert_not_called()
+        hass.config_entries.async_update_entry.assert_not_called()
 
 
 class TestDeviceInfo(unittest.TestCase):
