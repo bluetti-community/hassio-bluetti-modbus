@@ -20,7 +20,12 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import FullDeviceConfig, get_unique_id, phase_device_info
 from . import device_info as dev_info
-from .const import DATA_COORDINATOR, DOMAIN, SMETER_PHASE_FIELDS
+from .const import (
+    DATA_COORDINATOR,
+    DOMAIN,
+    FIELDS_SHOWN_VIA_BINARY_SENSOR,
+    SMETER_PHASE_FIELDS,
+)
 from .coordinator import PollingCoordinator
 from .field_metadata import metadata_for
 from .vendor.bluetti_modbus_lib import get_device
@@ -71,6 +76,8 @@ async def async_setup_entry(
     assert bluetti_device is not None
     sensor_fields = []
     for f in bluetti_device.get_sensors():
+        if f in FIELDS_SHOWN_VIA_BINARY_SENSOR:
+            continue
         field = bluetti_device.get_field(f)
         # get_sensors() only yields names that are keys in this same
         # device's registered fields, so get_field() always finds them.

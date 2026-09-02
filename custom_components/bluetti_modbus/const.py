@@ -27,3 +27,9 @@ SMETER_PHASE_FIELDS: dict[str, tuple[str, ...]] = {
     "b": ("ac_b_v", "ac_b_c", "ac_b_p", "ac_b_p_reactive", "ac_b_p_apparent", "ac_b_pf"),
     "c": ("ac_c_v", "ac_c_c", "ac_c_p", "ac_c_p_reactive", "ac_c_p_apparent", "ac_c_pf"),
 }
+
+# d_status (55111) decodes to a bool already (bluetti_modbus_lib's
+# bit_flag()) - a confirmed, single-bit online status, unlike this project's
+# other undecoded bitmap/status registers. Routed to binary_sensor.py
+# instead of sensor.py, which only handles numeric/enum/string values.
+FIELDS_SHOWN_VIA_BINARY_SENSOR = {"d_status"}
