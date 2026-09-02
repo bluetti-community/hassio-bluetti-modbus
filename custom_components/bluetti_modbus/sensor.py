@@ -54,12 +54,12 @@ async def async_setup_entry(
     # same "invalid data" case already ruled out by the config check above.
     assert device_info is not None
 
-    # SMeter's per-phase fields get their own sub-device (see
+    # S Meter's per-phase fields get their own sub-device (see
     # phase_device_info()'s docstring) - built once per phase, not per field.
     phase_device_infos: dict[str, DeviceInfo] = {}
     if config.dev_type == "smeter":
         for phase in SMETER_PHASE_FIELDS:
-            info = phase_device_info(entry, phase)
+            info = phase_device_info(hass, entry, phase)
             assert info is not None  # same guarantee as dev_info() above
             phase_device_infos[phase] = info
 

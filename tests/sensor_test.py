@@ -210,7 +210,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     ):
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda entry, phase: {
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 

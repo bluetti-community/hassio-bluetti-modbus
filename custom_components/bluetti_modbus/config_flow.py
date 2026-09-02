@@ -14,6 +14,7 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -90,7 +91,14 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     default="balco260",
                 ): SelectSelector(
                     SelectSelectorConfig(
-                        options=["balco260", "smeter"],
+                        # Product's real name is "S Meter" (two words) -
+                        # the stored value stays "smeter" (matches dev_type
+                        # elsewhere), only the dropdown's display label
+                        # differs.
+                        options=[
+                            SelectOptionDict(value="balco260", label="Balco260"),
+                            SelectOptionDict(value="smeter", label="S Meter"),
+                        ],
                         mode=SelectSelectorMode.DROPDOWN,
                     ),
                 ),

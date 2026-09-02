@@ -108,8 +108,8 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "g_o_switch": FieldMetadata(),
     "b_soc_low": _CONFIG,
     "b_soc_high": _CONFIG,
-    # SMeter (modbus-tcp/smeter.json) - g_i_f/g_i_e_total/g_o_e_total above are
-    # shared field names with Balco260 and already covered.
+    # S Meter (modbus-tcp/smeter.json) - g_i_f/g_i_e_total/g_o_e_total above
+    # are shared field names with Balco260 and already covered.
     # d_status (55111): official spec documents only bit2 (0=offline,
     # 1=online), bits 0/1 "reserved" - left as a raw uint16, same as this
     # project's other undecoded bitmap/status registers (e.g. Balco260's
