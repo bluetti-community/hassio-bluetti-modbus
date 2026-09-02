@@ -25,6 +25,14 @@ class TestMetadataFor(unittest.TestCase):
         self.assertIsNone(metadata.state_class)
         self.assertEqual(metadata.category, EntityCategory.CONFIG)
 
+    def test_smeter_timestamp_field_is_disabled_by_default(self):
+        # 55112 ("Unix timestamp") is the meter's own internal clock reading -
+        # not something anyone watches day to day, so it starts disabled
+        # rather than adding to entity clutter.
+        metadata = metadata_for("d_timestamp")
+        self.assertEqual(metadata.category, EntityCategory.DIAGNOSTIC)
+        self.assertFalse(metadata.enabled_by_default)
+
     def test_switch_field_has_no_metadata(self):
         metadata = metadata_for("ac_o_switch")
         self.assertIsNone(metadata.device_class)

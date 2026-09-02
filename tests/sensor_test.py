@@ -63,6 +63,14 @@ class TestBluettiSensorInit(unittest.TestCase):
         sensor = _sensor()
         self.assertFalse(sensor.available)
 
+    def test_enabled_by_default_defaults_to_true(self):
+        sensor = _sensor()
+        self.assertTrue(sensor._attr_entity_registry_enabled_default)
+
+    def test_enabled_by_default_can_be_set_to_false(self):
+        sensor = _sensor(enabled_by_default=False)
+        self.assertFalse(sensor._attr_entity_registry_enabled_default)
+
 
 class TestSetAvailableUnavailable(unittest.TestCase):
     def test_set_available_resets_counter_and_writes_state(self):
