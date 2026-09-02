@@ -93,6 +93,7 @@ async def async_setup_entry(
                 category=metadata.category,
                 device_class=metadata.device_class,
                 state_class=metadata.state_class,
+                enabled_by_default=metadata.enabled_by_default,
                 logger=logger,
             )
         )
@@ -117,6 +118,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         pack_num: int | None = None,
         cell_num: int | None = None,
         logger: logging.Logger | None = None,
+        enabled_by_default: bool = True,
     ) -> None:
         """Init sensor entity."""
         super().__init__(coordinator)
@@ -164,6 +166,7 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
                 EntityCategory.DIAGNOSTIC if category == EntityCategory.CONFIG else category
             )
         self._options = options
+        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
     def available(self) -> bool:
