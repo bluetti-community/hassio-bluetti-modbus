@@ -18,12 +18,19 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import FullDeviceConfig, get_unique_id
+from . import FullDeviceConfig, get_unique_id, phase_device_info
 from . import device_info as dev_info
-from .const import DATA_COORDINATOR, DOMAIN
+from .const import DATA_COORDINATOR, DOMAIN, SMETER_PHASE_FIELDS
 from .coordinator import PollingCoordinator
 from .field_metadata import metadata_for
 from .vendor.bluetti_modbus_lib import get_device
+
+# field name -> phase, the reverse of SMETER_PHASE_FIELDS's phase -> fields.
+_PHASE_FOR_FIELD = {
+    field_name: phase
+    for phase, field_names in SMETER_PHASE_FIELDS.items()
+    for field_name in field_names
+}
 
 
 async def async_setup_entry(
@@ -47,6 +54,15 @@ async def async_setup_entry(
     # same "invalid data" case already ruled out by the config check above.
     assert device_info is not None
 
+    # SMeter's per-phase fields get their own sub-device (see
+    # phase_device_info()'s docstring) - built once per phase, not per field.
+    phase_device_infos: dict[str, DeviceInfo] = {}
+    if config.dev_type == "smeter":
+        for phase in SMETER_PHASE_FIELDS:
+            info = phase_device_info(entry, phase)
+            assert info is not None  # same guarantee as dev_info() above
+            phase_device_infos[phase] = info
+
     # Add sensors
     bluetti_device = get_device(config.dev_type)
     # get_device() only returns None for a dev_type it doesn't recognize -
@@ -65,10 +81,12 @@ async def async_setup_entry(
 
     for field in sensor_fields:
         metadata = metadata_for(field.name)
+        field_phase = _PHASE_FOR_FIELD.get(field.name)
+        field_device_info = phase_device_infos[field_phase] if field_phase else device_info
         sensors_to_add.append(
             BluettiSensor(
                 coordinator,
-                device_info,
+                field_device_info,
                 field.address,
                 field.name,
                 unit_of_measurement=field.unit,

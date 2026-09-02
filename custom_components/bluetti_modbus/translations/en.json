@@ -164,6 +164,90 @@
       },
       "b_o_e": {
         "name": "Total Battery Discharged Energy"
+      },
+      "d_status": {
+        "name": "Status"
+      },
+      "d_timestamp": {
+        "name": "Timestamp"
+      },
+      "ac_a_v": {
+        "name": "Phase A Voltage"
+      },
+      "ac_b_v": {
+        "name": "Phase B Voltage"
+      },
+      "ac_c_v": {
+        "name": "Phase C Voltage"
+      },
+      "ac_a_c": {
+        "name": "Phase A Current"
+      },
+      "ac_b_c": {
+        "name": "Phase B Current"
+      },
+      "ac_c_c": {
+        "name": "Phase C Current"
+      },
+      "ac_a_p": {
+        "name": "Phase A Power"
+      },
+      "ac_b_p": {
+        "name": "Phase B Power"
+      },
+      "ac_c_p": {
+        "name": "Phase C Power"
+      },
+      "ac_a_p_reactive": {
+        "name": "Phase A Reactive Power"
+      },
+      "ac_b_p_reactive": {
+        "name": "Phase B Reactive Power"
+      },
+      "ac_c_p_reactive": {
+        "name": "Phase C Reactive Power"
+      },
+      "ac_a_p_apparent": {
+        "name": "Phase A Apparent Power"
+      },
+      "ac_b_p_apparent": {
+        "name": "Phase B Apparent Power"
+      },
+      "ac_c_p_apparent": {
+        "name": "Phase C Apparent Power"
+      },
+      "ac_a_pf": {
+        "name": "Phase A Power Factor"
+      },
+      "ac_b_pf": {
+        "name": "Phase B Power Factor"
+      },
+      "ac_c_pf": {
+        "name": "Phase C Power Factor"
+      },
+      "ac_v_avg": {
+        "name": "Average Phase Voltage"
+      },
+      "ac_c_avg": {
+        "name": "Average Line Current"
+      },
+      "ac_c_unbalance": {
+        "name": "Line Current Unbalance"
+      },
+      "ac_c_total": {
+        "name": "Total Line Current"
+      },
+      "ac_p_total": {
+        "name": "Total Active Power"
+      },
+      "ac_p_reactive_total": {
+        "name": "Total Reactive Power"
+      },
+      "ac_p_apparent_total": {
+        "name": "Total Apparent Power"
+      },
+      "ac_pf_total": {
+        "name": "Total Power Factor"
       }
     }
   }
