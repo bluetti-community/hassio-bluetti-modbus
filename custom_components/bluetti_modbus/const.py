@@ -7,11 +7,19 @@ CONF_OPTIONS = "options"
 
 DATA_COORDINATOR = "coordinator"
 
-# SMeter's per-phase fields (modbus-tcp/smeter.json) group under their own
+# dev_type (config_flow's stored, lowercase value) -> the product's real
+# display name, for DeviceInfo.model. Without this, the Devices page would
+# show the raw stored string ("smeter") instead of "S Meter".
+DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
+    "balco260": "Balco260",
+    "smeter": "S Meter",
+}
+
+# S Meter's per-phase fields (modbus-tcp/smeter.json) group under their own
 # sub-device, one per phase - matches how Shelly's Pro 3EM integration groups
 # its own per-channel energy-meter entities (home-assistant/core's shelly
 # component, get_rpc_device_info()/via_device_id), rather than dumping all 31
-# fields flat on one device. Everything else on SMeter (status, timestamp,
+# fields flat on one device. Everything else on S Meter (status, timestamp,
 # grid frequency, and the *_total/*_avg/*_unbalance aggregates) stays on the
 # main device - there's no phase to attribute them to.
 SMETER_PHASE_FIELDS: dict[str, tuple[str, ...]] = {
