@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
@@ -69,6 +70,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     logger.debug("Setup done")
+
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate an old config entry to the current version.
+
+    1 -> 2: d_timestamp (S Meter, register 55112) switched to disabled by
+    default (field_metadata.py), but entity_registry_enabled_default only
+    applies the first time an entity is ever registered - an entry set up
+    before that change already has the entity registered as enabled, and
+    nothing about bumping this integration's version changes that on its
+    own (confirmed against home-assistant/core's entity_registry.py:
+    async_get_or_create() only passes disabled_by down the "create" path,
+    never "update"). Disable it explicitly, once, here instead - and only
+    if it's still enabled, so this never fights a user who re-enables it
+    themselves afterward (this whole function doesn't run again once
+    entry.version reaches CURRENT_VERSION).
+    """
+    if entry.version == 1:
+        config = FullDeviceConfig.from_dict(entry.data)
+        if config is not None and config.dev_type == "smeter":
+            registry = er.async_get(hass)
+            unique_id = get_unique_id(f"{entry.title} d_timestamp")
+            entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+            if entity_id is not None:
+                existing = registry.async_get(entity_id)
+                if existing is not None and existing.disabled_by is None:
+                    registry.async_update_entity(
+                        entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION
+                    )
+
+        hass.config_entries.async_update_entry(entry, version=2)
 
     return True
 
