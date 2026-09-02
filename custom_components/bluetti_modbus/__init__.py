@@ -8,6 +8,7 @@ import re
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
@@ -49,6 +50,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id].setdefault(DATA_COORDINATOR, coordinator)
 
+    # Registered explicitly, before the platforms below create any entity:
+    # SMeter's per-phase sub-devices (see phase_device_info()) link back to
+    # this device via via_device, which only resolves against a device
+    # already in the registry - matches home-assistant/core's shelly
+    # integration, which registers its own main device the same way before
+    # forwarding to platforms (ShellyRpcCoordinator.async_setup()).
+    main_device_info = device_info(entry)
+    if main_device_info is not None:
+        dr.async_get(hass).async_get_or_create(
+            config_entry_id=entry.entry_id, **main_device_info
+        )
+
     logger.debug("Creating entities")
     # Setup platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -84,6 +97,33 @@ def device_info(entry: ConfigEntry) -> DeviceInfo | None:
         name=entry.title,
         manufacturer=MANUFACTURER,
         model=config.dev_type,
+        # The device's own local web server, the same one Modbus TCP has to
+        # be enabled through in the first place - see the README's setup
+        # steps. Port 80: the Modbus port (config.port) is a different,
+        # unrelated service on the same device.
+        configuration_url=f"http://{config.address}",
+    )
+
+
+def phase_device_info(entry: ConfigEntry, phase: str) -> DeviceInfo | None:
+    """Device info for one of SMeter's per-phase sub-devices (phase: 'a'/'b'/'c')."""
+    config = FullDeviceConfig.from_dict(entry.data)
+
+    if config is None:
+        return None
+
+    return DeviceInfo(
+        identifiers={(DOMAIN, f"{config.address}-phase-{phase}")},
+        name=f"{entry.title} Phase {phase.upper()}",
+        manufacturer=MANUFACTURER,
+        model=config.dev_type,
+        # Groups this sub-device under the main SMeter device on the
+        # Devices page, the same way home-assistant/core's shelly
+        # integration groups its own per-channel energy-meter sub-devices
+        # under one physical Shelly Pro 3EM (get_rpc_device_info() there).
+        # The main device is registered explicitly in async_setup_entry()
+        # below before this can ever be resolved.
+        via_device=(DOMAIN, config.address),
     )
 
 

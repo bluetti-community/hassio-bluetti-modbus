@@ -41,6 +41,16 @@ _DIAGNOSTIC_MEASUREMENT = FieldMetadata(
     state_class=SensorStateClass.MEASUREMENT, category=EntityCategory.DIAGNOSTIC
 )
 _CONFIG = FieldMetadata(category=EntityCategory.CONFIG)
+_REACTIVE_POWER = FieldMetadata(
+    device_class=SensorDeviceClass.REACTIVE_POWER, state_class=SensorStateClass.MEASUREMENT
+)
+_APPARENT_POWER = FieldMetadata(
+    device_class=SensorDeviceClass.APPARENT_POWER, state_class=SensorStateClass.MEASUREMENT
+)
+_POWER_FACTOR = FieldMetadata(
+    device_class=SensorDeviceClass.POWER_FACTOR, state_class=SensorStateClass.MEASUREMENT
+)
+_MEASUREMENT = FieldMetadata(state_class=SensorStateClass.MEASUREMENT)
 
 FIELD_METADATA: dict[str, FieldMetadata] = {
     "d_num_inverters": _DIAGNOSTIC,
@@ -92,6 +102,36 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "g_o_switch": FieldMetadata(),
     "b_soc_low": _CONFIG,
     "b_soc_high": _CONFIG,
+    # SMeter (modbus-tcp/smeter.json) - g_i_f/g_i_e_total/g_o_e_total above are
+    # shared field names with Balco260 and already covered.
+    "d_status": _DIAGNOSTIC,
+    "d_timestamp": _DIAGNOSTIC,
+    "ac_a_v": _VOLTAGE,
+    "ac_b_v": _VOLTAGE,
+    "ac_c_v": _VOLTAGE,
+    "ac_a_c": _CURRENT,
+    "ac_b_c": _CURRENT,
+    "ac_c_c": _CURRENT,
+    "ac_a_p": _POWER,
+    "ac_b_p": _POWER,
+    "ac_c_p": _POWER,
+    "ac_a_p_reactive": _REACTIVE_POWER,
+    "ac_b_p_reactive": _REACTIVE_POWER,
+    "ac_c_p_reactive": _REACTIVE_POWER,
+    "ac_a_p_apparent": _APPARENT_POWER,
+    "ac_b_p_apparent": _APPARENT_POWER,
+    "ac_c_p_apparent": _APPARENT_POWER,
+    "ac_a_pf": _POWER_FACTOR,
+    "ac_b_pf": _POWER_FACTOR,
+    "ac_c_pf": _POWER_FACTOR,
+    "ac_v_avg": _VOLTAGE,
+    "ac_c_avg": _CURRENT,
+    "ac_c_unbalance": _MEASUREMENT,
+    "ac_c_total": _CURRENT,
+    "ac_p_total": _POWER,
+    "ac_p_reactive_total": _REACTIVE_POWER,
+    "ac_p_apparent_total": _APPARENT_POWER,
+    "ac_pf_total": _POWER_FACTOR,
 }
 
 

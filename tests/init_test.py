@@ -6,6 +6,7 @@ from custom_components.bluetti_modbus import (
     async_unload_entry,
     device_info,
     get_unique_id,
+    phase_device_info,
 )
 from custom_components.bluetti_modbus.const import DATA_COORDINATOR, DOMAIN
 
@@ -49,11 +50,16 @@ class TestAsyncUnloadEntry(unittest.IsolatedAsyncioTestCase):
 
 
 class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
+    @patch("custom_components.bluetti_modbus.dr")
     @patch("custom_components.bluetti_modbus.PollingCoordinator")
-    async def test_setup_creates_coordinator_and_forwards_platforms(self, coordinator_cls):
+    async def test_setup_creates_coordinator_and_forwards_platforms(
+        self, coordinator_cls, dr_module
+    ):
         coordinator = MagicMock()
         coordinator.async_config_entry_first_refresh = AsyncMock()
         coordinator_cls.return_value = coordinator
+        device_registry = MagicMock()
+        dr_module.async_get.return_value = device_registry
 
         entry = MagicMock()
         entry.entry_id = "entry1"
@@ -69,6 +75,17 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator.async_config_entry_first_refresh.assert_awaited_once()
         hass.config_entries.async_forward_entry_setups.assert_awaited_once()
         self.assertIs(hass.data[DOMAIN]["entry1"][DATA_COORDINATOR], coordinator)
+        # The main device is registered explicitly, before platform setup -
+        # SMeter's per-phase sub-devices (see phase_device_info()) need it
+        # already present to resolve via_device against.
+        device_registry.async_get_or_create.assert_called_once_with(
+            config_entry_id="entry1",
+            identifiers={(DOMAIN, "10.2.1.60")},
+            name=entry.title,
+            manufacturer="Bluetti",
+            model="balco260",
+            configuration_url="http://10.2.1.60",
+        )
 
     async def test_setup_with_invalid_entry_data_returns_false(self):
         entry = MagicMock()
@@ -91,12 +108,32 @@ class TestDeviceInfo(unittest.TestCase):
         self.assertEqual(info["identifiers"], {(DOMAIN, "10.2.1.60")})
         self.assertEqual(info["name"], "My Balco260")
         self.assertEqual(info["model"], "balco260")
+        self.assertEqual(info["configuration_url"], "http://10.2.1.60")
 
     def test_returns_none_for_invalid_entry(self):
         entry = MagicMock()
         entry.data = {}
 
         self.assertIsNone(device_info(entry))
+
+
+class TestPhaseDeviceInfo(unittest.TestCase):
+    def test_returns_sub_device_info_linked_to_the_main_device(self):
+        entry = MagicMock()
+        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "smeter"}
+        entry.title = "My SMeter"
+
+        info = phase_device_info(entry, "a")
+
+        self.assertEqual(info["identifiers"], {(DOMAIN, "10.2.1.60-phase-a")})
+        self.assertEqual(info["name"], "My SMeter Phase A")
+        self.assertEqual(info["via_device"], (DOMAIN, "10.2.1.60"))
+
+    def test_returns_none_for_invalid_entry(self):
+        entry = MagicMock()
+        entry.data = {}
+
+        self.assertIsNone(phase_device_info(entry, "a"))
 
 
 class TestGetUniqueId(unittest.TestCase):
