@@ -59,7 +59,7 @@ async def async_setup_entry(
     phase_device_infos: dict[str, DeviceInfo] = {}
     if config.dev_type == "smeter":
         for phase in SMETER_PHASE_FIELDS:
-            info = phase_device_info(entry, phase)
+            info = phase_device_info(hass, entry, phase)
             assert info is not None  # same guarantee as dev_info() above
             phase_device_infos[phase] = info
 

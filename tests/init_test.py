@@ -118,22 +118,30 @@ class TestDeviceInfo(unittest.TestCase):
 
 
 class TestPhaseDeviceInfo(unittest.TestCase):
-    def test_returns_sub_device_info_linked_to_the_main_device(self):
+    @patch("custom_components.bluetti_modbus.dr")
+    def test_returns_sub_device_info_linked_to_the_main_device(self, dr_module):
+        dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
         entry = MagicMock()
+        entry.entry_id = "entry1"
         entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "smeter"}
         entry.title = "My SMeter"
+        hass = MagicMock()
 
-        info = phase_device_info(entry, "a")
+        info = phase_device_info(hass, entry, "a")
 
         self.assertEqual(info["identifiers"], {(DOMAIN, "10.2.1.60-phase-a")})
         self.assertEqual(info["name"], "My SMeter Phase A")
-        self.assertEqual(info["via_device"], (DOMAIN, "10.2.1.60"))
+        self.assertEqual(info["via_device_id"], "main-device-id")
+        dr_module.async_get_device_id_by_identifier.assert_called_once_with(
+            hass, (DOMAIN, "10.2.1.60"), config_entry_id="entry1"
+        )
 
     def test_returns_none_for_invalid_entry(self):
         entry = MagicMock()
         entry.data = {}
+        hass = MagicMock()
 
-        self.assertIsNone(phase_device_info(entry, "a"))
+        self.assertIsNone(phase_device_info(hass, entry, "a"))
 
 
 class TestGetUniqueId(unittest.TestCase):

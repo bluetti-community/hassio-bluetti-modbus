@@ -105,7 +105,9 @@ def device_info(entry: ConfigEntry) -> DeviceInfo | None:
     )
 
 
-def phase_device_info(entry: ConfigEntry, phase: str) -> DeviceInfo | None:
+def phase_device_info(
+    hass: HomeAssistant, entry: ConfigEntry, phase: str
+) -> DeviceInfo | None:
     """Device info for one of SMeter's per-phase sub-devices (phase: 'a'/'b'/'c')."""
     config = FullDeviceConfig.from_dict(entry.data)
 
@@ -122,8 +124,10 @@ def phase_device_info(entry: ConfigEntry, phase: str) -> DeviceInfo | None:
         # integration groups its own per-channel energy-meter sub-devices
         # under one physical Shelly Pro 3EM (get_rpc_device_info() there).
         # The main device is registered explicitly in async_setup_entry()
-        # below before this can ever be resolved.
-        via_device=(DOMAIN, config.address),
+        # above before this can ever be resolved.
+        via_device_id=dr.async_get_device_id_by_identifier(
+            hass, (DOMAIN, config.address), config_entry_id=entry.entry_id
+        ),
     )
 
 
