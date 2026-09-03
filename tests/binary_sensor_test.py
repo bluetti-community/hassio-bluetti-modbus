@@ -81,6 +81,20 @@ class TestHandleCoordinatorUpdate(unittest.TestCase):
         self.assertTrue(sensor.is_on)
 
 
+class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):
+    async def test_primes_is_on_from_data_already_on_the_coordinator(self):
+        # async_config_entry_first_refresh() already ran (see __init__.py)
+        # before this entity was ever created - coordinator.data reflects
+        # that read. Without priming here, is_on would stay unknown until
+        # the coordinator's next scheduled poll (update_interval, 30s).
+        sensor = _sensor()
+        sensor.coordinator.data = {"d_status": True}
+
+        await sensor.async_added_to_hass()
+
+        self.assertTrue(sensor.is_on)
+
+
 class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.binary_sensor.dev_info")
     @patch("custom_components.bluetti_modbus.binary_sensor.FullDeviceConfig")

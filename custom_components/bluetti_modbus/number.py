@@ -75,6 +75,20 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
         e_name = f"{device_info.get('name')} {field_name}"
         self._attr_unique_id = get_unique_id(e_name)
 
+    async def async_added_to_hass(self) -> None:
+        """Prime native_value from whatever the coordinator already has.
+
+        CoordinatorEntity.async_added_to_hass() only registers a listener for
+        FUTURE updates (confirmed against homeassistant's update_coordinator.py) -
+        it never calls _handle_coordinator_update() itself. Since
+        async_config_entry_first_refresh() already ran before this entity was
+        created (see __init__.py), coordinator.data is already populated;
+        without this, native_value would stay unknown until the coordinator's
+        next scheduled poll, up to update_interval (30s) later.
+        """
+        await super().async_added_to_hass()
+        self._handle_coordinator_update()
+
     async def async_set_native_value(self, value: float) -> None:
         """Write the new value to the device."""
         await self.coordinator.device.write(self._field_name, int(value))

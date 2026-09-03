@@ -34,6 +34,20 @@ class TestBluettiNumberEntityInit(unittest.TestCase):
         self.assertIsNone(number.native_value)
 
 
+class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):
+    async def test_primes_native_value_from_data_already_on_the_coordinator(self):
+        # async_config_entry_first_refresh() already ran (see __init__.py)
+        # before this entity was ever created - coordinator.data reflects
+        # that read. Without priming here, native_value would stay unknown
+        # until the coordinator's next scheduled poll (update_interval, 30s).
+        number = _number("b_soc_low")
+        number.coordinator.data = {"b_soc_low": 20}
+
+        await number.async_added_to_hass()
+
+        self.assertEqual(number.native_value, 20)
+
+
 class TestAsyncSetNativeValue(unittest.IsolatedAsyncioTestCase):
     async def test_writes_the_value_to_the_device(self):
         number = _number("b_soc_low")
