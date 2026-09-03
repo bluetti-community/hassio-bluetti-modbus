@@ -243,6 +243,35 @@ def phase_device_info(
     )
 
 
+def pack_device_info(
+    hass: HomeAssistant, entry: ConfigEntry, pack_num: int
+) -> DeviceInfo | None:
+    """Device info for one of Balco260's BC200 battery pack sub-devices.
+
+    pack_num: 2..MAX_BATTERY_PACKS - pack 1's data is shown on the main
+    device (same Modbus slave address), see coordinator.py's
+    _async_update_battery_packs().
+    """
+    config = FullDeviceConfig.from_dict(entry.data)
+
+    if config is None:
+        return None
+
+    return DeviceInfo(
+        identifiers={(DOMAIN, f"{config.address}-pack-{pack_num}")},
+        name=f"{entry.title} Pack {pack_num}",
+        manufacturer=MANUFACTURER,
+        model=DEVICE_TYPE_DISPLAY_NAMES.get(config.dev_type, config.dev_type),
+        # Groups this sub-device under the main Balco260 device on the
+        # Devices page - same pattern as phase_device_info() above. The main
+        # device is registered explicitly in async_setup_entry() above
+        # before this can ever be resolved.
+        via_device_id=dr.async_get_device_id_by_identifier(
+            hass, (DOMAIN, config.address), config_entry_id=entry.entry_id
+        ),
+    )
+
+
 def get_unique_id(name: str, sensor_type: str | None = None) -> str:
     """Generate an unique id."""
     res = re.sub("[^A-Za-z0-9]+", "_", name).lower()
