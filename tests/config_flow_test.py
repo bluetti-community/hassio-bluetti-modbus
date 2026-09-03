@@ -31,7 +31,14 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(show_form.call_args.kwargs["step_id"], "user")
         self.assertEqual(result, "form")
 
-    async def test_creates_entry_titled_with_the_devices_serial_number(self):
+    async def test_creates_entry_titled_with_the_plain_product_name(self):
+        # Regression test: the title used to have the serial number (or,
+        # lacking one, the address) crammed into it. Now it's just the
+        # product name, matching how other integrations name a single
+        # device (e.g. "SLZB-06M") - the serial number belongs in
+        # DeviceInfo.serial_number, not the display name. The device's own
+        # reported data (a serial number here) must not affect the title at
+        # all - device_values is set but irrelevant to what's asserted.
         flow = _flow()
         with (
             _patched_client(device_values={"d_serial": 1234567890123}),
@@ -45,24 +52,22 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
 
         set_uid.assert_awaited_once_with("10.2.1.60", raise_on_progress=False)
         abort_check.assert_called_once()
-        self.assertEqual(create_entry.call_args.kwargs["title"], "Balco 260 1234567890123")
+        self.assertEqual(create_entry.call_args.kwargs["title"], "Balco 260")
         self.assertEqual(
             create_entry.call_args.kwargs["data"],
             {
                 "address": "10.2.1.60",
                 "port": 502,
-                "name": "Balco 260 1234567890123",
+                "name": "Balco 260",
                 "type": "balco260",
             },
         )
         self.assertEqual(result, "entry")
 
-    async def test_creates_entry_titled_with_the_address_when_no_serial(self):
+    async def test_creates_entry_titled_with_the_plain_product_name_no_serial(self):
         # S Meter has no serial number register at all (confirmed by
         # BLUETTI) - and any device could, in principle, fail to report one.
-        # Regression test: the title used to be built by stripping every
-        # separator out of address+port with re.sub("[^A-Za-z0-9]+", "", ...)
-        # - "10.2.1.60" + "502" collapsed to the illegible "102160502".
+        # The title doesn't depend on that either way any more.
         flow = _flow()
         with (
             _patched_client(device_values={}),
@@ -74,7 +79,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
                 {"address": "10.2.1.60", "port": 502, "type": "smeter"}
             )
 
-        self.assertEqual(create_entry.call_args.kwargs["title"], "S Meter (10.2.1.60)")
+        self.assertEqual(create_entry.call_args.kwargs["title"], "S Meter")
 
     async def test_defaults_port_and_type_when_missing(self):
         flow = _flow()

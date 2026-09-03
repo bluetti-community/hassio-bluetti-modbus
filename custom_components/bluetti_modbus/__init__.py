@@ -76,7 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 5
+_CURRENT_VERSION = 6
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -122,6 +122,17 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     and therefore in every title built from it, including by the 3 -> 4 step
     above. Add the missing space, once, but only if the title still starts
     with the old unspaced prefix exactly.
+
+    5 -> 6: config_flow.py no longer appends the serial number (or, lacking
+    one, the address) to the default title - just the plain product name,
+    matching how other integrations name a single device. Drop the
+    now-unwanted suffix, once, but only if the title still matches exactly
+    what the old code would have produced: either "<type> (<address>)", or
+    "<type> " followed by nothing but digits (a serial number - not
+    reconstructible exactly at migration time, since that needs a live
+    device read this function doesn't have, so digits-only is the closest
+    safe check without risking a coincidental match against something the
+    user typed themselves).
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -171,6 +182,20 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if title_to_check.startswith("Balco260 "):
             new_title = "Balco 260 " + title_to_check[len("Balco260 ") :]
         version = 5
+
+    if version == 5:
+        title_to_check = new_title if new_title is not None else entry.title
+        if config is not None:
+            display_type = DEVICE_TYPE_DISPLAY_NAMES.get(
+                config.dev_type, config.dev_type
+            )
+            prefix = f"{display_type} "
+            if title_to_check == f"{display_type} ({config.address})" or (
+                title_to_check.startswith(prefix)
+                and title_to_check[len(prefix) :].isdigit()
+            ):
+                new_title = display_type
+        version = 6
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)

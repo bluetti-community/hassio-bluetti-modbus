@@ -32,9 +32,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle config flow for Bluetti Modbus devices."""
 
     # Bumped for the one-time d_timestamp-disable, d_serial/d_ver_arm/
-    # d_ver_dsp-removal, and legible-default-title migrations - see
-    # __init__.py's async_migrate_entry().
-    VERSION = 4
+    # d_ver_dsp-removal, legible-default-title, title-spacing, and
+    # drop-serial-from-title migrations - see __init__.py's
+    # async_migrate_entry(). Must stay in sync with _CURRENT_VERSION there -
+    # this is what HA stamps a newly created entry's version with.
+    VERSION = 6
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")
@@ -62,13 +64,13 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await client.aclose()
 
             if not errors:
-                # d_serial (Balco260/EP2000) - not available on S Meter, which
-                # has no serial number register at all (confirmed by BLUETTI).
-                # Already decoded by the validation read above - client.aclose()
-                # only closes the connection, not this cached dict.
-                serial = client.device.values.get("d_serial")
-                display_type = DEVICE_TYPE_DISPLAY_NAMES.get(dev_type, dev_type)
-                name = f"{display_type} {serial}" if serial else f"{display_type} ({address})"
+                # Plain product name, matching how other integrations name a
+                # single device (e.g. "SLZB-06M") - the serial number belongs
+                # in DeviceInfo.serial_number (see device_info()), not
+                # crammed into the display name. A user with more than one
+                # device of the same type can still tell them apart via the
+                # device page or by renaming one themselves.
+                name = DEVICE_TYPE_DISPLAY_NAMES.get(dev_type, dev_type)
 
                 await self.async_set_unique_id(address, raise_on_progress=False)
                 self._abort_if_unique_id_configured()
