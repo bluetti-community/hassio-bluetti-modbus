@@ -90,7 +90,13 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "d_num_battery_packs": _DIAGNOSTIC,
     "b_v_total": _VOLTAGE,
     "b_c_total": _CURRENT,
-    "b_soc_total": FieldMetadata(device_class=SensorDeviceClass.BATTERY, state_class=SensorStateClass.MEASUREMENT),
+    # Not device_class=BATTERY - a device can only have one "the battery"
+    # entity for HA's Devices-page summary column, and b_soc (the per-pack,
+    # always-populated reading) is that one. b_soc_total read 0 on a bare
+    # Balco260 with no BC200 pack while b_soc read 76% at the same moment
+    # (confirmed against real hardware) - two BATTERY-class sensors on one
+    # device made HA's summary column pick the wrong one.
+    "b_soc_total": _MEASUREMENT,
     "b_soh_total": _DIAGNOSTIC_MEASUREMENT,
     "b_type": _DIAGNOSTIC,
     "b_v": _VOLTAGE,

@@ -321,9 +321,6 @@
       "b_serial": {
         "name": "Battery Serial Number"
       },
-      "b_ver_1": {
-        "name": "Battery Firmware Version 1"
-      },
       "b_ver_2": {
         "name": "Battery Firmware Version 2"
       },
