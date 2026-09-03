@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import Any
 
 import voluptuous as vol
@@ -22,7 +21,7 @@ from homeassistant.helpers.selector import (
 )
 from modbus_connection.exceptions import ModbusError
 
-from .const import DOMAIN
+from .const import DEVICE_TYPE_DISPLAY_NAMES, DOMAIN
 from .types import InitialDeviceConfig
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
@@ -32,9 +31,10 @@ _LOGGER = logging.getLogger(__name__)
 class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle config flow for Bluetti Modbus devices."""
 
-    # Bumped for the one-time d_timestamp-disable and d_serial/d_ver_arm/
-    # d_ver_dsp-removal migrations - see __init__.py's async_migrate_entry().
-    VERSION = 3
+    # Bumped for the one-time d_timestamp-disable, d_serial/d_ver_arm/
+    # d_ver_dsp-removal, and legible-default-title migrations - see
+    # __init__.py's async_migrate_entry().
+    VERSION = 4
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")
@@ -62,7 +62,13 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await client.aclose()
 
             if not errors:
-                name = re.sub("[^A-Za-z0-9]+", "", address + str(port))
+                # d_serial (Balco260/EP2000) - not available on S Meter, which
+                # has no serial number register at all (confirmed by BLUETTI).
+                # Already decoded by the validation read above - client.aclose()
+                # only closes the connection, not this cached dict.
+                serial = client.device.values.get("d_serial")
+                display_type = DEVICE_TYPE_DISPLAY_NAMES.get(dev_type, dev_type)
+                name = f"{display_type} {serial}" if serial else f"{display_type} ({address})"
 
                 await self.async_set_unique_id(address, raise_on_progress=False)
                 self._abort_if_unique_id_configured()

@@ -76,7 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 3
+_CURRENT_VERSION = 4
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -105,6 +105,17 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     matching bluetti-home-assistant's identical fix. Entities from before
     this change don't disappear on their own just because the code stops
     creating them, so remove them explicitly, once.
+
+    3 -> 4: config_flow.py's default title used to strip every separator out
+    of the address and port instead of keeping them - re.sub("[^A-Za-z0-9]+",
+    "", "192.168.1.128" + "502") produced "1921681128502" instead of
+    something legible. That broken title cascades into DeviceInfo.name, and
+    when a sensor's own translation hasn't loaded yet, HA falls back to
+    showing the device name for it - so this could show up as every
+    sensor's displayed name, not just the config entry's own title. Fix it
+    once here, but only if the title still matches exactly what the old code
+    would have produced - never overwrite a title the user has since
+    customized themselves.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -112,6 +123,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     config = FullDeviceConfig.from_dict(entry.data)
     registry = er.async_get(hass)
+    new_title: str | None = None
 
     if version == 1:
         if config is not None and config.dev_type == "smeter":
@@ -134,7 +146,22 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     registry.async_remove(entity_id)
         version = 3
 
-    hass.config_entries.async_update_entry(entry, version=version)
+    if version == 3:
+        if config is not None:
+            old_default = re.sub(
+                "[^A-Za-z0-9]+", "", config.address + str(config.port)
+            )
+            if entry.title == old_default:
+                display_type = DEVICE_TYPE_DISPLAY_NAMES.get(
+                    config.dev_type, config.dev_type
+                )
+                new_title = f"{display_type} ({config.address})"
+        version = 4
+
+    if new_title is not None:
+        hass.config_entries.async_update_entry(entry, title=new_title, version=version)
+    else:
+        hass.config_entries.async_update_entry(entry, version=version)
 
     return True
 
