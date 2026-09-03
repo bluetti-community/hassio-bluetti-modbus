@@ -18,7 +18,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import FullDeviceConfig, get_unique_id, phase_device_info
+from . import FullDeviceConfig, get_unique_id, pack_device_info, phase_device_info
 from . import device_info as dev_info
 from .const import (
     DATA_COORDINATOR,
@@ -30,7 +30,7 @@ from .const import (
 )
 from .coordinator import PollingCoordinator
 from .field_metadata import metadata_for
-from .vendor.bluetti_modbus_lib import get_device
+from .vendor.bluetti_modbus_lib import MAX_BATTERY_PACKS, PACK_INFO_FIELDS, get_device
 
 # field name -> phase, the reverse of SMETER_PHASE_FIELDS's phase -> fields.
 _PHASE_FOR_FIELD = {
@@ -69,6 +69,20 @@ async def async_setup_entry(
             info = phase_device_info(hass, entry, phase)
             assert info is not None  # same guarantee as dev_info() above
             phase_device_infos[phase] = info
+
+    # BC200 packs beyond the first get their own sub-device (see
+    # pack_device_info()'s docstring and coordinator.py's
+    # _async_update_battery_packs()) - Balco260 only, and only for however
+    # many packs the device's own first refresh already found. Pack 1's data
+    # is shown on the main device.
+    pack_device_infos: dict[int, DeviceInfo] = {}
+    if config.dev_type == "balco260":
+        num_packs = coordinator.data.get("d_num_battery_packs")
+        if isinstance(num_packs, int):
+            for pack_num in range(2, min(num_packs, MAX_BATTERY_PACKS) + 1):
+                info = pack_device_info(hass, entry, pack_num)
+                assert info is not None  # same guarantee as dev_info() above
+                pack_device_infos[pack_num] = info
 
     # Add sensors
     bluetti_device = get_device(config.dev_type)
@@ -114,6 +128,31 @@ async def async_setup_entry(
                 logger=logger,
             )
         )
+
+    for pack_num, pack_info in pack_device_infos.items():
+        for name in PACK_INFO_FIELDS:
+            # Same field object as pack 1's own instance of this field on
+            # the main device - packs share the exact same schema, just at
+            # a different Modbus slave address (see battery_pack()'s
+            # docstring in bluetti_modbus_lib).
+            field = bluetti_device.get_field(name)
+            assert field is not None  # PACK_INFO_FIELDS names are Balco260 fields
+            metadata = metadata_for(name)
+            sensors_to_add.append(
+                BluettiSensor(
+                    coordinator,
+                    pack_info,
+                    field.address,
+                    field.name,
+                    unit_of_measurement=field.unit,
+                    category=metadata.category,
+                    device_class=metadata.device_class,
+                    state_class=metadata.state_class,
+                    enabled_by_default=metadata.enabled_by_default,
+                    logger=logger,
+                    pack_num=pack_num,
+                )
+            )
 
     async_add_entities(sensors_to_add)
 
