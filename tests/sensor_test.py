@@ -8,13 +8,14 @@ from homeassistant.const import EntityCategory
 from custom_components.bluetti_modbus.sensor import (
     BluettiSensor,
     _enum_options,
+    _snake_case,
     async_setup_entry,
 )
 
 
 class _FakeEnum(Enum):
-    A = 0
-    B = 1
+    Reserve = 0
+    DcPv = 100
 
 
 def _device_info():
@@ -34,10 +35,29 @@ def _sensor(**overrides) -> BluettiSensor:
     return sensor
 
 
+class TestSnakeCase(unittest.TestCase):
+    def test_converts_real_enum_member_names(self):
+        # Every value these enums actually use, confirmed against real
+        # hardware and the official register spec's own wording.
+        cases = {
+            "Idle": "idle",
+            "NoFault": "no_fault",
+            "NoWarning": "no_warning",
+            "Reserve": "reserve",
+            "DcPv": "dc_pv",
+            "AcPv": "ac_pv",
+            "OffGrid": "off_grid",
+            "GridConnectedOperation": "grid_connected_operation",
+            "AbnormalOffGrid": "abnormal_off_grid",
+        }
+        for pascal, snake in cases.items():
+            self.assertEqual(_snake_case(pascal), snake)
+
+
 class TestEnumOptions(unittest.TestCase):
-    def test_returns_member_names_for_an_enum_backed_field(self):
+    def test_returns_snake_cased_member_names_for_an_enum_backed_field(self):
         field = MagicMock(convert=_FakeEnum)
-        self.assertEqual(_enum_options(field), ["A", "B"])
+        self.assertEqual(_enum_options(field), ["reserve", "dc_pv"])
 
     def test_returns_none_for_a_plain_numeric_field(self):
         field = MagicMock(convert=None)
@@ -86,10 +106,10 @@ class TestBluettiSensorInit(unittest.TestCase):
         # combination) - options= always wins over a device_class= passed
         # alongside it, since an enum-backed field never has a real one.
         sensor = _sensor(
-            options=["Reserve", "DcPv"], device_class=SensorDeviceClass.POWER
+            options=["reserve", "dc_pv"], device_class=SensorDeviceClass.POWER
         )
         self.assertEqual(sensor._attr_device_class, SensorDeviceClass.ENUM)
-        self.assertEqual(sensor._attr_options, ["Reserve", "DcPv"])
+        self.assertEqual(sensor._attr_options, ["reserve", "dc_pv"])
 
     def test_config_category_becomes_diagnostic(self):
         # SensorEntity refuses entity_category=CONFIG outright - this
@@ -166,7 +186,10 @@ class TestHandleCoordinatorUpdate(unittest.TestCase):
         self.assertTrue(sensor.available)
         self.assertEqual(sensor.native_value, 84)
 
-    def test_enum_value_uses_its_name(self):
+    def test_enum_value_uses_its_snake_cased_name(self):
+        # Not the raw PascalCase name - HA's hassfest requires translation
+        # keys (and therefore the raw state values they translate) to match
+        # [a-z0-9-_]+ (confirmed by a real CI failure on "DcPv" etc.).
         class InverterStatus(Enum):
             GridConnectedOperation = "GridConnectedOperation"
 
@@ -176,7 +199,7 @@ class TestHandleCoordinatorUpdate(unittest.TestCase):
         }
         sensor._handle_coordinator_update()
         self.assertTrue(sensor.available)
-        self.assertEqual(sensor.native_value, "GridConnectedOperation")
+        self.assertEqual(sensor.native_value, "grid_connected_operation")
 
     def test_list_value_without_cell_num_marks_unavailable_not_crash(self):
         # Regression test: len(response_data) < self._cell_num used to run

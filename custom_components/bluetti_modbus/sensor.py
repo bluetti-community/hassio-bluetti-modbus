@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from decimal import Decimal
 from enum import Enum
 
@@ -41,6 +42,21 @@ _PHASE_FOR_FIELD = {
 }
 
 
+def _snake_case(name: str) -> str:
+    """PascalCase (a Python enum member's own .name) -> snake_case.
+
+    HA's hassfest requires translation keys - and therefore the raw state
+    values they translate - to match [a-z0-9-_]+ (confirmed by a real CI
+    failure: "Invalid translation key 'DcPv'..."). bluetti_modbus_lib's enum
+    member names are plain PascalCase Python identifiers (no separate
+    machine-readable slug), so this integration derives one rather than
+    hand-listing every value; translations/en.json's state blocks use the
+    same derived keys.
+    """
+    s = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s).lower()
+
+
 def _enum_options(field: object) -> list[str] | None:
     """The valid state strings for an enum-backed field, or None otherwise.
 
@@ -57,7 +73,7 @@ def _enum_options(field: object) -> list[str] | None:
     """
     convert = getattr(field, "convert", None)
     if isinstance(convert, type) and issubclass(convert, Enum):
-        return [member.name for member in convert]
+        return [_snake_case(member.name) for member in convert]
     return None
 
 
@@ -358,8 +374,10 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
 
         # Different for enum and numeric
         if isinstance(response_data, Enum):
-            # Enum
-            self._attr_native_value = response_data.name
+            # Enum - matches _enum_options()'s own conversion, so the state
+            # is always one of _attr_options (SensorEntity enforces this -
+            # see homeassistant/components/sensor/__init__.py).
+            self._attr_native_value = _snake_case(response_data.name)
         elif isinstance(response_data, list):
             assert cell_num is not None
             self._attr_native_value = response_data[cell_num - 1]
