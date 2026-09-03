@@ -42,6 +42,15 @@ FIELDS_SHOWN_VIA_BINARY_SENSOR = {"d_status"}
 # handling for a device where it isn't, so nothing is lost there.
 FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
 
+# ac_o_switch/g_i_switch/g_o_switch (57001/57009/57010): AC output, grid
+# charging, and grid feed-in controls - genuinely user-actuated switches, not
+# readings. Routed to switch.py instead of sensor.py, but only where
+# bluetti_modbus_lib actually marks the field writable=True (currently
+# Balco260 only - see that library's import.py), same gating as
+# FIELDS_SHOWN_VIA_NUMBER below - sensor.py falls back to its normal
+# read-only handling for a device where it isn't, so nothing is lost there.
+FIELDS_SHOWN_VIA_SWITCH = {"ac_o_switch", "g_i_switch", "g_o_switch"}
+
 # d_serial/d_ver_arm/d_ver_dsp (Balco260/EP2000 only - S Meter's address
 # range doesn't include these): the device's own identity, not readings -
 # fed into DeviceInfo (serial_number/sw_version) instead of shown as plain

@@ -19,9 +19,8 @@ names and available data come from
 [bluetti-community/bluetti-modbus](https://github.com/bluetti-community/bluetti-modbus)
 (published on PyPI as `bluetti-modbus`). Most fields are read-only sensors;
 Balco 260's two SOC thresholds (min discharge / max charge limit) are
-exposed as writable number entities. Its 3 control switches (AC output,
-grid charging, grid feed-in) are not yet exposed as switches - they still
-show up as plain read-only sensors for now.
+exposed as writable number entities, and its 3 control switches (AC output,
+grid charging, grid feed-in) as switch entities.
 
 Note: this integration bundles its own copy of that library
 (`custom_components/bluetti_modbus/vendor/`) rather than depending on it via

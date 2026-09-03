@@ -17,6 +17,7 @@ from .const import (
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
     FIELDS_SHOWN_VIA_DEVICE_INFO,
+    FIELDS_SHOWN_VIA_SWITCH,
     MANUFACTURER,
 )
 from .coordinator import PollingCoordinator
@@ -26,6 +27,7 @@ PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.NUMBER,
     Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 
@@ -76,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 6
+_CURRENT_VERSION = 7
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -133,6 +135,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     device read this function doesn't have, so digits-only is the closest
     safe check without risking a coincidental match against something the
     user typed themselves).
+
+    6 -> 7: ac_o_switch/g_i_switch/g_o_switch (Balco260's AC output/grid
+    charging/grid feed-in controls) are no longer plain sensors - they're
+    switch.py entities now, wherever bluetti_modbus_lib marks them
+    writable=True. Entities from before this change don't disappear on their
+    own just because the code stops creating them as sensors, so remove
+    those old sensor entities explicitly, once - matches the 2 -> 3 step's
+    identical pattern for d_serial/d_ver_arm/d_ver_dsp.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -196,6 +206,15 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             ):
                 new_title = display_type
         version = 6
+
+    if version == 6:
+        if config is not None and config.dev_type in ("balco260", "ep2000"):
+            for field_name in FIELDS_SHOWN_VIA_SWITCH:
+                unique_id = get_unique_id(f"{entry.title} {field_name}")
+                entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+                if entity_id is not None:
+                    registry.async_remove(entity_id)
+        version = 7
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)

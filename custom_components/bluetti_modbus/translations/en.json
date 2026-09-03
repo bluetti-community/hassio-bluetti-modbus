@@ -487,6 +487,17 @@
       "b_soc_high": {
         "name": "Max Charge Limit (SoC High)"
       }
+    },
+    "switch": {
+      "ac_o_switch": {
+        "name": "AC Output Switch"
+      },
+      "g_i_switch": {
+        "name": "Grid Charging Switch"
+      },
+      "g_o_switch": {
+        "name": "Grid Feed-in Switch"
+      }
     }
   }
 }
