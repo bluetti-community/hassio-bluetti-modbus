@@ -73,6 +73,12 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
             await coordinator._async_update_data()
 
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_device_property_returns_the_clients_device(self, client_cls):
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        self.assertIs(coordinator.device, client_cls.return_value.device)
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_aclose_closes_the_underlying_client(self, client_cls):
         client_cls.return_value.aclose = AsyncMock()
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())

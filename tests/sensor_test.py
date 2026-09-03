@@ -238,6 +238,65 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # d_status weren't skipped before it's ever looked up.
         self.assertEqual([s._response_key for s in added], ["d_timestamp"])
 
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_writable_b_soc_low_is_skipped_number_py_handles_it(
+        self, config_cls, dev_info_fn, get_device_fn
+    ):
+        config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+
+        field = MagicMock(address=57016, unit="%", writable=True)
+        field.name = "b_soc_low"
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = ["b_soc_low"]
+        bluetti_device.get_field.return_value = field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator)
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        self.assertEqual(added, [])
+
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_non_writable_b_soc_low_stays_a_sensor(
+        self, config_cls, dev_info_fn, get_device_fn
+    ):
+        # e.g. EP2000 today: the schema knows about b_soc_low, but
+        # bluetti_modbus_lib doesn't mark it writable there yet - it must
+        # stay readable as a plain sensor, not disappear.
+        config_cls.from_dict.return_value = MagicMock(dev_type="ep2000", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+
+        field = MagicMock(address=57016, unit="%", writable=False)
+        field.name = "b_soc_low"
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = ["b_soc_low"]
+        bluetti_device.get_field.return_value = field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator)
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        self.assertEqual([s._response_key for s in added], ["b_soc_low"])
+
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
