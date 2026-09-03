@@ -52,13 +52,29 @@
         "name": "PV AC Energy"
       },
       "d_inverter_status": {
-        "name": "Inverter Status"
+        "name": "Inverter Status",
+        "state": {
+          "Stop": "Stop",
+          "OffGrid": "Off-Grid Operation",
+          "GridConnectedLoad": "Grid-Connected Load",
+          "GridConnectedOperation": "Grid-Connected Operation",
+          "GridConnectedCharging": "Grid-Connected Charging",
+          "GridConnectedDischarging": "Grid-Connected Discharging",
+          "InverterFault": "Inverter Fault",
+          "AbnormalOffGrid": "Abnormal Off-Grid"
+        }
       },
       "d_inverter_warning": {
-        "name": "Inverter Warning"
+        "name": "Inverter Warning",
+        "state": {
+          "NoWarning": "No Warning"
+        }
       },
       "d_inverter_fault": {
-        "name": "Inverter Fault"
+        "name": "Inverter Fault",
+        "state": {
+          "NoFault": "No Fault"
+        }
       },
       "d_inverter_type": {
         "name": "Inverter Type"
@@ -259,7 +275,17 @@
         "name": "Inverter Phase Count"
       },
       "d_inverter_1_status": {
-        "name": "Inverter 1 Status"
+        "name": "Inverter 1 Status",
+        "state": {
+          "Stop": "Stop",
+          "OffGrid": "Off-Grid Operation",
+          "GridConnectedLoad": "Grid-Connected Load",
+          "GridConnectedOperation": "Grid-Connected Operation",
+          "GridConnectedCharging": "Grid-Connected Charging",
+          "GridConnectedDischarging": "Grid-Connected Discharging",
+          "InverterFault": "Inverter Fault",
+          "AbnormalOffGrid": "Abnormal Off-Grid"
+        }
       },
       "d_inverter_1_p": {
         "name": "Inverter 1 Power"
@@ -271,7 +297,17 @@
         "name": "Inverter 1 Current"
       },
       "d_inverter_2_status": {
-        "name": "Inverter 2 Status"
+        "name": "Inverter 2 Status",
+        "state": {
+          "Stop": "Stop",
+          "OffGrid": "Off-Grid Operation",
+          "GridConnectedLoad": "Grid-Connected Load",
+          "GridConnectedOperation": "Grid-Connected Operation",
+          "GridConnectedCharging": "Grid-Connected Charging",
+          "GridConnectedDischarging": "Grid-Connected Discharging",
+          "InverterFault": "Inverter Fault",
+          "AbnormalOffGrid": "Abnormal Off-Grid"
+        }
       },
       "d_inverter_2_p": {
         "name": "Inverter 2 Power"
@@ -283,7 +319,17 @@
         "name": "Inverter 2 Current"
       },
       "d_inverter_3_status": {
-        "name": "Inverter 3 Status"
+        "name": "Inverter 3 Status",
+        "state": {
+          "Stop": "Stop",
+          "OffGrid": "Off-Grid Operation",
+          "GridConnectedLoad": "Grid-Connected Load",
+          "GridConnectedOperation": "Grid-Connected Operation",
+          "GridConnectedCharging": "Grid-Connected Charging",
+          "GridConnectedDischarging": "Grid-Connected Discharging",
+          "InverterFault": "Inverter Fault",
+          "AbnormalOffGrid": "Abnormal Off-Grid"
+        }
       },
       "d_inverter_3_p": {
         "name": "Inverter 3 Power"
@@ -298,19 +344,56 @@
         "name": "PV String Count"
       },
       "pv_1_i_type": {
-        "name": "PV 1 Input Type"
+        "name": "PV 1 Input Type",
+        "state": {
+          "Reserve": "Reserve",
+          "Car": "CAR",
+          "Adapter": "Adapter",
+          "Other": "Other",
+          "DcPv": "DC PV",
+          "AcPv": "AC PV"
+        }
       },
       "pv_2_i_type": {
-        "name": "PV 2 Input Type"
+        "name": "PV 2 Input Type",
+        "state": {
+          "Reserve": "Reserve",
+          "Car": "CAR",
+          "Adapter": "Adapter",
+          "Other": "Other",
+          "DcPv": "DC PV",
+          "AcPv": "AC PV"
+        }
       },
       "pv_3_i_type": {
-        "name": "PV 3 Input Type"
+        "name": "PV 3 Input Type",
+        "state": {
+          "Reserve": "Reserve",
+          "Car": "CAR",
+          "Adapter": "Adapter",
+          "Other": "Other",
+          "DcPv": "DC PV",
+          "AcPv": "AC PV"
+        }
       },
       "pv_4_i_type": {
-        "name": "PV 4 Input Type"
+        "name": "PV 4 Input Type",
+        "state": {
+          "Reserve": "Reserve",
+          "Car": "CAR",
+          "Adapter": "Adapter",
+          "Other": "Other",
+          "DcPv": "DC PV",
+          "AcPv": "AC PV"
+        }
       },
       "b_status": {
-        "name": "Battery Status"
+        "name": "Battery Status",
+        "state": {
+          "Idle": "Idle",
+          "Charging": "Charging",
+          "Discharging": "Discharging"
+        }
       },
       "b_time_to_full_total": {
         "name": "Total Time to Full Charge"

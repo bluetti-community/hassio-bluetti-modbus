@@ -5,7 +5,16 @@ from unittest.mock import MagicMock, patch
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 
-from custom_components.bluetti_modbus.sensor import BluettiSensor, async_setup_entry
+from custom_components.bluetti_modbus.sensor import (
+    BluettiSensor,
+    _enum_options,
+    async_setup_entry,
+)
+
+
+class _FakeEnum(Enum):
+    A = 0
+    B = 1
 
 
 def _device_info():
@@ -23,6 +32,26 @@ def _sensor(**overrides) -> BluettiSensor:
     sensor = BluettiSensor(**kwargs)
     sensor.async_write_ha_state = MagicMock()
     return sensor
+
+
+class TestEnumOptions(unittest.TestCase):
+    def test_returns_member_names_for_an_enum_backed_field(self):
+        field = MagicMock(convert=_FakeEnum)
+        self.assertEqual(_enum_options(field), ["A", "B"])
+
+    def test_returns_none_for_a_plain_numeric_field(self):
+        field = MagicMock(convert=None)
+        self.assertIsNone(_enum_options(field))
+
+    def test_returns_none_for_a_lambda_convert(self):
+        # e.g. reference_offset_current()/bit_flag()/dotted_version() in
+        # bluetti_modbus_lib - a real function, not an Enum subclass.
+        field = MagicMock(convert=lambda raw: raw)
+        self.assertIsNone(_enum_options(field))
+
+    def test_returns_none_when_field_has_no_convert_attribute(self):
+        field = object()
+        self.assertIsNone(_enum_options(field))
 
 
 class TestBluettiSensorInit(unittest.TestCase):
@@ -50,6 +79,17 @@ class TestBluettiSensorInit(unittest.TestCase):
         self.assertEqual(sensor._attr_device_class, SensorDeviceClass.POWER)
         self.assertEqual(sensor._attr_state_class, SensorStateClass.MEASUREMENT)
         self.assertEqual(sensor._attr_entity_category, EntityCategory.DIAGNOSTIC)
+
+    def test_options_sets_enum_device_class_and_options(self):
+        # ENUM is mutually exclusive with a numeric device_class
+        # (homeassistant/components/sensor/__init__.py rejects the
+        # combination) - options= always wins over a device_class= passed
+        # alongside it, since an enum-backed field never has a real one.
+        sensor = _sensor(
+            options=["Reserve", "DcPv"], device_class=SensorDeviceClass.POWER
+        )
+        self.assertEqual(sensor._attr_device_class, SensorDeviceClass.ENUM)
+        self.assertEqual(sensor._attr_options, ["Reserve", "DcPv"])
 
     def test_config_category_becomes_diagnostic(self):
         # SensorEntity refuses entity_category=CONFIG outright - this
