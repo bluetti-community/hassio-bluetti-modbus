@@ -12,6 +12,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from modbus_connection.exceptions import ModbusError
 
 from .types import FullDeviceConfig
+from .vendor.bluetti_modbus_lib import EP2000, Balco260, SMeter
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
 
@@ -46,6 +47,11 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             config.port,
             config.dev_type,
         )
+
+    @property
+    def device(self) -> Balco260 | EP2000 | SMeter:
+        """The underlying bluetti_modbus_lib device - write() lives here."""
+        return self._client.device
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
