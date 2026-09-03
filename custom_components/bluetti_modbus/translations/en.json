@@ -354,9 +354,6 @@
       "d_iot_serial": {
         "name": "IoT Module Serial Number"
       },
-      "d_iot_ver": {
-        "name": "IoT Module Version"
-      },
       "pack_b_type": {
         "name": "Battery Type"
       },
