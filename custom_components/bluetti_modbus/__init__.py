@@ -16,6 +16,7 @@ from .const import (
     DATA_COORDINATOR,
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
+    FIELDS_SHOWN_VIA_DEVICE_INFO,
     MANUFACTURER,
 )
 from .coordinator import PollingCoordinator
@@ -60,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # already in the registry - matches home-assistant/core's shelly
     # integration, which registers its own main device the same way before
     # forwarding to platforms (ShellyRpcCoordinator.async_setup()).
-    main_device_info = device_info(entry)
+    main_device_info = device_info(entry, coordinator)
     if main_device_info is not None:
         dr.async_get(hass).async_get_or_create(
             config_entry_id=entry.entry_id, **main_device_info
@@ -75,8 +76,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+_CURRENT_VERSION = 3
+
+
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate an old config entry to the current version.
+
+    Steps cascade through a local `version` variable rather than re-checking
+    entry.version after each one and calling async_update_entry per step -
+    an entry several versions behind must catch up entirely within this one
+    call (HA only calls this function once per setup attempt), and relying
+    on async_update_entry to mutate entry.version in place for that would
+    make the cascade only as trustworthy as that side effect.
 
     1 -> 2: d_timestamp (S Meter, register 55112) switched to disabled by
     default (field_metadata.py), but entity_registry_enabled_default only
@@ -87,13 +98,23 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async_get_or_create() only passes disabled_by down the "create" path,
     never "update"). Disable it explicitly, once, here instead - and only
     if it's still enabled, so this never fights a user who re-enables it
-    themselves afterward (this whole function doesn't run again once
-    entry.version reaches CURRENT_VERSION).
+    themselves afterward.
+
+    2 -> 3: d_serial/d_ver_arm/d_ver_dsp (Balco260/EP2000) are no longer
+    separate sensors - they feed DeviceInfo instead (see device_info()),
+    matching bluetti-home-assistant's identical fix. Entities from before
+    this change don't disappear on their own just because the code stops
+    creating them, so remove them explicitly, once.
     """
-    if entry.version == 1:
-        config = FullDeviceConfig.from_dict(entry.data)
+    version = entry.version
+    if version >= _CURRENT_VERSION:
+        return True
+
+    config = FullDeviceConfig.from_dict(entry.data)
+    registry = er.async_get(hass)
+
+    if version == 1:
         if config is not None and config.dev_type == "smeter":
-            registry = er.async_get(hass)
             unique_id = get_unique_id(f"{entry.title} d_timestamp")
             entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
             if entity_id is not None:
@@ -102,8 +123,18 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     registry.async_update_entity(
                         entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION
                     )
+        version = 2
 
-        hass.config_entries.async_update_entry(entry, version=2)
+    if version == 2:
+        if config is not None and config.dev_type in ("balco260", "ep2000"):
+            for field_name in FIELDS_SHOWN_VIA_DEVICE_INFO:
+                unique_id = get_unique_id(f"{entry.title} {field_name}")
+                entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+                if entity_id is not None:
+                    registry.async_remove(entity_id)
+        version = 3
+
+    hass.config_entries.async_update_entry(entry, version=version)
 
     return True
 
@@ -122,14 +153,47 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unloaded
 
 
-def device_info(entry: ConfigEntry) -> DeviceInfo | None:
-    """Device info."""
+def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None, str | None]:
+    """(serial_number, sw_version) from d_serial/d_ver_arm/d_ver_dsp, if read yet.
+
+    Unlike bluetti-home-assistant (which discards d_serial - a cloud-known
+    serial already covers that role there), this integration has no other
+    source for the device's serial number, so d_serial's own decoded value
+    is what DeviceInfo.serial_number uses. (None, None) before the
+    coordinator's first successful refresh, or if no coordinator is given
+    (e.g. S Meter, which doesn't declare these fields at all).
+    """
+    if coordinator is None:
+        return None, None
+    data = coordinator.data or {}
+    serial = data.get("d_serial")
+    arm = data.get("d_ver_arm")
+    dsp = data.get("d_ver_dsp")
+    serial_number = str(serial) if serial is not None else None
+    sw_version = None
+    if arm is not None or dsp is not None:
+        sw_version = f"ARM {arm if arm is not None else '?'}, DSP {dsp if dsp is not None else '?'}"
+    return serial_number, sw_version
+
+
+def device_info(
+    entry: ConfigEntry, coordinator: PollingCoordinator | None = None
+) -> DeviceInfo | None:
+    """Device info.
+
+    coordinator is only needed to fill in serial_number/sw_version (from
+    d_serial/d_ver_arm/d_ver_dsp) - omit it for a per-entity DeviceInfo dict
+    (sensor.py/binary_sensor.py/number.py), where entity_platform only ever
+    applies the keys actually present, so leaving these two out there never
+    overwrites what async_setup_entry's own main-device registration
+    already set with a coordinator.
+    """
     config = FullDeviceConfig.from_dict(entry.data)
 
     if config is None:
         return None
 
-    return DeviceInfo(
+    info = DeviceInfo(
         identifiers={(DOMAIN, config.address)},
         name=entry.title,
         manufacturer=MANUFACTURER,
@@ -140,6 +204,17 @@ def device_info(entry: ConfigEntry) -> DeviceInfo | None:
         # unrelated service on the same device.
         configuration_url=f"http://{config.address}",
     )
+
+    # Only set when actually known (coordinator given and already read at
+    # least once) - a key present with value None would overwrite what the
+    # main device registration already set, see this function's docstring.
+    serial_number, sw_version = _modbus_identity(coordinator)
+    if serial_number is not None:
+        info["serial_number"] = serial_number
+    if sw_version is not None:
+        info["sw_version"] = sw_version
+
+    return info
 
 
 def phase_device_info(

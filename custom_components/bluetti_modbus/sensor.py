@@ -24,6 +24,7 @@ from .const import (
     DATA_COORDINATOR,
     DOMAIN,
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
+    FIELDS_SHOWN_VIA_DEVICE_INFO,
     FIELDS_SHOWN_VIA_NUMBER,
     SMETER_PHASE_FIELDS,
 )
@@ -78,6 +79,8 @@ async def async_setup_entry(
     sensor_fields = []
     for f in bluetti_device.get_sensors():
         if f in FIELDS_SHOWN_VIA_BINARY_SENSOR:
+            continue
+        if f in FIELDS_SHOWN_VIA_DEVICE_INFO:
             continue
         field = bluetti_device.get_field(f)
         # get_sensors() only yields names that are keys in this same
