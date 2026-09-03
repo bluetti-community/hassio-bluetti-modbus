@@ -251,6 +251,14 @@
       "d_status": {
         "name": "Online"
       }
+    },
+    "number": {
+      "b_soc_low": {
+        "name": "Min Discharge Limit (SoC Low)"
+      },
+      "b_soc_high": {
+        "name": "Max Charge Limit (SoC High)"
+      }
     }
   }
 }
