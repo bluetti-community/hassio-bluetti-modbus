@@ -89,7 +89,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             identifiers={(DOMAIN, "10.2.1.60")},
             name=entry.title,
             manufacturer="Bluetti",
-            model="Balco260",
+            model="Balco 260",
             configuration_url="http://10.2.1.60",
         )
 
@@ -159,7 +159,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         # A version-1 entry cascades all the way to the current version in
         # one call - see async_migrate_entry's own docstring for why.
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=5)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_does_not_touch_an_already_disabled_d_timestamp_entity(self, er_module):
@@ -173,7 +173,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=5)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_d_timestamp_not_yet_registered_is_a_no_op(self, er_module):
@@ -188,7 +188,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         registry.async_get.assert_not_called()
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=5)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_non_smeter_device_skips_d_timestamp_handling(self, er_module):
@@ -202,7 +202,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=5)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_still_bumps_the_version(self, er_module):
@@ -216,7 +216,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         registry.async_get_entity_id.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=5)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_removes_retired_identity_sensors_for_balco260(self, er_module):
@@ -238,7 +238,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 "sensor.my_device_d_ver_dsp",
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=5)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_sensor_that_was_never_registered(self, er_module):
@@ -279,7 +279,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco260 (10.2.1.60)", version=4
+            entry, title="Balco 260 (10.2.1.60)", version=5
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -292,7 +292,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=5)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_skips_the_title_rename(self, er_module):
@@ -305,12 +305,30 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=5)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_adds_the_missing_space_for_an_entry_already_on_version_4(
+        self, er_module
+    ):
+        # Not cascading from version 3 - an entry that already sat at
+        # version 4 with the (still unspaced) "Balco260 ..." title.
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        hass = MagicMock()
+        entry = self._entry(version=4, dev_type="balco260")
+        entry.title = "Balco260 1234567890123"
+
+        await async_migrate_entry(hass, entry)
+
+        hass.config_entries.async_update_entry.assert_called_once_with(
+            entry, title="Balco 260 1234567890123", version=5
+        )
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_already_current_version_is_a_no_op(self, er_module):
         hass = MagicMock()
-        entry = self._entry(version=4)
+        entry = self._entry(version=5)
 
         result = await async_migrate_entry(hass, entry)
 
@@ -329,7 +347,7 @@ class TestDeviceInfo(unittest.TestCase):
 
         self.assertEqual(info["identifiers"], {(DOMAIN, "10.2.1.60")})
         self.assertEqual(info["name"], "My Balco260")
-        self.assertEqual(info["model"], "Balco260")
+        self.assertEqual(info["model"], "Balco 260")
         self.assertEqual(info["configuration_url"], "http://10.2.1.60")
 
     def test_returns_none_for_invalid_entry(self):

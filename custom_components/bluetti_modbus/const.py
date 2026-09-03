@@ -11,7 +11,7 @@ DATA_COORDINATOR = "coordinator"
 # display name, for DeviceInfo.model. Without this, the Devices page would
 # show the raw stored string ("smeter") instead of "S Meter".
 DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
-    "balco260": "Balco260",
+    "balco260": "Balco 260",
     "smeter": "S Meter",
 }
 
