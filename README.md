@@ -8,7 +8,7 @@ This integration is provided without any warranty or support by Bluetti. I do no
 ## Supported devices
 
 - Balco 260
-- S Meter (untested against real hardware so far)
+- S Meter
 
 EP2000 support was pulled pending confirmation that it actually exposes
 Modbus TCP at all - see
@@ -17,9 +17,11 @@ Modbus TCP at all - see
 You have to enable Modbus TCP in your device's web interface first. Field
 names and available data come from
 [bluetti-community/bluetti-modbus](https://github.com/bluetti-community/bluetti-modbus)
-(published on PyPI as `bluetti-modbus`). This integration currently only
-reads data (sensors) - it does not yet expose any switches or other
-controls, even for registers the library marks as writable.
+(published on PyPI as `bluetti-modbus`). Most fields are read-only sensors;
+Balco 260's two SOC thresholds (min discharge / max charge limit) are
+exposed as writable number entities. Its 3 control switches (AC output,
+grid charging, grid feed-in) are not yet exposed as switches - they still
+show up as plain read-only sensors for now.
 
 Note: this integration bundles its own copy of that library
 (`custom_components/bluetti_modbus/vendor/`) rather than depending on it via
@@ -59,13 +61,10 @@ pull request. To run it locally without installing anything but Docker:
 This builds `Dockerfile.test` and runs the same `coverage run` /
 `coverage report --fail-under=100` steps CI does.
 
-## Affiliate links (Anzeige / Ad)
+## Relationship to Patrick762's `hassio-bluetti-modbus`
 
-If you want to support this project and buy a Bluetti device, you can use the following affiliate links:
-
-- <a href="https://tidd.ly/4xJPHDn" target="_blank" rel="sponsored">Balco 260</a>
-
-> [!NOTE]
-> DE: Bei diesem Link handelt es sich um einen Affiliate-Link. Wenn du darüber kaufst, erhalte ich eine kleine Provision. Für dich entstehen keine Zusatzkosten.
->
-> EN: This is an affiliate link. If you make a purchase through it, I may earn a small commission at no extra cost to you.
+This repository started as a fork of
+[Patrick762/hassio-bluetti-modbus](https://github.com/Patrick762/hassio-bluetti-modbus)
+and has since diverged significantly (coordinator/entity handling, retry
+handling, multi-pack support, device coverage). Patrick762 is still actively
+maintaining his own version independently.
