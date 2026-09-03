@@ -518,6 +518,36 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(added, [])
 
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_no_pack_sensors_for_zero_installed_packs(
+        self, config_cls, dev_info_fn, get_device_fn
+    ):
+        # The most common real-world value for a bare Balco260 with no BC200
+        # pack attached at all - distinct from "1" (see the test above) and
+        # from "missing" (coordinator.data.get() returning None, also
+        # excluded by the isinstance check in sensor.py). Confirmed against
+        # real hardware this session.
+        config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = []
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator.data = {"d_num_battery_packs": 0}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        self.assertEqual(added, [])
+
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_no_coordinator_does_not_add_entities(self, config_cls):
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")

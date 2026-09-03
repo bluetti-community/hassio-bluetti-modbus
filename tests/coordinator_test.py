@@ -200,6 +200,24 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
 
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_skips_packs_for_zero_installed_packs(self, client_cls, battery_pack_fn):
+        # The most common real-world value for a bare Balco260 with no BC200
+        # pack attached at all - distinct from "1" (see the test above) and
+        # from "missing" (see the test below). Confirmed against real
+        # hardware this session.
+        client_cls.return_value.device = MagicMock(spec=Balco260)
+        client_cls.return_value.read = AsyncMock(
+            return_value=[_result("d_num_battery_packs", 0)]
+        )
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        result = await coordinator._async_update_data()
+
+        battery_pack_fn.assert_not_called()
+        self.assertEqual(result, {"d_num_battery_packs": 0})
+
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_skips_packs_when_d_num_battery_packs_is_missing(
         self, client_cls, battery_pack_fn
     ):
