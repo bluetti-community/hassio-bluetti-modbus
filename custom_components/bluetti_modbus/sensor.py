@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from decimal import Decimal
 from enum import Enum
 
@@ -39,6 +40,41 @@ _PHASE_FOR_FIELD = {
     for phase, field_names in SMETER_PHASE_FIELDS.items()
     for field_name in field_names
 }
+
+
+def _snake_case(name: str) -> str:
+    """PascalCase (a Python enum member's own .name) -> snake_case.
+
+    HA's hassfest requires translation keys - and therefore the raw state
+    values they translate - to match [a-z0-9-_]+ (confirmed by a real CI
+    failure: "Invalid translation key 'DcPv'..."). bluetti_modbus_lib's enum
+    member names are plain PascalCase Python identifiers (no separate
+    machine-readable slug), so this integration derives one rather than
+    hand-listing every value; translations/en.json's state blocks use the
+    same derived keys.
+    """
+    s = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s).lower()
+
+
+def _enum_options(field: object) -> list[str] | None:
+    """The valid state strings for an enum-backed field, or None otherwise.
+
+    bluetti_modbus_lib's enum() field constructor sets a RegisterField's
+    `convert` to the Enum class itself (see modbus_connection's NumberField -
+    calling convert(raw) performs the value lookup) - detect that here rather
+    than tracking field names, so a newly-generated enum field picks this up
+    automatically. bluetti_modbus_lib's own get_field()/get_sensors() only
+    ever hand back real RegisterField instances, always with a `convert`
+    attribute (None for a plain numeric field) - not a proper superclass this
+    integration can import without a circular dependency on internals, hence
+    the loose `object` type and getattr below rather than an isinstance check
+    against RegisterField itself.
+    """
+    convert = getattr(field, "convert", None)
+    if isinstance(convert, type) and issubclass(convert, Enum):
+        return [_snake_case(member.name) for member in convert]
+    return None
 
 
 async def async_setup_entry(
@@ -127,6 +163,7 @@ async def async_setup_entry(
                 category=metadata.category,
                 device_class=metadata.device_class,
                 state_class=metadata.state_class,
+                options=_enum_options(field),
                 enabled_by_default=metadata.enabled_by_default,
                 logger=logger,
             )
@@ -151,6 +188,7 @@ async def async_setup_entry(
                     category=metadata.category,
                     device_class=metadata.device_class,
                     state_class=metadata.state_class,
+                    options=_enum_options(field),
                     enabled_by_default=metadata.enabled_by_default,
                     logger=logger,
                     pack_num=pack_num,
@@ -210,7 +248,15 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self._attr_available = False
         self._attr_unique_id = get_unique_id(e_name)
         self._attr_native_unit_of_measurement = unit_of_measurement
-        if device_class is not None:
+        if options is not None:
+            # ENUM is mutually exclusive with a numeric device_class/
+            # state_class (homeassistant/components/sensor/__init__.py
+            # rejects the combination) - an enum-backed field never carries
+            # either of those anyway (see field_metadata.py), so this never
+            # actually overrides a real device_class.
+            self._attr_device_class = SensorDeviceClass.ENUM
+            self._attr_options = options
+        elif device_class is not None:
             self._attr_device_class = device_class
         if state_class is not None:
             self._attr_state_class = state_class
@@ -224,7 +270,6 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
             self._attr_entity_category = (
                 EntityCategory.DIAGNOSTIC if category == EntityCategory.CONFIG else category
             )
-        self._options = options
         self._attr_entity_registry_enabled_default = enabled_by_default
 
     async def async_added_to_hass(self) -> None:
@@ -329,8 +374,10 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
 
         # Different for enum and numeric
         if isinstance(response_data, Enum):
-            # Enum
-            self._attr_native_value = response_data.name
+            # Enum - matches _enum_options()'s own conversion, so the state
+            # is always one of _attr_options (SensorEntity enforces this -
+            # see homeassistant/components/sensor/__init__.py).
+            self._attr_native_value = _snake_case(response_data.name)
         elif isinstance(response_data, list):
             assert cell_num is not None
             self._attr_native_value = response_data[cell_num - 1]
