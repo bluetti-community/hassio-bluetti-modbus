@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -50,6 +50,12 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
     """A writable Bluetti Modbus register, e.g. the AC output switch."""
 
     _attr_has_entity_name = True
+    # Generic SWITCH, not OUTLET - these control internal AC/grid relays on
+    # the inverter, not a literal power outlet a user plugs something into.
+    # Only sets the default icon; the user can still override it per-entity
+    # (Settings -> Devices & services -> Entities -> entity -> icon) same as
+    # any other HA entity, device_class or not.
+    _attr_device_class = SwitchDeviceClass.SWITCH
 
     def __init__(
         self,

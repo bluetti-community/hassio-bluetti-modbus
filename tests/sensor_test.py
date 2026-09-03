@@ -358,7 +358,13 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         field = MagicMock(address=50001, unit=None)
         field.name = "d_num_inverters"
         bluetti_device = MagicMock()
-        bluetti_device.get_sensors.return_value = ["d_serial", "d_ver_arm", "d_ver_dsp", "d_num_inverters"]
+        bluetti_device.get_sensors.return_value = [
+            "d_serial",
+            "d_ver_arm",
+            "d_ver_dsp",
+            "b_ver_1",
+            "d_num_inverters",
+        ]
         bluetti_device.get_field.side_effect = lambda name: {"d_num_inverters": field}[name]
         get_device_fn.return_value = bluetti_device
 
@@ -374,7 +380,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         # get_field("d_serial") would raise (not in the side_effect dict) if
-        # the identity fields weren't skipped before they're ever looked up.
+        # the identity fields weren't skipped before they're ever looked up
+        # - same for b_ver_1 (BMS firmware version), which joins them in
+        # DeviceInfo.sw_version instead of staying a plain sensor.
         self.assertEqual([s._response_key for s in added], ["d_num_inverters"])
 
     @patch("custom_components.bluetti_modbus.sensor.get_device")

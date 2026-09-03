@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from homeassistant.components.switch import SwitchDeviceClass
+
 from custom_components.bluetti_modbus.switch import (
     BluettiSwitchEntity,
     async_setup_entry,
@@ -26,6 +28,13 @@ class TestBluettiSwitchEntityInit(unittest.TestCase):
     def test_is_on_starts_unknown(self):
         switch = _switch()
         self.assertIsNone(switch.is_on)
+
+    def test_device_class_is_switch_not_outlet(self):
+        # These control internal AC/grid relays on the inverter, not a
+        # literal power outlet - sets a sensible default icon; the user can
+        # still override it per-entity regardless.
+        switch = _switch()
+        self.assertEqual(switch._attr_device_class, SwitchDeviceClass.SWITCH)
 
 
 class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):

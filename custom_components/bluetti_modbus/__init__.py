@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 7
+_CURRENT_VERSION = 8
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -143,6 +143,15 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     own just because the code stops creating them as sensors, so remove
     those old sensor entities explicitly, once - matches the 2 -> 3 step's
     identical pattern for d_serial/d_ver_arm/d_ver_dsp.
+
+    7 -> 8: b_ver_1 (the battery's own BMS firmware version) is no longer a
+    plain sensor - it joins ARM/DSP in DeviceInfo.sw_version instead (see
+    _modbus_identity()), now that bluetti_modbus_lib decodes it into the
+    same dotted major.minor.patch format, confirmed against real hardware
+    and the Bluetti app. Remove the old sensor entity explicitly, once -
+    matches the 2 -> 3 and 6 -> 7 steps' identical pattern. b_ver_2/3/4 are
+    untouched - unlike b_ver_1, their meaning isn't confirmed, so they stay
+    plain sensors.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -216,6 +225,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     registry.async_remove(entity_id)
         version = 7
 
+    if version == 7:
+        if config is not None and config.dev_type in ("balco260", "ep2000"):
+            unique_id = get_unique_id(f"{entry.title} b_ver_1")
+            entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+            if entity_id is not None:
+                registry.async_remove(entity_id)
+        version = 8
+
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
     else:
@@ -239,7 +256,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None, str | None]:
-    """(serial_number, sw_version) from d_serial/d_ver_arm/d_ver_dsp, if read yet.
+    """(serial_number, sw_version) from d_serial/d_ver_arm/d_ver_dsp/b_ver_1, if read yet.
 
     Unlike bluetti-home-assistant (which discards d_serial - a cloud-known
     serial already covers that role there), this integration has no other
@@ -247,6 +264,11 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     is what DeviceInfo.serial_number uses. (None, None) before the
     coordinator's first successful refresh, or if no coordinator is given
     (e.g. S Meter, which doesn't declare these fields at all).
+
+    b_ver_1 (the battery's own BMS firmware version) joins ARM/DSP here -
+    all three are already "major.minor.patch" strings by this point
+    (bluetti_modbus_lib's dotted_version(), confirmed against real hardware
+    and the Bluetti app), not raw ints.
     """
     if coordinator is None:
         return None, None
@@ -254,10 +276,15 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     serial = data.get("d_serial")
     arm = data.get("d_ver_arm")
     dsp = data.get("d_ver_dsp")
+    bms = data.get("b_ver_1")
     serial_number = str(serial) if serial is not None else None
     sw_version = None
-    if arm is not None or dsp is not None:
-        sw_version = f"ARM {arm if arm is not None else '?'}, DSP {dsp if dsp is not None else '?'}"
+    if arm is not None or dsp is not None or bms is not None:
+        sw_version = (
+            f"ARM {arm if arm is not None else '?'}, "
+            f"DSP {dsp if dsp is not None else '?'}, "
+            f"BMS {bms if bms is not None else '?'}"
+        )
     return serial_number, sw_version
 
 
