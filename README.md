@@ -8,7 +8,7 @@ This integration is provided without any warranty or support by Bluetti. I do no
 ## Supported devices
 
 - Balco 260
-- S Meter (untested against real hardware so far)
+- S Meter
 
 EP2000 support was pulled pending confirmation that it actually exposes
 Modbus TCP at all - see
