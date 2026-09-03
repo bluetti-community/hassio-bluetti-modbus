@@ -32,11 +32,12 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle config flow for Bluetti Modbus devices."""
 
     # Bumped for the one-time d_timestamp-disable, d_serial/d_ver_arm/
-    # d_ver_dsp-removal, legible-default-title, title-spacing, and
-    # drop-serial-from-title migrations - see __init__.py's
-    # async_migrate_entry(). Must stay in sync with _CURRENT_VERSION there -
-    # this is what HA stamps a newly created entry's version with.
-    VERSION = 6
+    # d_ver_dsp-removal, legible-default-title, title-spacing,
+    # drop-serial-from-title, and switch-entities migrations - see
+    # __init__.py's async_migrate_entry(). Must stay in sync with
+    # _CURRENT_VERSION there - this is what HA stamps a newly created entry's
+    # version with.
+    VERSION = 7
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")
