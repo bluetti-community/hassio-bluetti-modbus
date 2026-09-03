@@ -76,7 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 4
+_CURRENT_VERSION = 5
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -116,6 +116,12 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     once here, but only if the title still matches exactly what the old code
     would have produced - never overwrite a title the user has since
     customized themselves.
+
+    4 -> 5: "Balco260" (the product's real name is "Balco 260", two words,
+    matching "S Meter") was used without a space in DEVICE_TYPE_DISPLAY_NAMES
+    and therefore in every title built from it, including by the 3 -> 4 step
+    above. Add the missing space, once, but only if the title still starts
+    with the old unspaced prefix exactly.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -157,6 +163,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 )
                 new_title = f"{display_type} ({config.address})"
         version = 4
+
+    if version == 4:
+        # A cascading entry (version was 3 a moment ago) already has its new
+        # title in new_title, not yet on entry.title - check that instead.
+        title_to_check = new_title if new_title is not None else entry.title
+        if title_to_check.startswith("Balco260 "):
+            new_title = "Balco 260 " + title_to_check[len("Balco260 ") :]
+        version = 5
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)

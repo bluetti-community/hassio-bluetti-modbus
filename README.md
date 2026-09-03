@@ -7,7 +7,7 @@ This integration is provided without any warranty or support by Bluetti. I do no
 
 ## Supported devices
 
-- Balco260
+- Balco 260
 - S Meter (untested against real hardware so far)
 
 EP2000 support was pulled pending confirmation that it actually exposes

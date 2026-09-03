@@ -45,13 +45,13 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
 
         set_uid.assert_awaited_once_with("10.2.1.60", raise_on_progress=False)
         abort_check.assert_called_once()
-        self.assertEqual(create_entry.call_args.kwargs["title"], "Balco260 2616210037358")
+        self.assertEqual(create_entry.call_args.kwargs["title"], "Balco 260 2616210037358")
         self.assertEqual(
             create_entry.call_args.kwargs["data"],
             {
                 "address": "10.2.1.60",
                 "port": 502,
-                "name": "Balco260 2616210037358",
+                "name": "Balco 260 2616210037358",
                 "type": "balco260",
             },
         )
