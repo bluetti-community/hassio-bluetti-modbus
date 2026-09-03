@@ -340,8 +340,11 @@
       "d_inverter_3_c": {
         "name": "Inverter 3 Current"
       },
-      "pv_count": {
-        "name": "PV String Count"
+      "pv_dc_count": {
+        "name": "Number of DC PV Strings"
+      },
+      "pv_ac_count": {
+        "name": "Number of AC PV Strings"
       },
       "pv_1_i_type": {
         "name": "PV 1 Input Type",
