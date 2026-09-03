@@ -230,9 +230,10 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "pv_2_i_type": _DIAGNOSTIC,
     "pv_3_i_type": _DIAGNOSTIC,
     "pv_4_i_type": _DIAGNOSTIC,
+    "pv_ac_count": _DIAGNOSTIC,
     "pv_ac_e_local": _ENERGY_DIAGNOSTIC,
     "pv_ac_p_local": _POWER,
-    "pv_count": _DIAGNOSTIC,
+    "pv_dc_count": _DIAGNOSTIC,
     "pv_i_e_local": _ENERGY_DIAGNOSTIC,
     "pv_i_p_local": _POWER,
 }
