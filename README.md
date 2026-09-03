@@ -17,9 +17,11 @@ Modbus TCP at all - see
 You have to enable Modbus TCP in your device's web interface first. Field
 names and available data come from
 [bluetti-community/bluetti-modbus](https://github.com/bluetti-community/bluetti-modbus)
-(published on PyPI as `bluetti-modbus`). This integration currently only
-reads data (sensors) - it does not yet expose any switches or other
-controls, even for registers the library marks as writable.
+(published on PyPI as `bluetti-modbus`). Most fields are read-only sensors;
+Balco 260's two SOC thresholds (min discharge / max charge limit) are
+exposed as writable number entities. Its 3 control switches (AC output,
+grid charging, grid feed-in) are not yet exposed as switches - they still
+show up as plain read-only sensors for now.
 
 Note: this integration bundles its own copy of that library
 (`custom_components/bluetti_modbus/vendor/`) rather than depending on it via
