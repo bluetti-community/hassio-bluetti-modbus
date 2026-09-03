@@ -33,3 +33,11 @@ SMETER_PHASE_FIELDS: dict[str, tuple[str, ...]] = {
 # other undecoded bitmap/status registers. Routed to binary_sensor.py
 # instead of sensor.py, which only handles numeric/enum/string values.
 FIELDS_SHOWN_VIA_BINARY_SENSOR = {"d_status"}
+
+# b_soc_low/b_soc_high (57016/57017): battery empty/full SOC thresholds,
+# 0-100% - genuinely user-configurable settings, not readings. Routed to
+# number.py instead of sensor.py, but only where bluetti_modbus_lib actually
+# marks the field writable=True (currently Balco260 only - see that
+# library's import.py) - sensor.py falls back to its normal read-only
+# handling for a device where it isn't, so nothing is lost there.
+FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
