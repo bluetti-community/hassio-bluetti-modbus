@@ -185,6 +185,21 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self._options = options
         self._attr_entity_registry_enabled_default = enabled_by_default
 
+    async def async_added_to_hass(self) -> None:
+        """Prime state from whatever the coordinator already has.
+
+        CoordinatorEntity.async_added_to_hass() only registers a listener for
+        FUTURE updates (confirmed against homeassistant's update_coordinator.py) -
+        it never calls _handle_coordinator_update() itself. Since
+        async_config_entry_first_refresh() already ran before this entity was
+        created (see __init__.py), coordinator.data is already populated;
+        without this, this sensor would stay unavailable (_attr_available
+        starts False in __init__) until the coordinator's next scheduled
+        poll, up to update_interval (30s) later.
+        """
+        await super().async_added_to_hass()
+        self._handle_coordinator_update()
+
     @property
     def available(self) -> bool:
         """Return if entity is available."""

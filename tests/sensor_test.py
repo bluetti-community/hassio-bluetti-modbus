@@ -163,6 +163,22 @@ class TestHandleCoordinatorUpdate(unittest.TestCase):
         self.assertEqual(sensor.native_value, 20)
 
 
+class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):
+    async def test_primes_state_from_data_already_on_the_coordinator(self):
+        # async_config_entry_first_refresh() already ran (see __init__.py)
+        # before this entity was ever created - coordinator.data reflects
+        # that read. Without priming here, this sensor would stay
+        # unavailable (_attr_available starts False in __init__) until the
+        # coordinator's next scheduled poll (update_interval, 30s).
+        sensor = _sensor(response_key="d_num_inverters")
+        sensor.coordinator.data = {"d_num_inverters": 2}
+
+        await sensor.async_added_to_hass()
+
+        self.assertTrue(sensor.available)
+        self.assertEqual(sensor.native_value, 2)
+
+
 class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
