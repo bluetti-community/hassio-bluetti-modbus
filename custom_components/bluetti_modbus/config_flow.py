@@ -101,12 +101,12 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     default="balco260",
                 ): SelectSelector(
                     SelectSelectorConfig(
-                        # Product's real name is "S Meter" (two words) -
-                        # the stored value stays "smeter" (matches dev_type
-                        # elsewhere), only the dropdown's display label
-                        # differs.
+                        # Product's real names are "Balco 260" and "S Meter"
+                        # (both two words) - the stored values stay
+                        # "balco260"/"smeter" (match dev_type elsewhere),
+                        # only the dropdown's display labels differ.
                         options=[
-                            SelectOptionDict(value="balco260", label="Balco260"),
+                            SelectOptionDict(value="balco260", label="Balco 260"),
                             SelectOptionDict(value="smeter", label="S Meter"),
                         ],
                         mode=SelectSelectorMode.DROPDOWN,
