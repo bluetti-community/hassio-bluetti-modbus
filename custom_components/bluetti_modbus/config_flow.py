@@ -32,9 +32,9 @@ _LOGGER = logging.getLogger(__name__)
 class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle config flow for Bluetti Modbus devices."""
 
-    # Bumped for the one-time d_timestamp-disable migration - see
-    # __init__.py's async_migrate_entry().
-    VERSION = 2
+    # Bumped for the one-time d_timestamp-disable and d_serial/d_ver_arm/
+    # d_ver_dsp-removal migrations - see __init__.py's async_migrate_entry().
+    VERSION = 3
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")
