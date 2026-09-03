@@ -165,6 +165,201 @@
       "b_o_e": {
         "name": "Total Battery Discharged Energy"
       },
+      "g_i_p_local": {
+        "name": "Grid Input Power"
+      },
+      "ac_o_p_local": {
+        "name": "AC Output Power"
+      },
+      "pv_i_p_local": {
+        "name": "PV Input Power"
+      },
+      "pv_ac_p_local": {
+        "name": "PV AC Power"
+      },
+      "g_i_e_local": {
+        "name": "Grid Import Energy"
+      },
+      "g_o_e_local": {
+        "name": "Grid Export Energy"
+      },
+      "ac_o_e_local": {
+        "name": "AC Output Energy"
+      },
+      "pv_i_e_local": {
+        "name": "PV Input Energy"
+      },
+      "pv_ac_e_local": {
+        "name": "PV AC Energy"
+      },
+      "d_self_consumption": {
+        "name": "Self-Consumption Percentage"
+      },
+      "d_phase_count": {
+        "name": "Grid Phase Count"
+      },
+      "g_1_i_p": {
+        "name": "Grid Phase 1 Power"
+      },
+      "g_1_i_v": {
+        "name": "Grid Phase 1 Voltage"
+      },
+      "g_1_i_c": {
+        "name": "Grid Phase 1 Current"
+      },
+      "g_2_i_p": {
+        "name": "Grid Phase 2 Power"
+      },
+      "g_2_i_v": {
+        "name": "Grid Phase 2 Voltage"
+      },
+      "g_2_i_c": {
+        "name": "Grid Phase 2 Current"
+      },
+      "g_3_i_p": {
+        "name": "Grid Phase 3 Power"
+      },
+      "g_3_i_v": {
+        "name": "Grid Phase 3 Voltage"
+      },
+      "g_3_i_c": {
+        "name": "Grid Phase 3 Current"
+      },
+      "ac_phase_count": {
+        "name": "AC Output Phase Count"
+      },
+      "ac_1_o_p": {
+        "name": "AC Output Phase 1 Power"
+      },
+      "ac_1_o_v": {
+        "name": "AC Output Phase 1 Voltage"
+      },
+      "ac_1_o_c": {
+        "name": "AC Output Phase 1 Current"
+      },
+      "ac_2_o_p": {
+        "name": "AC Output Phase 2 Power"
+      },
+      "ac_2_o_v": {
+        "name": "AC Output Phase 2 Voltage"
+      },
+      "ac_2_o_c": {
+        "name": "AC Output Phase 2 Current"
+      },
+      "ac_3_o_p": {
+        "name": "AC Output Phase 3 Power"
+      },
+      "ac_3_o_v": {
+        "name": "AC Output Phase 3 Voltage"
+      },
+      "ac_3_o_c": {
+        "name": "AC Output Phase 3 Current"
+      },
+      "d_inverter_phase_count": {
+        "name": "Inverter Phase Count"
+      },
+      "d_inverter_1_status": {
+        "name": "Inverter 1 Status"
+      },
+      "d_inverter_1_p": {
+        "name": "Inverter 1 Power"
+      },
+      "d_inverter_1_v": {
+        "name": "Inverter 1 Voltage"
+      },
+      "d_inverter_1_c": {
+        "name": "Inverter 1 Current"
+      },
+      "d_inverter_2_status": {
+        "name": "Inverter 2 Status"
+      },
+      "d_inverter_2_p": {
+        "name": "Inverter 2 Power"
+      },
+      "d_inverter_2_v": {
+        "name": "Inverter 2 Voltage"
+      },
+      "d_inverter_2_c": {
+        "name": "Inverter 2 Current"
+      },
+      "d_inverter_3_status": {
+        "name": "Inverter 3 Status"
+      },
+      "d_inverter_3_p": {
+        "name": "Inverter 3 Power"
+      },
+      "d_inverter_3_v": {
+        "name": "Inverter 3 Voltage"
+      },
+      "d_inverter_3_c": {
+        "name": "Inverter 3 Current"
+      },
+      "pv_count": {
+        "name": "PV String Count"
+      },
+      "pv_1_i_type": {
+        "name": "PV 1 Input Type"
+      },
+      "pv_2_i_type": {
+        "name": "PV 2 Input Type"
+      },
+      "pv_3_i_type": {
+        "name": "PV 3 Input Type"
+      },
+      "pv_4_i_type": {
+        "name": "PV 4 Input Type"
+      },
+      "b_status": {
+        "name": "Battery Status"
+      },
+      "b_time_to_full_total": {
+        "name": "Total Time to Full Charge"
+      },
+      "b_time_to_empty_total": {
+        "name": "Total Time to Empty"
+      },
+      "b_serial": {
+        "name": "Battery Serial Number"
+      },
+      "b_ver_1": {
+        "name": "Battery Firmware Version 1"
+      },
+      "b_ver_2": {
+        "name": "Battery Firmware Version 2"
+      },
+      "b_ver_3": {
+        "name": "Battery Firmware Version 3"
+      },
+      "b_ver_4": {
+        "name": "Battery Firmware Version 4"
+      },
+      "b_protect": {
+        "name": "Battery Protection Status"
+      },
+      "b_error": {
+        "name": "Battery System Error"
+      },
+      "b_alarm_residential": {
+        "name": "Battery Residential Alarm"
+      },
+      "b_alarm_portable": {
+        "name": "Battery Portable Alarm"
+      },
+      "b_time_to_full": {
+        "name": "Time to Full Charge"
+      },
+      "b_time_to_empty": {
+        "name": "Time to Empty"
+      },
+      "d_iot_model": {
+        "name": "IoT Module Model"
+      },
+      "d_iot_serial": {
+        "name": "IoT Module Serial Number"
+      },
+      "d_iot_ver": {
+        "name": "IoT Module Version"
+      },
       "pack_b_type": {
         "name": "Battery Type"
       },
