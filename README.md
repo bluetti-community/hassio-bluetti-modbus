@@ -59,13 +59,10 @@ pull request. To run it locally without installing anything but Docker:
 This builds `Dockerfile.test` and runs the same `coverage run` /
 `coverage report --fail-under=100` steps CI does.
 
-## Affiliate links (Anzeige / Ad)
+## Relationship to Patrick762's `hassio-bluetti-modbus`
 
-If you want to support this project and buy a Bluetti device, you can use the following affiliate links:
-
-- <a href="https://tidd.ly/4xJPHDn" target="_blank" rel="sponsored">Balco 260</a>
-
-> [!NOTE]
-> DE: Bei diesem Link handelt es sich um einen Affiliate-Link. Wenn du darüber kaufst, erhalte ich eine kleine Provision. Für dich entstehen keine Zusatzkosten.
->
-> EN: This is an affiliate link. If you make a purchase through it, I may earn a small commission at no extra cost to you.
+This repository started as a fork of
+[Patrick762/hassio-bluetti-modbus](https://github.com/Patrick762/hassio-bluetti-modbus)
+and has since diverged significantly (coordinator/entity handling, retry
+handling, multi-pack support, device coverage). Patrick762 is still actively
+maintaining his own version independently.
