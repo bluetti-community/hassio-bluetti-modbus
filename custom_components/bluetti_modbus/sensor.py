@@ -24,6 +24,7 @@ from .const import (
     DATA_COORDINATOR,
     DOMAIN,
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
+    FIELDS_SHOWN_VIA_NUMBER,
     SMETER_PHASE_FIELDS,
 )
 from .coordinator import PollingCoordinator
@@ -82,6 +83,12 @@ async def async_setup_entry(
         # get_sensors() only yields names that are keys in this same
         # device's registered fields, so get_field() always finds them.
         assert field is not None
+        # Only skip if number.py will actually create an entity for it on
+        # this device - a field in FIELDS_SHOWN_VIA_NUMBER that isn't
+        # writable here (e.g. EP2000 today) stays a normal read-only sensor,
+        # same as before this field existed in that set at all.
+        if f in FIELDS_SHOWN_VIA_NUMBER and field.writable:
+            continue
         sensor_fields.append(field)
 
     sensors_to_add = []
