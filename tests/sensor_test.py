@@ -363,6 +363,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             "d_ver_arm",
             "d_ver_dsp",
             "b_ver_1",
+            "d_iot_ver",
             "d_num_inverters",
         ]
         bluetti_device.get_field.side_effect = lambda name: {"d_num_inverters": field}[name]
@@ -381,8 +382,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         # get_field("d_serial") would raise (not in the side_effect dict) if
         # the identity fields weren't skipped before they're ever looked up
-        # - same for b_ver_1 (BMS firmware version), which joins them in
-        # DeviceInfo.sw_version instead of staying a plain sensor.
+        # - same for b_ver_1/d_iot_ver (BMS/IoT firmware versions), which
+        # join them in DeviceInfo.sw_version instead of staying plain
+        # sensors.
         self.assertEqual([s._response_key for s in added], ["d_num_inverters"])
 
     @patch("custom_components.bluetti_modbus.sensor.get_device")

@@ -51,17 +51,20 @@ FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
 # read-only handling for a device where it isn't, so nothing is lost there.
 FIELDS_SHOWN_VIA_SWITCH = {"ac_o_switch", "g_i_switch", "g_o_switch"}
 
-# d_serial/d_ver_arm/d_ver_dsp/b_ver_1 (Balco260/EP2000 only - S Meter's
-# address range doesn't include these): the device's own identity, not
-# readings - fed into DeviceInfo (serial_number/sw_version) instead of shown
-# as plain sensors. d_serial/d_ver_arm/d_ver_dsp match bluetti-home-
+# d_serial/d_ver_arm/d_ver_dsp/b_ver_1/d_iot_ver (Balco260/EP2000 only - S
+# Meter's address range doesn't include these): the device's own identity,
+# not readings - fed into DeviceInfo (serial_number/sw_version) instead of
+# shown as plain sensors. d_serial/d_ver_arm/d_ver_dsp match bluetti-home-
 # assistant's identical fix for those three fields (there they're excluded
 # outright since a cloud-known serial already covers d_serial's role; there
 # is no such other source here, so d_serial's own decoded value is what
 # DeviceInfo.serial_number uses). b_ver_1 (the battery's own BMS firmware
-# version, confirmed against real hardware and the Bluetti app) joins ARM/
-# DSP in sw_version for the same reason - it's part of "what firmware is
-# this device running", not a sensor reading. b_ver_2/3/4 stay plain sensors
-# - unlike b_ver_1, their meaning isn't confirmed (they read 0 on real
-# hardware with no BC200 pack attached).
-FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_serial", "d_ver_arm", "d_ver_dsp", "b_ver_1"}
+# version) and d_iot_ver (the IoT/communication module's own firmware
+# version) join ARM/DSP in sw_version for the same reason - it's part of
+# "what firmware is this device running", not a sensor reading; both are
+# confirmed against real hardware and the Bluetti app. b_ver_2/3/4 stay
+# plain sensors - unlike b_ver_1, their meaning isn't confirmed (they read 0
+# on real hardware with no BC200 pack attached). d_iot_model/d_iot_serial
+# also stay plain sensors - DeviceInfo only has one name/model/serial slot
+# each, already taken by the main device's own identity.
+FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_serial", "d_ver_arm", "d_ver_dsp", "b_ver_1", "d_iot_ver"}

@@ -57,6 +57,7 @@ _POWER_FACTOR = FieldMetadata(
     device_class=SensorDeviceClass.POWER_FACTOR, state_class=SensorStateClass.MEASUREMENT
 )
 _MEASUREMENT = FieldMetadata(state_class=SensorStateClass.MEASUREMENT)
+_DURATION = FieldMetadata(device_class=SensorDeviceClass.DURATION, state_class=SensorStateClass.MEASUREMENT)
 
 FIELD_METADATA: dict[str, FieldMetadata] = {
     "d_num_inverters": _DIAGNOSTIC,
@@ -145,6 +146,95 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "ac_p_reactive_total": _REACTIVE_POWER,
     "ac_p_apparent_total": _APPARENT_POWER,
     "ac_pf_total": _POWER_FACTOR,
+    # The 65 fields added by a later bluetti-registers sync (see
+    # field_metadata.py's git history / translations/en.json) never got
+    # entries here - each fell back to metadata_for()'s bare, icon-less
+    # default. Real installation, real report: every one of these showed up
+    # with no icon at all, unlike their already-categorized siblings above.
+    "ac_1_o_c": _CURRENT,
+    "ac_1_o_p": _POWER,
+    "ac_1_o_v": _VOLTAGE,
+    "ac_2_o_c": _CURRENT,
+    "ac_2_o_p": _POWER,
+    "ac_2_o_v": _VOLTAGE,
+    "ac_3_o_c": _CURRENT,
+    "ac_3_o_p": _POWER,
+    "ac_3_o_v": _VOLTAGE,
+    "ac_o_e_local": _ENERGY_DIAGNOSTIC,
+    "ac_o_p_local": _POWER,
+    "ac_phase_count": _DIAGNOSTIC,
+    "b_alarm_portable": _DIAGNOSTIC,
+    "b_alarm_residential": _DIAGNOSTIC,
+    "b_error": _DIAGNOSTIC,
+    "b_protect": _DIAGNOSTIC,
+    "b_serial": _DIAGNOSTIC,
+    "b_status": _DIAGNOSTIC,
+    # b_time_to_full/empty (pack-level) and their _total (all-packs)
+    # counterparts read 0 whenever the battery isn't actively charging or
+    # discharging (confirmed against real hardware: 0 while b_status is
+    # "Idle") - that's the device correctly reporting "no ETA to estimate
+    # right now", not a decode bug.
+    "b_time_to_empty": _DURATION,
+    "b_time_to_empty_total": _DURATION,
+    "b_time_to_full": _DURATION,
+    "b_time_to_full_total": _DURATION,
+    # b_ver_1 isn't here - it feeds DeviceInfo.sw_version instead (see
+    # const.py's FIELDS_SHOWN_VIA_DEVICE_INFO). b_ver_2/3/4 stay plain
+    # sensors - their meaning isn't confirmed the way b_ver_1's is.
+    "b_ver_2": _DIAGNOSTIC,
+    "b_ver_3": _DIAGNOSTIC,
+    "b_ver_4": _DIAGNOSTIC,
+    "d_inverter_1_c": _CURRENT,
+    "d_inverter_1_p": _POWER,
+    "d_inverter_1_status": _DIAGNOSTIC,
+    "d_inverter_1_v": _VOLTAGE,
+    "d_inverter_2_c": _CURRENT,
+    "d_inverter_2_p": _POWER,
+    "d_inverter_2_status": _DIAGNOSTIC,
+    "d_inverter_2_v": _VOLTAGE,
+    "d_inverter_3_c": _CURRENT,
+    "d_inverter_3_p": _POWER,
+    "d_inverter_3_status": _DIAGNOSTIC,
+    "d_inverter_3_v": _VOLTAGE,
+    "d_inverter_phase_count": _DIAGNOSTIC,
+    "d_iot_model": _DIAGNOSTIC,
+    # d_iot_serial (the IoT/communication module's own serial number) is a
+    # third, distinct serial from d_serial (the inverter's own, already in
+    # DeviceInfo.serial_number) and b_serial (the battery pack's own,
+    # confirmed against the official register spec's own abbreviations:
+    # "Inverter SN", "Pack SN", "IoT SN" respectively) - HA's DeviceInfo only
+    # has room for one serial_number, so this one stays its own sensor.
+    "d_iot_serial": _DIAGNOSTIC,
+    # d_iot_ver isn't here - it joins ARM/DSP/BMS in DeviceInfo.sw_version
+    # instead (see const.py's FIELDS_SHOWN_VIA_DEVICE_INFO).
+    "d_phase_count": _DIAGNOSTIC,
+    "d_self_consumption": _MEASUREMENT,
+    "g_1_i_c": _CURRENT,
+    "g_1_i_p": _POWER,
+    "g_1_i_v": _VOLTAGE,
+    "g_2_i_c": _CURRENT,
+    "g_2_i_p": _POWER,
+    "g_2_i_v": _VOLTAGE,
+    "g_3_i_c": _CURRENT,
+    "g_3_i_p": _POWER,
+    "g_3_i_v": _VOLTAGE,
+    "g_i_e_local": _ENERGY_DIAGNOSTIC,
+    "g_i_p_local": _POWER,
+    "g_o_e_local": _ENERGY_DIAGNOSTIC,
+    # pv_1-4_i_type: an enum (0/1/2/3 = reserve/car/adapter/other, 100/101 =
+    # DC PV/AC PV per the official register spec's remark column - not
+    # sequential) - bluetti_modbus_lib doesn't decode it yet, so this reads
+    # as a raw int (100 on real hardware) rather than a label for now.
+    # Diagnostic either way.
+    "pv_1_i_type": _DIAGNOSTIC,
+    "pv_2_i_type": _DIAGNOSTIC,
+    "pv_3_i_type": _DIAGNOSTIC,
+    "pv_4_i_type": _DIAGNOSTIC,
+    "pv_ac_e_local": _ENERGY_DIAGNOSTIC,
+    "pv_ac_p_local": _POWER,
+    "pv_count": _DIAGNOSTIC,
+    "pv_i_e_local": _ENERGY_DIAGNOSTIC,
+    "pv_i_p_local": _POWER,
 }
 
 

@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 8
+_CURRENT_VERSION = 9
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -152,6 +152,15 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     matches the 2 -> 3 and 6 -> 7 steps' identical pattern. b_ver_2/3/4 are
     untouched - unlike b_ver_1, their meaning isn't confirmed, so they stay
     plain sensors.
+
+    8 -> 9: d_iot_ver (the IoT/communication module's own firmware version)
+    is no longer a plain sensor - it joins ARM/DSP/BMS in
+    DeviceInfo.sw_version instead, for the same reason and using the same
+    dotted format as the 7 -> 8 step. Remove the old sensor entity
+    explicitly, once - matches the 2 -> 3, 6 -> 7, and 7 -> 8 steps'
+    identical pattern. d_iot_model/d_iot_serial are untouched - DeviceInfo
+    only has one name/model/serial slot each, already taken by the main
+    device's own identity.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -233,6 +242,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 registry.async_remove(entity_id)
         version = 8
 
+    if version == 8:
+        if config is not None and config.dev_type in ("balco260", "ep2000"):
+            unique_id = get_unique_id(f"{entry.title} d_iot_ver")
+            entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+            if entity_id is not None:
+                registry.async_remove(entity_id)
+        version = 9
+
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
     else:
@@ -256,17 +273,20 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None, str | None]:
-    """(serial_number, sw_version) from d_serial/d_ver_arm/d_ver_dsp/b_ver_1, if read yet.
+    """(serial_number, sw_version) from d_serial/d_ver_arm/d_ver_dsp/b_ver_1/
+    d_iot_ver, if read yet.
 
     Unlike bluetti-home-assistant (which discards d_serial - a cloud-known
     serial already covers that role there), this integration has no other
     source for the device's serial number, so d_serial's own decoded value
-    is what DeviceInfo.serial_number uses. (None, None) before the
-    coordinator's first successful refresh, or if no coordinator is given
-    (e.g. S Meter, which doesn't declare these fields at all).
+    (the inverter's own serial, per the official register spec's "Inverter
+    SN" abbreviation) is what DeviceInfo.serial_number uses. (None, None)
+    before the coordinator's first successful refresh, or if no coordinator
+    is given (e.g. S Meter, which doesn't declare these fields at all).
 
-    b_ver_1 (the battery's own BMS firmware version) joins ARM/DSP here -
-    all three are already "major.minor.patch" strings by this point
+    b_ver_1 (the battery's own BMS firmware version) and d_iot_ver (the IoT/
+    communication module's own firmware version) join ARM/DSP here - all
+    four are already "major.minor.patch" strings by this point
     (bluetti_modbus_lib's dotted_version(), confirmed against real hardware
     and the Bluetti app), not raw ints.
     """
@@ -277,13 +297,15 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     arm = data.get("d_ver_arm")
     dsp = data.get("d_ver_dsp")
     bms = data.get("b_ver_1")
+    iot = data.get("d_iot_ver")
     serial_number = str(serial) if serial is not None else None
     sw_version = None
-    if arm is not None or dsp is not None or bms is not None:
+    if arm is not None or dsp is not None or bms is not None or iot is not None:
         sw_version = (
             f"ARM {arm if arm is not None else '?'}, "
             f"DSP {dsp if dsp is not None else '?'}, "
-            f"BMS {bms if bms is not None else '?'}"
+            f"BMS {bms if bms is not None else '?'}, "
+            f"IoT {iot if iot is not None else '?'}"
         )
     return serial_number, sw_version
 

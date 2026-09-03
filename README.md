@@ -1,6 +1,6 @@
 # hassio-bluetti-modbus
 
-Unofficial Bluetti Modbus Integration for Home Assistant
+Bluetti Modbus Integration for Home Assistant
 
 ## Disclaimer
 This integration is provided without any warranty or support by Bluetti. I do not take responsibility for any problems it may cause in all cases. Use it at your own risk.
