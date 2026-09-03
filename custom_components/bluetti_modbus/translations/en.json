@@ -165,6 +165,39 @@
       "b_o_e": {
         "name": "Total Battery Discharged Energy"
       },
+      "pack_b_type": {
+        "name": "Battery Type"
+      },
+      "pack_b_v": {
+        "name": "Battery Voltage"
+      },
+      "pack_b_c": {
+        "name": "Battery Current"
+      },
+      "pack_b_soc": {
+        "name": "Battery SoC"
+      },
+      "pack_b_soh": {
+        "name": "Battery SoH"
+      },
+      "pack_b_cycle_count": {
+        "name": "Battery Cycle Count"
+      },
+      "pack_b_t_avg": {
+        "name": "Average Battery Temperature"
+      },
+      "pack_b_cell_count": {
+        "name": "Cell Count"
+      },
+      "pack_b_ntc_count": {
+        "name": "Temperature Sensor Count"
+      },
+      "pack_b_i_e": {
+        "name": "Total Battery Charged Energy"
+      },
+      "pack_b_o_e": {
+        "name": "Total Battery Discharged Energy"
+      },
       "d_timestamp": {
         "name": "Timestamp"
       },

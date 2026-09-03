@@ -7,6 +7,7 @@ from custom_components.bluetti_modbus import (
     async_unload_entry,
     device_info,
     get_unique_id,
+    pack_device_info,
     phase_device_info,
 )
 from custom_components.bluetti_modbus.const import DATA_COORDINATOR, DOMAIN
@@ -321,6 +322,33 @@ class TestPhaseDeviceInfo(unittest.TestCase):
         hass = MagicMock()
 
         self.assertIsNone(phase_device_info(hass, entry, "a"))
+
+
+class TestPackDeviceInfo(unittest.TestCase):
+    @patch("custom_components.bluetti_modbus.dr")
+    def test_returns_sub_device_info_linked_to_the_main_device(self, dr_module):
+        dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
+        entry = MagicMock()
+        entry.entry_id = "entry1"
+        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
+        entry.title = "My Balco260"
+        hass = MagicMock()
+
+        info = pack_device_info(hass, entry, 2)
+
+        self.assertEqual(info["identifiers"], {(DOMAIN, "10.2.1.60-pack-2")})
+        self.assertEqual(info["name"], "My Balco260 Pack 2")
+        self.assertEqual(info["via_device_id"], "main-device-id")
+        dr_module.async_get_device_id_by_identifier.assert_called_once_with(
+            hass, (DOMAIN, "10.2.1.60"), config_entry_id="entry1"
+        )
+
+    def test_returns_none_for_invalid_entry(self):
+        entry = MagicMock()
+        entry.data = {}
+        hass = MagicMock()
+
+        self.assertIsNone(pack_device_info(hass, entry, 2))
 
 
 class TestGetUniqueId(unittest.TestCase):
