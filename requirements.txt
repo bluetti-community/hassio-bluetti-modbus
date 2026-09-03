@@ -1,2 +1,3 @@
 homeassistant
 modbus-connection[pymodbus]>=4.10.0
+probatio>=0.11.4
