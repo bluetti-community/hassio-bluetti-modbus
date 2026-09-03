@@ -41,3 +41,12 @@ FIELDS_SHOWN_VIA_BINARY_SENSOR = {"d_status"}
 # library's import.py) - sensor.py falls back to its normal read-only
 # handling for a device where it isn't, so nothing is lost there.
 FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
+
+# d_serial/d_ver_arm/d_ver_dsp (Balco260/EP2000 only - S Meter's address
+# range doesn't include these): the device's own identity, not readings -
+# fed into DeviceInfo (serial_number/sw_version) instead of shown as plain
+# sensors. Matches bluetti-home-assistant's identical fix for the same
+# three fields (there they're excluded outright since a cloud-known serial
+# already covers d_serial's role; there is no such other source here, so
+# d_serial's own decoded value is what DeviceInfo.serial_number uses).
+FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_serial", "d_ver_arm", "d_ver_dsp"}
