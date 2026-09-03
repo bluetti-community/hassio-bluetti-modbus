@@ -1,5 +1,11 @@
 # hassio-bluetti-modbus
 
+[![HACS Custom][hacs-shield]][hacs]
+[![Release][release-shield]][release]
+[![License][license-shield]](LICENSE)
+[![Tests][tests-shield]][tests]
+[![HACS Validation][hacs-validation-shield]][hacs-validation]
+
 Bluetti Modbus Integration for Home Assistant
 
 ## Disclaimer
@@ -67,3 +73,13 @@ This repository started as a fork of
 and has since diverged significantly (coordinator/entity handling, retry
 handling, multi-pack support, device coverage). Patrick762 is still actively
 maintaining his own version independently.
+
+[hacs-shield]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
+[hacs]: https://hacs.xyz/docs/faq/custom_repositories/
+[release-shield]: https://img.shields.io/github/v/release/bluetti-community/hassio-bluetti-modbus.svg
+[release]: https://github.com/bluetti-community/hassio-bluetti-modbus/releases
+[license-shield]: https://img.shields.io/github/license/bluetti-community/hassio-bluetti-modbus.svg
+[tests-shield]: https://github.com/bluetti-community/hassio-bluetti-modbus/actions/workflows/test.yml/badge.svg
+[tests]: https://github.com/bluetti-community/hassio-bluetti-modbus/actions/workflows/test.yml
+[hacs-validation-shield]: https://github.com/bluetti-community/hassio-bluetti-modbus/actions/workflows/HACS.yml/badge.svg
+[hacs-validation]: https://github.com/bluetti-community/hassio-bluetti-modbus/actions/workflows/HACS.yml
