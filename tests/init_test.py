@@ -159,7 +159,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         # A version-1 entry cascades all the way to the current version in
         # one call - see async_migrate_entry's own docstring for why.
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=3)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_does_not_touch_an_already_disabled_d_timestamp_entity(self, er_module):
@@ -173,7 +173,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=3)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_d_timestamp_not_yet_registered_is_a_no_op(self, er_module):
@@ -188,7 +188,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         registry.async_get.assert_not_called()
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=3)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_non_smeter_device_skips_d_timestamp_handling(self, er_module):
@@ -202,7 +202,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=3)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_still_bumps_the_version(self, er_module):
@@ -216,7 +216,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         registry.async_get_entity_id.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=3)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_removes_retired_identity_sensors_for_balco260(self, er_module):
@@ -238,7 +238,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 "sensor.my_device_d_ver_dsp",
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=3)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_sensor_that_was_never_registered(self, er_module):
@@ -266,9 +266,51 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         registry.async_remove.assert_not_called()
 
     @patch("custom_components.bluetti_modbus.er")
-    async def test_already_current_version_is_a_no_op(self, er_module):
+    async def test_renames_the_old_illegible_default_title(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        hass = MagicMock()
+        entry = self._entry(version=3, dev_type="balco260")
+        # What config_flow.py's old re.sub("[^A-Za-z0-9]+", "", ...) title
+        # generation would have produced for this entry's address+port.
+        entry.title = "102160502"
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        hass.config_entries.async_update_entry.assert_called_once_with(
+            entry, title="Balco260 (10.2.1.60)", version=4
+        )
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_does_not_rename_a_title_the_user_has_customized(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        hass = MagicMock()
+        entry = self._entry(version=3, dev_type="balco260")
+        entry.title = "Garage Battery"
+
+        await async_migrate_entry(hass, entry)
+
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_invalid_entry_data_skips_the_title_rename(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
         hass = MagicMock()
         entry = self._entry(version=3)
+        entry.data = {}
+        entry.title = "102160502"
+
+        await async_migrate_entry(hass, entry)
+
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=4)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_already_current_version_is_a_no_op(self, er_module):
+        hass = MagicMock()
+        entry = self._entry(version=4)
 
         result = await async_migrate_entry(hass, entry)
 
