@@ -16,12 +16,18 @@ from . import device_info as dev_info
 from .const import DATA_COORDINATOR, DOMAIN, FIELDS_SHOWN_VIA_NUMBER
 from .coordinator import PollingCoordinator
 
-# b_soc_low/b_soc_high (57016/57017): both 0-100%, matching bluetti-
-# registers' own num_min/num_max for these fields - bluetti_modbus_lib's
-# Range validator already enforces this at write time; this is only the
-# number entity's own displayed slider/box bounds.
-_MIN_VALUE = 0
-_MAX_VALUE = 100
+# b_soc_low/b_soc_high (57016/57017): min/max, matching bluetti-registers'
+# own num_min/num_max for these fields - bluetti_modbus_lib's Range
+# validator already enforces this at write time; this is only the number
+# entity's own displayed slider/box bounds. Different per field on
+# Balco260 - b_soc_low is 5-90% (the official BLUETTI app's own SOC screen
+# doesn't allow this discharge-stop threshold outside that range), while
+# b_soc_high (charge-stop threshold) is still 0-100% pending equivalent
+# evidence for it.
+_FIELD_BOUNDS: dict[str, tuple[int, int]] = {
+    "b_soc_low": (5, 90),
+    "b_soc_high": (0, 100),
+}
 
 
 async def async_setup_entry(
@@ -57,8 +63,6 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
     """A writable Bluetti Modbus register, e.g. a battery SOC threshold."""
 
     _attr_has_entity_name = True
-    _attr_native_min_value = _MIN_VALUE
-    _attr_native_max_value = _MAX_VALUE
     _attr_native_step = 1
 
     def __init__(
@@ -73,6 +77,7 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
         self._attr_device_info = device_info
         self._attr_translation_key = field_name
         self._attr_unique_id = _unique_id_for(coordinator, device_info, field_name, "number")
+        self._attr_native_min_value, self._attr_native_max_value = _FIELD_BOUNDS[field_name]
 
     async def async_added_to_hass(self) -> None:
         """Prime native_value from whatever the coordinator already has.
