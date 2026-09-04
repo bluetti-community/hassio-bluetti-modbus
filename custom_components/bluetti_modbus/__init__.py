@@ -16,12 +16,12 @@ from .const import (
     DATA_COORDINATOR,
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
-    FIELDS_SHOWN_VIA_DEVICE_INFO,
     FIELDS_SHOWN_VIA_SWITCH,
     MANUFACTURER,
 )
 from .coordinator import PollingCoordinator
 from .types import FullDeviceConfig as FullDeviceConfig
+from .vendor.bluetti_modbus_lib import PACK_INFO_FIELDS
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 9
+_CURRENT_VERSION = 10
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -161,6 +161,20 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     identical pattern. d_iot_model/d_iot_serial are untouched - DeviceInfo
     only has one name/model/serial slot each, already taken by the main
     device's own identity.
+
+    9 -> 10: the battery (PACK_INFO_FIELDS, Balco260's own built-in one) gets
+    its own sub-device now, like BC200 packs 2..5 already had - see
+    battery_device_info() and sensor.py. Its serial_number/sw_version come
+    from b_serial/b_ver_1 (the battery's own identity) instead of the main
+    device's d_iot_serial/d_iot_ver/d_ver_arm/d_ver_dsp - and d_iot_serial
+    ("IoT SN") replaces d_serial ("Inverter SN") as the main device's own
+    serial_number, since a Balco260/EP2000 exposes 3 different serials
+    (inverter/battery/IoT module) and only one can be "the" device's.
+    d_serial becomes a plain sensor for the first time (never one before);
+    every PACK_INFO_FIELDS name except b_ver_1 (already retired at 7 -> 8)
+    was a plain sensor on the main device and needs its old entity removed,
+    same pattern as every step above - they're all on the battery
+    sub-device now.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -183,8 +197,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         version = 2
 
     if version == 2:
+        # Frozen to exactly what was true when this step was written - not
+        # FIELDS_SHOWN_VIA_DEVICE_INFO, whose live contents have since
+        # changed (b_ver_1 moved to the battery sub-device at the 7 -> 8
+        # step, d_serial dropped and d_iot_serial added at 9 -> 10) in ways
+        # this historical step was never about.
         if config is not None and config.dev_type in ("balco260", "ep2000"):
-            for field_name in FIELDS_SHOWN_VIA_DEVICE_INFO:
+            for field_name in ("d_serial", "d_ver_arm", "d_ver_dsp"):
                 unique_id = get_unique_id(f"{entry.title} {field_name}")
                 entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
                 if entity_id is not None:
@@ -250,6 +269,25 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 registry.async_remove(entity_id)
         version = 9
 
+    if version == 9:
+        if config is not None and config.dev_type in ("balco260", "ep2000"):
+            unique_id = get_unique_id(f"{entry.title} d_iot_serial")
+            entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+            if entity_id is not None:
+                registry.async_remove(entity_id)
+            # Every PACK_INFO_FIELDS name except b_ver_1 (already retired at
+            # the 7 -> 8 step) was a plain sensor on the main device -
+            # they're all battery sub-device sensors now (see
+            # battery_device_info() and sensor.py).
+            for field_name in PACK_INFO_FIELDS:
+                if field_name == "b_ver_1":
+                    continue
+                unique_id = get_unique_id(f"{entry.title} {field_name}")
+                entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+                if entity_id is not None:
+                    registry.async_remove(entity_id)
+        version = 10
+
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
     else:
@@ -273,39 +311,40 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None, str | None]:
-    """(serial_number, sw_version) from d_serial/d_ver_arm/d_ver_dsp/b_ver_1/
-    d_iot_ver, if read yet.
+    """(serial_number, sw_version) from d_iot_serial/d_iot_ver/d_ver_arm/
+    d_ver_dsp, if read yet.
 
-    Unlike bluetti-home-assistant (which discards d_serial - a cloud-known
-    serial already covers that role there), this integration has no other
-    source for the device's serial number, so d_serial's own decoded value
-    (the inverter's own serial, per the official register spec's "Inverter
-    SN" abbreviation) is what DeviceInfo.serial_number uses. (None, None)
-    before the coordinator's first successful refresh, or if no coordinator
-    is given (e.g. S Meter, which doesn't declare these fields at all).
+    d_iot_serial (the IoT/communication module's own serial number, per the
+    official register spec's "IoT SN" abbreviation) is what
+    DeviceInfo.serial_number uses - not d_serial (the inverter's own
+    "Inverter SN") or b_serial (the battery's own "Pack SN", now the battery
+    sub-device's own identity - see battery_device_info()). Unlike bluetti-
+    home-assistant (which discards every serial - a cloud-known one already
+    covers that role there), this integration has no such other source, so
+    one of these three has to be picked as "the" serial; d_iot_serial was
+    chosen as the closest match to "the unit itself", confirmed against real
+    hardware and the user's own installation. (None, None) before the
+    coordinator's first successful refresh, or if no coordinator is given
+    (e.g. S Meter, which doesn't declare these fields at all).
 
-    b_ver_1 (the battery's own BMS firmware version) and d_iot_ver (the IoT/
-    communication module's own firmware version) join ARM/DSP here - all
-    four are already "major.minor.patch" strings by this point
-    (bluetti_modbus_lib's dotted_version(), confirmed against real hardware
-    and the Bluetti app), not raw ints.
+    b_ver_1 (BMS, the battery's own firmware) is deliberately not here - it
+    moved to battery_device_info()'s own sw_version, since BMS is the
+    battery's firmware, not the main unit's.
     """
     if coordinator is None:
         return None, None
     data = coordinator.data or {}
-    serial = data.get("d_serial")
+    serial = data.get("d_iot_serial")
+    iot = data.get("d_iot_ver")
     arm = data.get("d_ver_arm")
     dsp = data.get("d_ver_dsp")
-    bms = data.get("b_ver_1")
-    iot = data.get("d_iot_ver")
     serial_number = str(serial) if serial is not None else None
     sw_version = None
-    if arm is not None or dsp is not None or bms is not None or iot is not None:
+    if iot is not None or arm is not None or dsp is not None:
         sw_version = (
-            f"ARM {arm if arm is not None else '?'}, "
-            f"DSP {dsp if dsp is not None else '?'}, "
-            f"BMS {bms if bms is not None else '?'}, "
-            f"IoT {iot if iot is not None else '?'}"
+            f"IoT v{iot if iot is not None else '?'}, "
+            f"ARM v{arm if arm is not None else '?'}, "
+            f"DSP v{dsp if dsp is not None else '?'}"
         )
     return serial_number, sw_version
 
@@ -316,7 +355,7 @@ def device_info(
     """Device info.
 
     coordinator is only needed to fill in serial_number/sw_version (from
-    d_serial/d_ver_arm/d_ver_dsp) - omit it for a per-entity DeviceInfo dict
+    d_iot_serial/d_iot_ver/d_ver_arm/d_ver_dsp) - omit it for a per-entity DeviceInfo dict
     (sensor.py/binary_sensor.py/number.py), where entity_platform only ever
     applies the keys actually present, so leaving these two out there never
     overwrites what async_setup_entry's own main-device registration
@@ -404,6 +443,54 @@ def pack_device_info(
             hass, (DOMAIN, config.address), config_entry_id=entry.entry_id
         ),
     )
+
+
+def battery_device_info(
+    hass: HomeAssistant, entry: ConfigEntry, coordinator: PollingCoordinator | None = None
+) -> DeviceInfo | None:
+    """Device info for Balco260's own built-in battery, as a sub-device.
+
+    Unlike BC200 packs 2..MAX_BATTERY_PACKS (pack_device_info() above), this
+    one always exists - a Balco260 always has a built-in battery - so unlike
+    those, it doesn't depend on d_num_battery_packs having been read yet.
+
+    serial_number/sw_version come from b_serial ("Pack SN") and b_ver_1
+    ("BMS", the battery's own firmware) - both properties of the battery
+    itself, not the main unit (which uses d_iot_serial/d_iot_ver/d_ver_arm/
+    d_ver_dsp instead, see _modbus_identity()). coordinator is optional for
+    the same reason as device_info()'s own docstring explains: omit it for a
+    per-entity DeviceInfo dict, where leaving these keys out never overwrites
+    what async_setup_entry's own registration already set with one.
+    """
+    config = FullDeviceConfig.from_dict(entry.data)
+
+    if config is None:
+        return None
+
+    info = DeviceInfo(
+        identifiers={(DOMAIN, f"{config.address}-battery")},
+        name=f"{entry.title} Battery",
+        manufacturer=MANUFACTURER,
+        model=DEVICE_TYPE_DISPLAY_NAMES.get(config.dev_type, config.dev_type),
+        # Groups this sub-device under the main Balco260 device on the
+        # Devices page - same pattern as pack_device_info() above. The main
+        # device is registered explicitly in async_setup_entry() above
+        # before this can ever be resolved.
+        via_device_id=dr.async_get_device_id_by_identifier(
+            hass, (DOMAIN, config.address), config_entry_id=entry.entry_id
+        ),
+    )
+
+    if coordinator is not None:
+        data = coordinator.data or {}
+        serial = data.get("b_serial")
+        bms = data.get("b_ver_1")
+        if serial is not None:
+            info["serial_number"] = str(serial)
+        if bms is not None:
+            info["sw_version"] = f"BMS v{bms}"
+
+    return info
 
 
 def get_unique_id(name: str, sensor_type: str | None = None) -> str:

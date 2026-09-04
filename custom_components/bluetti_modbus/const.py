@@ -51,20 +51,28 @@ FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
 # read-only handling for a device where it isn't, so nothing is lost there.
 FIELDS_SHOWN_VIA_SWITCH = {"ac_o_switch", "g_i_switch", "g_o_switch"}
 
-# d_serial/d_ver_arm/d_ver_dsp/b_ver_1/d_iot_ver (Balco260/EP2000 only - S
-# Meter's address range doesn't include these): the device's own identity,
-# not readings - fed into DeviceInfo (serial_number/sw_version) instead of
-# shown as plain sensors. d_serial/d_ver_arm/d_ver_dsp match bluetti-home-
-# assistant's identical fix for those three fields (there they're excluded
-# outright since a cloud-known serial already covers d_serial's role; there
-# is no such other source here, so d_serial's own decoded value is what
-# DeviceInfo.serial_number uses). b_ver_1 (the battery's own BMS firmware
-# version) and d_iot_ver (the IoT/communication module's own firmware
-# version) join ARM/DSP in sw_version for the same reason - it's part of
-# "what firmware is this device running", not a sensor reading; both are
-# confirmed against real hardware and the Bluetti app. b_ver_2/3/4 stay
-# plain sensors - unlike b_ver_1, their meaning isn't confirmed (they read 0
-# on real hardware with no BC200 pack attached). d_iot_model/d_iot_serial
-# also stay plain sensors - DeviceInfo only has one name/model/serial slot
-# each, already taken by the main device's own identity.
-FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_serial", "d_ver_arm", "d_ver_dsp", "b_ver_1", "d_iot_ver"}
+# d_ver_arm/d_ver_dsp/d_iot_ver/d_iot_serial (Balco260/EP2000 only - S
+# Meter's address range doesn't include these): the main unit's own
+# identity, not readings - fed into the main DeviceInfo (serial_number/
+# sw_version, see _modbus_identity() in __init__.py) instead of shown as
+# plain sensors. d_iot_serial ("IoT SN") is DeviceInfo.serial_number - not
+# d_serial ("Inverter SN", now just a plain diagnostic sensor - EP2000/
+# Balco260 both actually expose 3 different serials: inverter, battery, and
+# IoT module; only one can be "the" device serial, and d_iot_serial was
+# chosen as the closest match to "the unit itself") and not b_serial
+# ("Pack SN", the battery's own - see FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO
+# below). d_iot_model stays a plain sensor - DeviceInfo only has one
+# name/model slot, already taken by the main device's own identity.
+FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_ver_arm", "d_ver_dsp", "d_iot_ver", "d_iot_serial"}
+
+# b_serial/b_ver_1 (part of PACK_INFO_FIELDS, i.e. Balco260's built-in
+# battery, address block 51200-51249): the battery's own identity, not
+# readings - fed into the battery sub-device's own DeviceInfo instead (see
+# battery_device_info() in __init__.py), same reasoning as
+# FIELDS_SHOWN_VIA_DEVICE_INFO above but for the battery specifically.
+# b_serial ("Pack SN") is the battery sub-device's serial_number; b_ver_1
+# ("BMS", the battery's own firmware, confirmed against real hardware and
+# the Bluetti app) is its sw_version. Every other PACK_INFO_FIELDS name
+# becomes a plain sensor on that same sub-device instead of the main
+# device - see sensor.py.
+FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}
