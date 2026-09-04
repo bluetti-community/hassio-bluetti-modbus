@@ -184,12 +184,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     step above.
 
     No 11 -> 12 step: entity unique_id was refined once more after this -
-    preferring a real device serial number over entry_id where the cloud
-    API provides one, per HA's own documented unique_id guidance (entry_id
-    is meant as a last resort - see _unique_id_for()'s own docstring). That
-    reconciliation can't live here, though - unlike every step above, it
-    needs a live device read to know a serial, and this function only ever
-    runs before the coordinator's first refresh. See _unique_id_for()
+    preferring a real device serial number over entry_id where the device
+    itself reports one over Modbus, per HA's own documented unique_id
+    guidance (entry_id is meant as a last resort - see _unique_id_for()'s
+    own docstring). That reconciliation can't live here, though - unlike
+    every step above, it needs a live device read to know a serial, and
+    this function only ever runs before the coordinator's first refresh.
+    See _unique_id_for()
     instead, called every time an entity is constructed (always after that
     first refresh), self-healing and idempotent rather than a one-time
     versioned step.
@@ -400,9 +401,9 @@ def _unique_id_for(
     pack_num: int | None = None,
     cell_num: int | None = None,
 ) -> str:
-    """This entity's unique_id - a real device serial number when the cloud
-    API has provided one for this entity's own physical sub-device, else
-    this config entry's own entry_id.
+    """This entity's unique_id - a real device serial number read directly
+    from the device over Modbus, for this entity's own physical sub-device,
+    when one is available, else this config entry's own entry_id.
 
     Per https://developers.home-assistant.io/docs/entity_registry_index/,
     HA's own documented unique_id guidance ranks a device's serial number
@@ -414,10 +415,13 @@ def _unique_id_for(
     to a new HA instance) - entry_id does not, since HA generates a fresh
     one for every new entry.
 
-    Not every model's cloud data includes a serial for every sub-device (see
-    this project's CLAUDE.md on the lack of static per-model data) - S Meter
-    never does at all - so this always falls back to entry_id when the
-    relevant one hasn't been read (yet, or ever), matching HA's own
+    Not every model's own Modbus register schema (see bluetti_modbus_lib's
+    devices/*.py, this integration's vendored per-device-type field maps)
+    declares a serial for every sub-device - S Meter never does at all, see
+    _modbus_identity()'s own docstring - and even where one is declared,
+    this only sees it once a live read has actually populated
+    coordinator.data. Either way, this always falls back to entry_id when
+    the relevant serial isn't known (yet, or ever), matching HA's own
     documented "last resort" framing exactly.
 
     Self-healing, not a versioned migration step: async_migrate_entry() has
