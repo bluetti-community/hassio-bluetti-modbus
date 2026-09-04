@@ -34,7 +34,7 @@ def _pack_field(name):
 
 def _sensor(**overrides) -> BluettiSensor:
     kwargs = {
-        "coordinator": MagicMock(),
+        "coordinator": MagicMock(config_entry=MagicMock(entry_id="test_entry_id")),
         "device_info": _device_info(),
         "address": 50001,
         "response_key": "d_num_inverters",
@@ -88,7 +88,7 @@ class TestBluettiSensorInit(unittest.TestCase):
     def test_unique_id_and_translation_key_from_response_key(self):
         sensor = _sensor(response_key="d_num_inverters")
         self.assertEqual(sensor._attr_translation_key, "d_num_inverters")
-        self.assertEqual(sensor.unique_id, "test_device_d_num_inverters")
+        self.assertEqual(sensor.unique_id, "test_entry_id_test_device_d_num_inverters")
 
     def test_pack_num_prefixes_response_key_and_translation_key(self):
         sensor = _sensor(response_key="b_soc", pack_num=2)
@@ -286,7 +286,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -329,7 +329,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -367,7 +367,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -403,7 +403,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -435,7 +435,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -480,7 +480,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -526,7 +526,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -564,7 +564,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -609,7 +609,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             PACK_INFO_FIELDS,
         )
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {"d_num_battery_packs": 2}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -643,7 +643,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {"d_num_battery_packs": 1}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -679,7 +679,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {"d_num_battery_packs": 0}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -737,7 +737,7 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
             PACK_INFO_FIELDS,
         )
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}  # no BC200 packs - the battery still gets sensors
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -777,7 +777,7 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = {}
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
