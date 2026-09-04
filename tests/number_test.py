@@ -19,11 +19,20 @@ def _number(field_name="b_soc_low") -> BluettiNumberEntity:
 
 
 class TestBluettiNumberEntityInit(unittest.TestCase):
-    def test_min_max_step(self):
-        number = _number()
+    def test_min_max_step_for_b_soc_low(self):
+        # 5-90, not 0-100 - the official BLUETTI app's own SOC screen
+        # doesn't allow this discharge-stop threshold outside that range.
+        number = _number("b_soc_low")
+        self.assertEqual(number._attr_native_min_value, 5)
+        self.assertEqual(number._attr_native_max_value, 90)
+        self.assertEqual(number._attr_native_step, 1)
+
+    def test_min_max_for_b_soc_high(self):
+        # Still 0-100 - no equivalent evidence yet for this (charge-stop)
+        # threshold, unlike b_soc_low.
+        number = _number("b_soc_high")
         self.assertEqual(number._attr_native_min_value, 0)
         self.assertEqual(number._attr_native_max_value, 100)
-        self.assertEqual(number._attr_native_step, 1)
 
     def test_translation_key_and_unique_id(self):
         number = _number("b_soc_high")
