@@ -21,8 +21,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import (
     FullDeviceConfig,
+    _unique_id_for,
     battery_device_info,
-    get_unique_id,
     pack_device_info,
     phase_device_info,
 )
@@ -272,20 +272,6 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self._logger = logger or logging.getLogger(__name__)
 
         self._attr_has_entity_name = True
-        # entry_id prefix: two config entries for the same device type
-        # default to the same title (see config_flow.py's own comment on
-        # why), which without this would make every field's unique_id
-        # collide across them - confirmed on real hardware, a second
-        # Balco260 added with its entities all silently rejected ("does
-        # not generate unique IDs") because the first already claimed
-        # every one of them. entry_id is HA's own guaranteed-unique,
-        # stable-for-life config entry identifier.
-        entry_id = coordinator.config_entry.entry_id
-        e_name = f"{entry_id} {device_info.get('name')} {response_key}"
-
-        if cell_num is not None:
-            e_name = f"{entry_id} {device_info.get('name')} {response_key} {cell_num}"
-
         self._address = address
         self._response_key = (
             f"pack_{pack_num}_{response_key}" if pack_num else response_key
@@ -302,7 +288,14 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
             self._attr_translation_placeholders = {"cell_num": str(cell_num)}
 
         self._attr_available = False
-        self._attr_unique_id = get_unique_id(e_name)
+        self._attr_unique_id = _unique_id_for(
+            coordinator,
+            device_info,
+            response_key,
+            "sensor",
+            pack_num=pack_num,
+            cell_num=cell_num,
+        )
         self._attr_native_unit_of_measurement = unit_of_measurement
         if options is not None:
             # ENUM is mutually exclusive with a numeric device_class/

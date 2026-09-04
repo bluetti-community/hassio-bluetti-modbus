@@ -12,7 +12,7 @@ def _device_info():
 
 
 def _number(field_name="b_soc_low") -> BluettiNumberEntity:
-    coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"))
+    coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"), data={})
     number = BluettiNumberEntity(coordinator, _device_info(), field_name)
     number.async_write_ha_state = MagicMock()
     return number
@@ -109,7 +109,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         writable_field = MagicMock(writable=True)
         coordinator.device.get_field.return_value = writable_field
         hass = MagicMock()
@@ -136,7 +136,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.device.get_field.return_value = MagicMock(writable=False)
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -155,7 +155,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.device.get_field.return_value = None
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
@@ -183,7 +183,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     async def test_invalid_config_data_adds_nothing(self, dev_info_fn):
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1", data={})
