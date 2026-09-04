@@ -14,7 +14,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import FullDeviceConfig, get_unique_id
+from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
 from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import PollingCoordinator
@@ -61,16 +61,9 @@ class BluettiOnlineBinarySensor(CoordinatorEntity, BinarySensorEntity):
         """Init binary sensor entity."""
         super().__init__(coordinator)
         self._attr_device_info = device_info
-        # entry_id prefix: two config entries for the same device type
-        # default to the same title (see config_flow.py's own comment on
-        # why), which without this would make every field's unique_id
-        # collide across them - confirmed on real hardware, a second
-        # Balco260 added with its entities all silently rejected ("does
-        # not generate unique IDs") because the first already claimed
-        # every one of them. entry_id is HA's own guaranteed-unique,
-        # stable-for-life config entry identifier.
-        e_name = f"{coordinator.config_entry.entry_id} {device_info.get('name')} d_status"
-        self._attr_unique_id = get_unique_id(e_name)
+        self._attr_unique_id = _unique_id_for(
+            coordinator, device_info, "d_status", "binary_sensor"
+        )
 
     async def async_added_to_hass(self) -> None:
         """Prime is_on from whatever the coordinator already has.

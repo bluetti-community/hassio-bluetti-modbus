@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from custom_components.bluetti_modbus import (
+    _unique_id_for,
     async_migrate_entry,
     async_setup_entry,
     async_unload_entry,
@@ -875,3 +876,126 @@ class TestGetUniqueId(unittest.TestCase):
         self.assertEqual(
             get_unique_id("My Sensor Name", "sensor"), "sensor.my_sensor_name"
         )
+
+
+class TestUniqueIdFor(unittest.TestCase):
+    def _coordinator(self, *, data=None, entry_id="entry1"):
+        coordinator = MagicMock()
+        coordinator.data = data if data is not None else {}
+        coordinator.config_entry.entry_id = entry_id
+        return coordinator
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_falls_back_to_entry_id_when_no_serial_is_known(self, er_module):
+        coordinator = self._coordinator(data={})
+
+        result = _unique_id_for(
+            coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
+        )
+
+        self.assertEqual(result, "entry1_my_device_d_num_inverters")
+        # No registry lookup at all when there's no serial to reconcile
+        # towards - nothing to potentially rename.
+        er_module.async_get.assert_not_called()
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_uses_the_main_device_serial_when_known(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = None
+        coordinator = self._coordinator(data={"d_iot_serial": 1234567890123})
+
+        result = _unique_id_for(
+            coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
+        )
+
+        self.assertEqual(result, "1234567890123_my_device_d_num_inverters")
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_uses_the_battery_serial_for_a_pack_info_field_without_pack_num(
+        self, er_module
+    ):
+        # b_soc is a PACK_INFO_FIELDS name with no pack_num - the built-in
+        # battery sub-device (see battery_device_info()), whose own identity
+        # is b_serial, not the main device's d_iot_serial.
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = None
+        coordinator = self._coordinator(data={"b_serial": 999, "d_iot_serial": 111})
+
+        result = _unique_id_for(
+            coordinator, {"name": "My Device Battery"}, "b_soc", "sensor"
+        )
+
+        self.assertEqual(result, "999_my_device_battery_b_soc")
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_uses_the_pack_serial_when_pack_num_is_given(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = None
+        coordinator = self._coordinator(data={"pack_2_b_serial": 555, "b_serial": 999})
+
+        result = _unique_id_for(
+            coordinator, {"name": "My Device Pack 2"}, "b_soc", "sensor", pack_num=2
+        )
+
+        self.assertEqual(result, "555_my_device_pack_2_b_soc")
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_includes_cell_num_in_the_suffix(self, er_module):
+        # b_v (per-cell battery voltage) is a PACK_INFO_FIELDS name - the
+        # battery's own b_serial applies, same as
+        # test_uses_the_battery_serial_for_a_pack_info_field_without_pack_num.
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = None
+        coordinator = self._coordinator(data={"b_serial": 111})
+
+        result = _unique_id_for(
+            coordinator, {"name": "My Device"}, "b_v", "sensor", cell_num=3
+        )
+
+        self.assertEqual(result, "111_my_device_b_v_3")
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_renames_an_existing_entry_id_based_registration_once_a_serial_is_known(
+        self, er_module
+    ):
+        # The real self-healing scenario: an entity registered under
+        # 0.0.31's entry_id-only scheme, now that a live read has revealed a
+        # serial number - it must keep its history, not get a second,
+        # disconnected entity_id.
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = "sensor.my_device_d_num_inverters"
+        coordinator = self._coordinator(data={"d_iot_serial": 1234567890123})
+
+        result = _unique_id_for(
+            coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
+        )
+
+        self.assertEqual(result, "1234567890123_my_device_d_num_inverters")
+        registry.async_get_entity_id.assert_called_once_with(
+            "sensor", DOMAIN, "entry1_my_device_d_num_inverters"
+        )
+        registry.async_update_entity.assert_called_once_with(
+            "sensor.my_device_d_num_inverters",
+            new_unique_id="1234567890123_my_device_d_num_inverters",
+        )
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_does_not_rename_anything_for_a_fresh_install_with_no_legacy_entity(
+        self, er_module
+    ):
+        # A serial was already known the very first time this entity was
+        # ever created - there's no older entry_id-based registration to
+        # find, so nothing to rename.
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = None
+        coordinator = self._coordinator(data={"d_iot_serial": 1234567890123})
+
+        _unique_id_for(coordinator, {"name": "My Device"}, "d_num_inverters", "sensor")
+
+        registry.async_update_entity.assert_not_called()

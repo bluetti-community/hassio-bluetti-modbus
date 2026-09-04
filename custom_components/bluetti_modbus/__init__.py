@@ -182,6 +182,18 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     step's own comment below) - re-keys every entity already registered
     under this entry rather than enumerating field names, unlike every
     step above.
+
+    No 11 -> 12 step: entity unique_id was refined once more after this -
+    preferring a real device serial number over entry_id where the device
+    itself reports one over Modbus, per HA's own documented unique_id
+    guidance (entry_id is meant as a last resort - see _unique_id_for()'s
+    own docstring). That reconciliation can't live here, though - unlike
+    every step above, it needs a live device read to know a serial, and
+    this function only ever runs before the coordinator's first refresh.
+    See _unique_id_for()
+    instead, called every time an entity is constructed (always after that
+    first refresh), self-healing and idempotent rather than a one-time
+    versioned step.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -378,6 +390,74 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
             f"DSP v{dsp if dsp is not None else '?'}"
         )
     return serial_number, sw_version
+
+
+def _unique_id_for(
+    coordinator: PollingCoordinator,
+    device_info: DeviceInfo,
+    response_key: str,
+    domain: str,
+    *,
+    pack_num: int | None = None,
+    cell_num: int | None = None,
+) -> str:
+    """This entity's unique_id - a real device serial number read directly
+    from the device over Modbus, for this entity's own physical sub-device,
+    when one is available, else this config entry's own entry_id.
+
+    Per https://developers.home-assistant.io/docs/entity_registry_index/,
+    HA's own documented unique_id guidance ranks a device's serial number
+    above a config entry ID (a "last resort" when no better identifier is
+    available) - and explicitly prohibits basing it on a device name (this
+    integration's own original scheme, fixed by the 10 -> 11 migration
+    below) or an IP address. A serial number also survives this config
+    entry itself being deleted and re-added (restoring an HA backup, moving
+    to a new HA instance) - entry_id does not, since HA generates a fresh
+    one for every new entry.
+
+    Not every model's own Modbus register schema (see bluetti_modbus_lib's
+    devices/*.py, this integration's vendored per-device-type field maps)
+    declares a serial for every sub-device - S Meter never does at all, see
+    _modbus_identity()'s own docstring - and even where one is declared,
+    this only sees it once a live read has actually populated
+    coordinator.data. Either way, this always falls back to entry_id when
+    the relevant serial isn't known (yet, or ever), matching HA's own
+    documented "last resort" framing exactly.
+
+    Self-healing, not a versioned migration step: async_migrate_entry() has
+    no coordinator, so it can't know a serial until a live read has
+    happened - this runs instead every time an entity is constructed
+    (already after the coordinator's first refresh, see async_setup_entry),
+    and if this entity was still registered under the older, entry_id-only
+    scheme (this integration's 0.0.31) and a serial is now known, renames it
+    in place so it keeps its history instead of getting a second,
+    disconnected entity_id. A no-op once already reconciled, or for as long
+    as no serial is available yet.
+    """
+    data = coordinator.data or {}
+    if pack_num is not None:
+        serial = data.get(f"pack_{pack_num}_b_serial")
+    elif response_key in PACK_INFO_FIELDS:
+        serial = data.get("b_serial")
+    else:
+        serial = data.get("d_iot_serial")
+    identity = str(serial) if serial is not None else coordinator.config_entry.entry_id
+
+    name = device_info.get("name")
+    suffix = f"{response_key} {cell_num}" if cell_num is not None else response_key
+    new_unique_id = get_unique_id(f"{identity} {name} {suffix}")
+
+    if serial is not None:
+        legacy_unique_id = get_unique_id(
+            f"{coordinator.config_entry.entry_id} {name} {suffix}"
+        )
+        if legacy_unique_id != new_unique_id:
+            registry = er.async_get(coordinator.hass)
+            entity_id = registry.async_get_entity_id(domain, DOMAIN, legacy_unique_id)
+            if entity_id is not None:
+                registry.async_update_entity(entity_id, new_unique_id=new_unique_id)
+
+    return new_unique_id
 
 
 def device_info(

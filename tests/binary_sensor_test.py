@@ -14,7 +14,7 @@ def _device_info():
 
 
 def _sensor() -> BluettiOnlineBinarySensor:
-    coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"))
+    coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"), data={})
     sensor = BluettiOnlineBinarySensor(coordinator, _device_info())
     sensor.async_write_ha_state = MagicMock()
     return sensor
@@ -105,7 +105,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
@@ -125,7 +125,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
@@ -152,7 +152,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     async def test_invalid_config_data_adds_nothing(self, dev_info_fn):
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1", data={})
