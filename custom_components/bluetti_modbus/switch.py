@@ -68,7 +68,15 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
         self._field_name = field_name
         self._attr_device_info = device_info
         self._attr_translation_key = field_name
-        e_name = f"{device_info.get('name')} {field_name}"
+        # entry_id prefix: two config entries for the same device type
+        # default to the same title (see config_flow.py's own comment on
+        # why), which without this would make every field's unique_id
+        # collide across them - confirmed on real hardware, a second
+        # Balco260 added with its entities all silently rejected ("does
+        # not generate unique IDs") because the first already claimed
+        # every one of them. entry_id is HA's own guaranteed-unique,
+        # stable-for-life config entry identifier.
+        e_name = f"{coordinator.config_entry.entry_id} {device_info.get('name')} {field_name}"
         self._attr_unique_id = get_unique_id(e_name)
 
     async def async_added_to_hass(self) -> None:

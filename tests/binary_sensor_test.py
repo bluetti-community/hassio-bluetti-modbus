@@ -14,7 +14,8 @@ def _device_info():
 
 
 def _sensor() -> BluettiOnlineBinarySensor:
-    sensor = BluettiOnlineBinarySensor(MagicMock(), _device_info())
+    coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"))
+    sensor = BluettiOnlineBinarySensor(coordinator, _device_info())
     sensor.async_write_ha_state = MagicMock()
     return sensor
 
@@ -27,7 +28,7 @@ class TestBluettiOnlineBinarySensorInit(unittest.TestCase):
     def test_translation_key_and_unique_id(self):
         sensor = _sensor()
         self.assertEqual(sensor._attr_translation_key, "d_status")
-        self.assertEqual(sensor.unique_id, "test_device_d_status")
+        self.assertEqual(sensor.unique_id, "test_entry_id_test_device_d_status")
 
     def test_is_on_starts_unknown(self):
         # No available/_attr_available override here - that's
@@ -104,7 +105,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
@@ -124,7 +125,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
@@ -151,7 +152,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     async def test_invalid_config_data_adds_nothing(self, dev_info_fn):
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1", data={})

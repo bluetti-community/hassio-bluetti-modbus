@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 10
+_CURRENT_VERSION = 11
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -175,6 +175,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     was a plain sensor on the main device and needs its old entity removed,
     same pattern as every step above - they're all on the battery
     sub-device now.
+
+    10 -> 11: every entity's unique_id now includes this entry's entry_id,
+    fixing a real collision between two config entries of the same device
+    type (see sensor.py/switch.py/number.py/binary_sensor.py and this
+    step's own comment below) - re-keys every entity already registered
+    under this entry rather than enumerating field names, unlike every
+    step above.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -287,6 +294,30 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 if entity_id is not None:
                     registry.async_remove(entity_id)
         version = 10
+
+    if version == 10:
+        # Every entity's unique_id now includes entry.entry_id (see
+        # sensor.py/switch.py/number.py/binary_sensor.py) - two config
+        # entries for the same device type default to the same title (see
+        # config_flow.py's own comment on why), which made every field's
+        # unique_id collide across them: a second Balco260 confirmed on
+        # real hardware got a device with zero entities, all silently
+        # rejected ("does not generate unique IDs") because the first
+        # already claimed every one of them.
+        #
+        # Generic re-key rather than enumerating field names like every
+        # step above - this one doesn't need to know what fields exist,
+        # only that every entity already registered under this entry needs
+        # entry_id prepended to what's already there. The startswith guard
+        # makes it safe to run again if this step is ever replayed.
+        prefix = get_unique_id(entry.entry_id)
+        for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+            if not entity_entry.unique_id.startswith(f"{prefix}_"):
+                registry.async_update_entity(
+                    entity_entry.entity_id,
+                    new_unique_id=f"{prefix}_{entity_entry.unique_id}",
+                )
+        version = 11
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)

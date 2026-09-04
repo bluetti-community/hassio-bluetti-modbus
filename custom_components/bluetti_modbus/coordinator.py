@@ -25,6 +25,14 @@ from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Polling coordinator."""
 
+    # Narrows DataUpdateCoordinator's own `config_entry: ConfigEntry | None`
+    # - always a real ConfigEntry here, __init__ below never omits it (the
+    # base class only leaves it None when a caller skips the parameter
+    # entirely, using contextvars as a fallback instead - not something this
+    # coordinator ever does). Entity classes rely on this being non-None to
+    # read entry_id for their own unique_id (see e.g. sensor.py).
+    config_entry: ConfigEntry
+
     def __init__(
         self,
         hass: HomeAssistant,

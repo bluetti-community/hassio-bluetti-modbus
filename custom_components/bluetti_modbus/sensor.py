@@ -272,10 +272,19 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self._logger = logger or logging.getLogger(__name__)
 
         self._attr_has_entity_name = True
-        e_name = f"{device_info.get('name')} {response_key}"
+        # entry_id prefix: two config entries for the same device type
+        # default to the same title (see config_flow.py's own comment on
+        # why), which without this would make every field's unique_id
+        # collide across them - confirmed on real hardware, a second
+        # Balco260 added with its entities all silently rejected ("does
+        # not generate unique IDs") because the first already claimed
+        # every one of them. entry_id is HA's own guaranteed-unique,
+        # stable-for-life config entry identifier.
+        entry_id = coordinator.config_entry.entry_id
+        e_name = f"{entry_id} {device_info.get('name')} {response_key}"
 
         if cell_num is not None:
-            e_name = f"{device_info.get('name')} {response_key} {cell_num}"
+            e_name = f"{entry_id} {device_info.get('name')} {response_key} {cell_num}"
 
         self._address = address
         self._response_key = (
