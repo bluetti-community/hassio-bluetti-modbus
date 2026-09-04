@@ -404,6 +404,9 @@
       "b_time_to_empty_total": {
         "name": "Total Time to Empty"
       },
+      "b_ver_count": {
+        "name": "Battery Firmware Version Slots"
+      },
       "b_ver_2": {
         "name": "Battery Firmware Version 2"
       },
