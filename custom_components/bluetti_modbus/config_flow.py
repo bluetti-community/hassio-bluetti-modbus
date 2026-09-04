@@ -33,11 +33,12 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     # Bumped for the one-time d_timestamp-disable, d_serial/d_ver_arm/
     # d_ver_dsp-removal, legible-default-title, title-spacing,
-    # drop-serial-from-title, switch-entities, b_ver_1-removal, and
-    # d_iot_ver-removal migrations - see __init__.py's async_migrate_entry().
-    # Must stay in sync with _CURRENT_VERSION there - this is what HA stamps
-    # a newly created entry's version with.
-    VERSION = 9
+    # drop-serial-from-title, switch-entities, b_ver_1-removal,
+    # d_iot_ver-removal, and battery-sub-device migrations - see
+    # __init__.py's async_migrate_entry(). Must stay in sync with
+    # _CURRENT_VERSION there - this is what HA stamps a newly created
+    # entry's version with.
+    VERSION = 10
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")

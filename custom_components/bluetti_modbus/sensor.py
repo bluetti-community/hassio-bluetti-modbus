@@ -19,11 +19,18 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import FullDeviceConfig, get_unique_id, pack_device_info, phase_device_info
+from . import (
+    FullDeviceConfig,
+    battery_device_info,
+    get_unique_id,
+    pack_device_info,
+    phase_device_info,
+)
 from . import device_info as dev_info
 from .const import (
     DATA_COORDINATOR,
     DOMAIN,
+    FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO,
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
     FIELDS_SHOWN_VIA_DEVICE_INFO,
     FIELDS_SHOWN_VIA_NUMBER,
@@ -110,8 +117,7 @@ async def async_setup_entry(
     # BC200 packs beyond the first get their own sub-device (see
     # pack_device_info()'s docstring and coordinator.py's
     # _async_update_battery_packs()) - Balco260 only, and only for however
-    # many packs the device's own first refresh already found. Pack 1's data
-    # is shown on the main device.
+    # many packs the device's own first refresh already found.
     pack_device_infos: dict[int, DeviceInfo] = {}
     if config.dev_type == "balco260":
         num_packs = coordinator.data.get("d_num_battery_packs")
@@ -120,6 +126,14 @@ async def async_setup_entry(
                 info = pack_device_info(hass, entry, pack_num)
                 assert info is not None  # same guarantee as dev_info() above
                 pack_device_infos[pack_num] = info
+
+    # Balco260's own built-in battery gets its own sub-device too, like the
+    # BC200 packs above - but unconditionally (a Balco260 always has one),
+    # unlike those, which depend on d_num_battery_packs having been read.
+    battery_info: DeviceInfo | None = None
+    if config.dev_type == "balco260":
+        battery_info = battery_device_info(hass, entry, coordinator)
+        assert battery_info is not None  # same guarantee as dev_info() above
 
     # Add sensors
     bluetti_device = get_device(config.dev_type)
@@ -132,6 +146,11 @@ async def async_setup_entry(
         if f in FIELDS_SHOWN_VIA_BINARY_SENSOR:
             continue
         if f in FIELDS_SHOWN_VIA_DEVICE_INFO:
+            continue
+        # PACK_INFO_FIELDS (Balco260's built-in battery, the same block
+        # BC200 packs 2..5 use) are the battery sub-device's own sensors
+        # now, not the main device's - see the dedicated loop below.
+        if f in PACK_INFO_FIELDS:
             continue
         field = bluetti_device.get_field(f)
         # get_sensors() only yields names that are keys in this same
@@ -171,10 +190,10 @@ async def async_setup_entry(
 
     for pack_num, pack_info in pack_device_infos.items():
         for name in PACK_INFO_FIELDS:
-            # Same field object as pack 1's own instance of this field on
-            # the main device - packs share the exact same schema, just at
-            # a different Modbus slave address (see battery_pack()'s
-            # docstring in bluetti_modbus_lib).
+            # Same field object as the built-in battery's own instance of
+            # this field (see the dedicated loop below) - packs share the
+            # exact same schema, just at a different Modbus slave address
+            # (see battery_pack()'s docstring in bluetti_modbus_lib).
             field = bluetti_device.get_field(name)
             assert field is not None  # PACK_INFO_FIELDS names are Balco260 fields
             metadata = metadata_for(name)
@@ -192,6 +211,34 @@ async def async_setup_entry(
                     enabled_by_default=metadata.enabled_by_default,
                     logger=logger,
                     pack_num=pack_num,
+                )
+            )
+
+    if battery_info is not None:
+        for name in PACK_INFO_FIELDS:
+            if name in FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO:
+                continue
+            field = bluetti_device.get_field(name)
+            assert field is not None  # PACK_INFO_FIELDS names are Balco260 fields
+            metadata = metadata_for(name)
+            sensors_to_add.append(
+                BluettiSensor(
+                    coordinator,
+                    battery_info,
+                    field.address,
+                    field.name,
+                    unit_of_measurement=field.unit,
+                    category=metadata.category,
+                    device_class=metadata.device_class,
+                    state_class=metadata.state_class,
+                    options=_enum_options(field),
+                    enabled_by_default=metadata.enabled_by_default,
+                    logger=logger,
+                    # No pack_num - unlike packs 2..5 (own Modbus slave
+                    # address), the built-in battery's data comes from the
+                    # main device's own read, under its plain field names
+                    # (e.g. "b_soc", not "pack_1_b_soc" - see
+                    # coordinator.py).
                 )
             )
 

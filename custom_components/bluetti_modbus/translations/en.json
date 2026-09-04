@@ -34,7 +34,7 @@
         "name": "Total Inverter Power"
       },
       "pv_ac_p": {
-        "name": "PV AC Power"
+        "name": "Total PV AC Power"
       },
       "ac_o_e_total": {
         "name": "Total AC Output Energy"
@@ -49,7 +49,7 @@
         "name": "Total Grid Export Energy"
       },
       "pv_ac_e": {
-        "name": "PV AC Energy"
+        "name": "Total PV AC Energy"
       },
       "d_inverter_status": {
         "name": "Inverter Status",
@@ -404,9 +404,6 @@
       "b_time_to_empty_total": {
         "name": "Total Time to Empty"
       },
-      "b_serial": {
-        "name": "Battery Serial Number"
-      },
       "b_ver_2": {
         "name": "Battery Firmware Version 2"
       },
@@ -437,8 +434,8 @@
       "d_iot_model": {
         "name": "IoT Module Model"
       },
-      "d_iot_serial": {
-        "name": "IoT Module Serial Number"
+      "d_serial": {
+        "name": "Inverter Serial Number"
       },
       "pack_b_type": {
         "name": "Battery Type"

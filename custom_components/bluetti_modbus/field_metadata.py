@@ -167,7 +167,8 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "b_alarm_residential": _DIAGNOSTIC,
     "b_error": _DIAGNOSTIC,
     "b_protect": _DIAGNOSTIC,
-    "b_serial": _DIAGNOSTIC,
+    # b_serial isn't here - it's the battery sub-device's own serial_number
+    # instead (see const.py's FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO).
     "b_status": _DIAGNOSTIC,
     # b_time_to_full/empty (pack-level) and their _total (all-packs)
     # counterparts read 0 whenever the battery isn't actively charging or
@@ -198,17 +199,16 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "d_inverter_3_v": _VOLTAGE,
     "d_inverter_phase_count": _DIAGNOSTIC,
     "d_iot_model": _DIAGNOSTIC,
-    # d_iot_serial (the IoT/communication module's own serial number) is a
-    # third, distinct serial from d_serial (the inverter's own, already in
-    # DeviceInfo.serial_number) and b_serial (the battery pack's own,
-    # confirmed against the official register spec's own abbreviations:
-    # "Inverter SN", "Pack SN", "IoT SN" respectively) - HA's DeviceInfo only
-    # has room for one serial_number, so this one stays its own sensor.
-    "d_iot_serial": _DIAGNOSTIC,
-    # d_iot_ver isn't here - it joins ARM/DSP/BMS in DeviceInfo.sw_version
-    # instead (see const.py's FIELDS_SHOWN_VIA_DEVICE_INFO).
+    # d_iot_serial isn't here - it's the main DeviceInfo.serial_number
+    # instead (see const.py's FIELDS_SHOWN_VIA_DEVICE_INFO). d_iot_ver isn't
+    # here either - it joins ARM/DSP in DeviceInfo.sw_version, same set.
     "d_phase_count": _DIAGNOSTIC,
     "d_self_consumption": _MEASUREMENT,
+    # d_serial ("Inverter SN" - a third, distinct serial from d_iot_serial
+    # and b_serial, the battery's own, confirmed against the official
+    # register spec's own abbreviations) is no longer "the" device serial,
+    # but it's real data - a plain sensor for the first time.
+    "d_serial": _DIAGNOSTIC,
     "g_1_i_c": _CURRENT,
     "g_1_i_p": _POWER,
     "g_1_i_v": _VOLTAGE,

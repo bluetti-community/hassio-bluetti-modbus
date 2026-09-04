@@ -22,6 +22,16 @@ def _device_info():
     return {"name": "Test Device"}
 
 
+def _pack_field(name):
+    # A stand-in for any PACK_INFO_FIELDS lookup - what the unconditional
+    # battery sub-device loop (and, when packs 2+ exist, the pack loop) both
+    # call get_field() with. Shared so every test exercising either path
+    # doesn't need its own copy.
+    f = MagicMock(address=51221, unit="%", writable=False)
+    f.name = name
+    return f
+
+
 def _sensor(**overrides) -> BluettiSensor:
     kwargs = {
         "coordinator": MagicMock(),
@@ -243,12 +253,25 @@ class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):
 
 
 class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
+    @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
-    async def test_adds_a_sensor_per_field(self, config_cls, dev_info_fn, get_device_fn):
-        config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
+    async def test_adds_a_sensor_per_field(
+        self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
+    ):
+        # smeter, not balco260 - sidesteps the unconditional battery
+        # sub-device construction (see TestCreatesBatterySensors for that),
+        # irrelevant to what this test actually checks (field_metadata
+        # lookup by name). Unlike the battery loop, S Meter's phase sensors
+        # are still gated by get_sensors() below (kept to just
+        # "ac_o_p_total"), so phase_device_info only needs a bare mock here,
+        # not a real per-phase implementation.
+        config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+            "name": f"Test Device Phase {phase.upper()}"
+        }
 
         # MagicMock(name=...) sets the mock's own repr, not a `.name`
         # attribute - must be assigned after construction to actually be
@@ -319,14 +342,21 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # d_status weren't skipped before it's ever looked up.
         self.assertEqual([s._response_key for s in added], ["d_timestamp"])
 
+    @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_writable_b_soc_low_is_skipped_number_py_handles_it(
-        self, config_cls, dev_info_fn, get_device_fn
+        self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
     ):
-        config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
+        # smeter, not balco260 - the FIELDS_SHOWN_VIA_NUMBER check itself
+        # doesn't care about dev_type, and this sidesteps the unconditional
+        # battery sub-device construction (see TestCreatesBatterySensors).
+        config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+            "name": f"Test Device Phase {phase.upper()}"
+        }
 
         field = MagicMock(address=57016, unit="%", writable=True)
         field.name = "b_soc_low"
@@ -348,14 +378,21 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(added, [])
 
+    @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_writable_ac_o_switch_is_skipped_switch_py_handles_it(
-        self, config_cls, dev_info_fn, get_device_fn
+        self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
     ):
-        config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
+        # smeter, not balco260 - the FIELDS_SHOWN_VIA_SWITCH check itself
+        # doesn't care about dev_type, and this sidesteps the unconditional
+        # battery sub-device construction (see TestCreatesBatterySensors).
+        config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+            "name": f"Test Device Phase {phase.upper()}"
+        }
 
         field = MagicMock(address=57001, unit=None, writable=True)
         field.name = "ac_o_switch"
@@ -409,17 +446,25 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual([s._response_key for s in added], ["ac_o_switch"])
 
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
-    async def test_d_serial_is_skipped_it_feeds_device_info_instead(
-        self, config_cls, dev_info_fn, get_device_fn
+    async def test_identity_fields_are_skipped_they_feed_device_info_instead(
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
 
-        field = MagicMock(address=50001, unit=None)
-        field.name = "d_num_inverters"
+        # Permissive - unlike a narrow dict-of-one, this also answers the
+        # unconditional battery sub-device loop's PACK_INFO_FIELDS lookups
+        # (b_soc, b_v, ...), which aren't this test's concern.
+        def _field(name):
+            f = MagicMock(address=50001, unit=None)
+            f.name = name
+            return f
+
         bluetti_device = MagicMock()
         bluetti_device.get_sensors.return_value = [
             "d_serial",
@@ -427,9 +472,10 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             "d_ver_dsp",
             "b_ver_1",
             "d_iot_ver",
+            "d_iot_serial",
             "d_num_inverters",
         ]
-        bluetti_device.get_field.side_effect = lambda name: {"d_num_inverters": field}[name]
+        bluetti_device.get_field.side_effect = _field
         get_device_fn.return_value = bluetti_device
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
@@ -443,12 +489,21 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_setup_entry(hass, entry, added.extend)
 
-        # get_field("d_serial") would raise (not in the side_effect dict) if
-        # the identity fields weren't skipped before they're ever looked up
-        # - same for b_ver_1/d_iot_ver (BMS/IoT firmware versions), which
-        # join them in DeviceInfo.sw_version instead of staying plain
-        # sensors.
-        self.assertEqual([s._response_key for s in added], ["d_num_inverters"])
+        response_keys = {s._response_key for s in added}
+        # d_serial is no longer excluded - it's real data, just not "the"
+        # device serial anymore (see const.py's FIELDS_SHOWN_VIA_DEVICE_INFO
+        # - d_iot_serial replaced it there). d_num_inverters is unrelated,
+        # proving normal fields still get through.
+        self.assertIn("d_serial", response_keys)
+        self.assertIn("d_num_inverters", response_keys)
+        # d_ver_arm/d_ver_dsp/d_iot_ver/d_iot_serial feed the main
+        # DeviceInfo instead; b_ver_1 feeds the battery sub-device's -
+        # never plain sensors.
+        self.assertNotIn("d_ver_arm", response_keys)
+        self.assertNotIn("d_ver_dsp", response_keys)
+        self.assertNotIn("b_ver_1", response_keys)
+        self.assertNotIn("d_iot_ver", response_keys)
+        self.assertNotIn("d_iot_serial", response_keys)
 
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
@@ -524,18 +579,20 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             by_key["ac_a_v"].device_info, {"name": "Test Device Phase A"}
         )
 
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.pack_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_creates_pack_sensors_when_multiple_packs_are_present(
-        self, config_cls, dev_info_fn, get_device_fn, pack_device_info_fn
+        self, config_cls, dev_info_fn, get_device_fn, pack_device_info_fn, battery_device_info_fn
     ):
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
         pack_device_info_fn.side_effect = lambda hass, entry, pack_num: {
             "name": f"Test Device Pack {pack_num}"
         }
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
 
         def _field(name):
             f = MagicMock(address=51221, unit="%", writable=False)
@@ -561,21 +618,27 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_setup_entry(hass, entry, added.extend)
 
-        pack_response_keys = {s._response_key for s in added}
-        self.assertEqual(len(added), len(PACK_INFO_FIELDS))
-        self.assertTrue(all(k.startswith("pack_2_") for k in pack_response_keys))
-        self.assertEqual(added[0].device_info, {"name": "Test Device Pack 2"})
+        # The unconditional battery sub-device (see
+        # TestCreatesBatterySensors) also creates sensors now - filter this
+        # test's own assertions down to pack 2's, which are what it's
+        # actually about.
+        pack_sensors = [s for s in added if s._response_key.startswith("pack_2_")]
+        self.assertEqual(len(pack_sensors), len(PACK_INFO_FIELDS))
+        self.assertEqual(pack_sensors[0].device_info, {"name": "Test Device Pack 2"})
 
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_no_pack_sensors_for_a_single_installed_pack(
-        self, config_cls, dev_info_fn, get_device_fn
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
         bluetti_device = MagicMock()
         bluetti_device.get_sensors.return_value = []
+        bluetti_device.get_field.side_effect = _pack_field
         get_device_fn.return_value = bluetti_device
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
@@ -589,13 +652,17 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_setup_entry(hass, entry, added.extend)
 
-        self.assertEqual(added, [])
+        # No BC200 pack sub-device (1 = only the built-in battery) - but the
+        # battery's own sensors (unconditional, unprefixed) are still there.
+        self.assertEqual([s for s in added if s._response_key.startswith("pack_")], [])
+        self.assertTrue(len(added) > 0)
 
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_no_pack_sensors_for_zero_installed_packs(
-        self, config_cls, dev_info_fn, get_device_fn
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
         # The most common real-world value for a bare Balco260 with no BC200
         # pack attached at all - distinct from "1" (see the test above) and
@@ -604,8 +671,10 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # real hardware this session.
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
         bluetti_device = MagicMock()
         bluetti_device.get_sensors.return_value = []
+        bluetti_device.get_field.side_effect = _pack_field
         get_device_fn.return_value = bluetti_device
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
@@ -619,7 +688,11 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_setup_entry(hass, entry, added.extend)
 
-        self.assertEqual(added, [])
+        # The built-in battery's own sensors are still there even with 0
+        # total packs reported - "0" doesn't mean "no battery at all", see
+        # battery_device_info()'s own docstring.
+        self.assertEqual([s for s in added if s._response_key.startswith("pack_")], [])
+        self.assertTrue(len(added) > 0)
 
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_no_coordinator_does_not_add_entities(self, config_cls):
@@ -633,3 +706,85 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, async_add_entities)
 
         async_add_entities.assert_not_called()
+
+
+class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
+    """Balco260's built-in battery, on its own sub-device (const.py's
+    FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO) - same PACK_INFO_FIELDS block as
+    BC200 packs 2..5 (TestAsyncSetupEntry's pack tests), but unconditional
+    (a Balco260 always has a built-in battery) and without a pack_num
+    prefix (its data comes from the main device's own read, under plain
+    field names - see coordinator.py)."""
+
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_creates_a_sensor_per_field_except_the_battery_device_info_ones(
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
+    ):
+        config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
+
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = []  # main-loop sensors irrelevant here
+        bluetti_device.get_field.side_effect = _pack_field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            PACK_INFO_FIELDS,
+        )
+
+        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator.data = {}  # no BC200 packs - the battery still gets sensors
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        response_keys = {s._response_key for s in added}
+        # b_serial/b_ver_1 feed the battery's own DeviceInfo instead (see
+        # FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO) - not sensors here.
+        self.assertEqual(
+            response_keys, PACK_INFO_FIELDS - {"b_serial", "b_ver_1"}
+        )
+        # No pack_N_ prefix - unlike packs 2+, unprefixed (see the class
+        # docstring).
+        self.assertTrue(all("pack_" not in k for k in response_keys))
+        self.assertTrue(all(s.device_info == {"name": "Test Device Battery"} for s in added))
+
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_smeter_has_no_battery_sub_device(
+        self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn, battery_device_info_fn
+    ):
+        config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+            "name": f"Test Device Phase {phase.upper()}"
+        }
+
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = []
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator.data = {}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        battery_device_info_fn.assert_not_called()
+        self.assertEqual(added, [])
