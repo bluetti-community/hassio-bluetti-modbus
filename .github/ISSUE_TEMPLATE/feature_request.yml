@@ -1,0 +1,53 @@
+name: Feature request
+description: Suggest a new device, sensor, or control for the Bluetti Modbus integration
+title: "[Feature] <Replace this part>"
+labels:
+  - enhancement
+body:
+  - type: checkboxes
+    id: existing-issue
+    attributes:
+      label: Is there an existing issue for this?
+      options:
+        - label: I searched and didn't find an existing request for this
+          required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of request is this?
+      options:
+        - Support for a new device model
+        - A new sensor or control for an already-supported device
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device model
+      placeholder: e.g. AC500
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe what you'd like
+      description: >
+        What entity or capability are you missing, and what would you use it for?
+    validations:
+      required: true
+  - type: textarea
+    id: modread
+    attributes:
+      label: bluetti-modread output (if requesting a new sensor/control, or a new device)
+      description: >
+        Run `bluetti-modread -c <device-ip> -p 502 -t <balco260|smeter|ep2000|ac500>` against
+        your device directly (see the bluetti-modbus README), or for a genuinely new/untested
+        device, a full register scan if you have one. This integration has no static per-model
+        data - every entity is derived from what the device actually reports over Modbus, so
+        this is usually needed before a new field can be added at all.
+      render: text
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
