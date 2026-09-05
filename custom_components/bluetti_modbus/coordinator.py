@@ -11,12 +11,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from modbus_connection.exceptions import ModbusError
 
+from .const import INDIVIDUAL_BC200_PACKS_CONFIRMED
 from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
     EP2000,
     MAX_BATTERY_PACKS,
     Balco260,
     SMeter,
+    aggregate_pack_summary,
     battery_pack,
 )
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
@@ -67,6 +69,12 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # from the main device's own fields (same Modbus slave address) - see
         # bluetti_modbus_lib.battery_pack()'s docstring.
         self._packs: dict[int, Balco260] = {}
+        # Balco260 only - the aggregate "Pack Summary" block (51001-51008,
+        # including d_num_battery_packs itself), which only reports
+        # correctly at a different Modbus slave address (250) than the main
+        # device's own - see bluetti_modbus_lib.aggregate_pack_summary()'s
+        # docstring. Built lazily on first use, same as self._packs.
+        self._aggregate_summary: Balco260 | None = None
 
     @property
     def device(self) -> Balco260 | EP2000 | SMeter:
@@ -93,7 +101,10 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return result
 
     async def _async_update_battery_packs(self, result: dict[str, Any]) -> None:
-        """Read BC200 packs 2..N into result as pack_{n}_{field}.
+        """Overwrite the aggregate "Pack Summary" fields in result (they
+        only report correctly at a different slave address than the main
+        device's own - see aggregate_pack_summary()'s docstring), then read
+        BC200 packs 2..N into result as pack_{n}_{field}.
 
         Balco260 only, per this integration's current scope - EP2000's
         battery-pack behavior is unconfirmed on real hardware. Packs share
@@ -102,6 +113,20 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         already established it, within the same update cycle.
         """
         if not isinstance(self.device, Balco260):
+            return
+
+        if self._aggregate_summary is None:
+            self._aggregate_summary = aggregate_pack_summary(self._client.conn)
+        await self._aggregate_summary.async_update_with_retry()
+        result.update(self._aggregate_summary.values)
+
+        # Individual pack data (this block) isn't confirmed against real
+        # hardware yet, unlike the aggregate summary above - see
+        # INDIVIDUAL_BC200_PACKS_CONFIRMED's own comment. d_num_battery_packs
+        # is now accurate, but creating pack_2_*/pack_3_*/... entities from
+        # data that reads as a clean 0 regardless of what's actually
+        # attached would be worse than not creating them at all.
+        if not INDIVIDUAL_BC200_PACKS_CONFIRMED:
             return
 
         num_packs = result.get("d_num_battery_packs")
