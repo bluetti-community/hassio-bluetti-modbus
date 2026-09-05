@@ -76,3 +76,21 @@ FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_ver_arm", "d_ver_dsp", "d_iot_ver", "d_iot_se
 # becomes a plain sensor on that same sub-device instead of the main
 # device - see sensor.py.
 FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}
+
+# d_num_battery_packs is now read correctly (bluetti_modbus_lib's
+# aggregate_pack_summary(), slave 250 - see coordinator.py), but real
+# hardware testing on a Balco260 with 3 confirmed, app-active BC200 packs
+# found individual pack data (battery_pack(), slave 2 and up) still reads a
+# clean, error-free 0 for every field - indistinguishable from a Balco260
+# with zero packs attached (see bluetti-community/bluetti-modbus's own
+# README caveat on battery_pack(), added the same day this was found).
+#
+# Creating per-pack devices/entities now that d_num_battery_packs is
+# accurate would surface them showing 0% SOC, 0V, no serial, etc. for every
+# real pack beyond the first - worse than not showing them at all, since it
+# reads as a broken sensor rather than an absent feature. Keep this False
+# until BLUETTI clarifies the actual mechanism (a follow-up email is
+# pending) and it's confirmed against real hardware; flip it back on then -
+# this is the only gate needed, both coordinator.py and sensor.py check it
+# before doing anything with packs 2+.
+INDIVIDUAL_BC200_PACKS_CONFIRMED = False

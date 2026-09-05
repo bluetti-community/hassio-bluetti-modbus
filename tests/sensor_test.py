@@ -581,6 +581,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             by_key["ac_a_v"].device_info, {"name": "Test Device Phase A"}
         )
 
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.pack_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
@@ -628,6 +629,40 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(pack_sensors), len(PACK_INFO_FIELDS))
         self.assertEqual(pack_sensors[0].device_info, {"name": "Test Device Pack 2"})
 
+    @patch("custom_components.bluetti_modbus.sensor.pack_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_no_pack_sensors_by_default_even_with_multiple_packs_reported(
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn, pack_device_info_fn
+    ):
+        # INDIVIDUAL_BC200_PACKS_CONFIRMED is False by default - real-hardware
+        # testing found individual pack data (slave 2+) unreliable even
+        # though d_num_battery_packs (the aggregate count) is now accurate.
+        config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = []
+        bluetti_device.get_field.side_effect = _pack_field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {"d_num_battery_packs": 4}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        pack_device_info_fn.assert_not_called()
+        self.assertEqual([s for s in added if s._response_key.startswith("pack_")], [])
+
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
@@ -659,6 +694,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([s for s in added if s._response_key.startswith("pack_")], [])
         self.assertTrue(len(added) > 0)
 
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")

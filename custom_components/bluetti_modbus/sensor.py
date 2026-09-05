@@ -35,6 +35,7 @@ from .const import (
     FIELDS_SHOWN_VIA_DEVICE_INFO,
     FIELDS_SHOWN_VIA_NUMBER,
     FIELDS_SHOWN_VIA_SWITCH,
+    INDIVIDUAL_BC200_PACKS_CONFIRMED,
     SMETER_PHASE_FIELDS,
 )
 from .coordinator import PollingCoordinator
@@ -119,7 +120,7 @@ async def async_setup_entry(
     # _async_update_battery_packs()) - Balco260 only, and only for however
     # many packs the device's own first refresh already found.
     pack_device_infos: dict[int, DeviceInfo] = {}
-    if config.dev_type == "balco260":
+    if config.dev_type == "balco260" and INDIVIDUAL_BC200_PACKS_CONFIRMED:
         num_packs = coordinator.data.get("d_num_battery_packs")
         if isinstance(num_packs, int):
             for pack_num in range(2, min(num_packs, MAX_BATTERY_PACKS) + 1):
