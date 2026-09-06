@@ -35,7 +35,7 @@ from .const import (
     FIELDS_SHOWN_VIA_DEVICE_INFO,
     FIELDS_SHOWN_VIA_NUMBER,
     FIELDS_SHOWN_VIA_SWITCH,
-    INDIVIDUAL_BC200_PACKS_CONFIRMED,
+    INDIVIDUAL_BC260_PACKS_CONFIRMED,
     SMETER_PHASE_FIELDS,
 )
 from .coordinator import PollingCoordinator
@@ -115,12 +115,12 @@ async def async_setup_entry(
             assert info is not None  # same guarantee as dev_info() above
             phase_device_infos[phase] = info
 
-    # BC200 packs beyond the first get their own sub-device (see
+    # BC260 packs beyond the first get their own sub-device (see
     # pack_device_info()'s docstring and coordinator.py's
     # _async_update_battery_packs()) - Balco260 only, and only for however
     # many packs the device's own first refresh already found.
     pack_device_infos: dict[int, DeviceInfo] = {}
-    if config.dev_type == "balco260" and INDIVIDUAL_BC200_PACKS_CONFIRMED:
+    if config.dev_type == "balco260" and INDIVIDUAL_BC260_PACKS_CONFIRMED:
         num_packs = coordinator.data.get("d_num_battery_packs")
         if isinstance(num_packs, int):
             for pack_num in range(2, min(num_packs, MAX_BATTERY_PACKS) + 1):
@@ -129,7 +129,7 @@ async def async_setup_entry(
                 pack_device_infos[pack_num] = info
 
     # Balco260's own built-in battery gets its own sub-device too, like the
-    # BC200 packs above - but unconditionally (a Balco260 always has one),
+    # BC260 packs above - but unconditionally (a Balco260 always has one),
     # unlike those, which depend on d_num_battery_packs having been read.
     battery_info: DeviceInfo | None = None
     if config.dev_type == "balco260":
@@ -149,7 +149,7 @@ async def async_setup_entry(
         if f in FIELDS_SHOWN_VIA_DEVICE_INFO:
             continue
         # PACK_INFO_FIELDS (Balco260's built-in battery, the same block
-        # BC200 packs 2..5 use) are the battery sub-device's own sensors
+        # BC260 packs 2..5 use) are the battery sub-device's own sensors
         # now, not the main device's - see the dedicated loop below.
         if f in PACK_INFO_FIELDS:
             continue

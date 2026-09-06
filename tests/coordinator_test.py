@@ -179,8 +179,8 @@ class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
 
 
 class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
-    """Individual BC200 packs beyond the first - see coordinator.py and
-    const.INDIVIDUAL_BC200_PACKS_CONFIRMED's own comment for why this stays
+    """Individual BC260 packs beyond the first - see coordinator.py and
+    const.INDIVIDUAL_BC260_PACKS_CONFIRMED's own comment for why this stays
     disabled by default pending confirmation against real hardware."""
 
     def _mock_aggregate(self, aggregate_fn, num_packs: int) -> None:
@@ -195,7 +195,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
     async def test_stays_disabled_by_default_even_with_packs_reported(
         self, client_cls, battery_pack_fn, aggregate_fn
     ):
-        # INDIVIDUAL_BC200_PACKS_CONFIRMED is False - real-hardware testing
+        # INDIVIDUAL_BC260_PACKS_CONFIRMED is False - real-hardware testing
         # found individual pack data unreliable even though the aggregate
         # count (d_num_battery_packs) is now correct.
         client_cls.return_value.device = MagicMock(spec=Balco260)
@@ -208,7 +208,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         battery_pack_fn.assert_not_called()
         self.assertEqual(result["d_num_battery_packs"], 4)
 
-    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
@@ -231,7 +231,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["pack_2_b_soc"], 77)
         self.assertNotIn("pack_1_b_soc", result)  # same slave as the main unit
 
-    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
@@ -254,7 +254,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
             [2, 3],
         )
 
-    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
@@ -277,7 +277,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
             [2, 3, 4, 5],
         )
 
-    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
@@ -299,7 +299,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         battery_pack_fn.assert_called_once_with(client_cls.return_value.conn, 2)
         self.assertEqual(pack.async_update_with_retry.await_count, 2)
 
-    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
@@ -316,7 +316,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         battery_pack_fn.assert_not_called()
         self.assertEqual(result, {"d_num_battery_packs": 1})
 
-    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
@@ -333,7 +333,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         battery_pack_fn.assert_not_called()
         self.assertEqual(result, {"d_num_battery_packs": 0})
 
-    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
@@ -353,7 +353,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         battery_pack_fn.assert_not_called()
         self.assertEqual(result, {})
 
-    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")

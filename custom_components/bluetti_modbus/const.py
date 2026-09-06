@@ -103,7 +103,7 @@ FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}
 
 # d_num_battery_packs is now read correctly (bluetti_modbus_lib's
 # aggregate_pack_summary(), slave 250 - see coordinator.py), but real
-# hardware testing on a Balco260 with 3 confirmed, app-active BC200 packs
+# hardware testing on a Balco260 with 3 confirmed, app-active BC260 packs
 # found individual pack data (battery_pack(), slave 2 and up) still reads a
 # clean, error-free 0 for every field - indistinguishable from a Balco260
 # with zero packs attached (see bluetti-community/bluetti-modbus's own
@@ -117,4 +117,4 @@ FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}
 # pending) and it's confirmed against real hardware; flip it back on then -
 # this is the only gate needed, both coordinator.py and sensor.py check it
 # before doing anything with packs 2+.
-INDIVIDUAL_BC200_PACKS_CONFIRMED = False
+INDIVIDUAL_BC260_PACKS_CONFIRMED = False

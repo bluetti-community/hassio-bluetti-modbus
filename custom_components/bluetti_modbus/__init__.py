@@ -163,7 +163,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     device's own identity.
 
     9 -> 10: the battery (PACK_INFO_FIELDS, Balco260's own built-in one) gets
-    its own sub-device now, like BC200 packs 2..5 already had - see
+    its own sub-device now, like BC260 packs 2..5 already had - see
     battery_device_info() and sensor.py. Its serial_number/sw_version come
     from b_serial/b_ver_1 (the battery's own identity) instead of the main
     device's d_iot_serial/d_iot_ver/d_ver_arm/d_ver_dsp - and d_iot_serial
@@ -570,7 +570,7 @@ def phase_device_info(
 def pack_device_info(
     hass: HomeAssistant, entry: ConfigEntry, pack_num: int
 ) -> DeviceInfo | None:
-    """Device info for one of Balco260's BC200 battery pack sub-devices.
+    """Device info for one of Balco260's BC260 battery pack sub-devices.
 
     pack_num: 2..MAX_BATTERY_PACKS - pack 1's data is shown on the main
     device (same Modbus slave address), see coordinator.py's
@@ -601,7 +601,7 @@ def battery_device_info(
 ) -> DeviceInfo | None:
     """Device info for Balco260's own built-in battery, as a sub-device.
 
-    Unlike BC200 packs 2..MAX_BATTERY_PACKS (pack_device_info() above), this
+    Unlike BC260 packs 2..MAX_BATTERY_PACKS (pack_device_info() above), this
     one always exists - a Balco260 always has a built-in battery - so unlike
     those, it doesn't depend on d_num_battery_packs having been read yet.
 

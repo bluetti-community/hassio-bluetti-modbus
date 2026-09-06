@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from modbus_connection.exceptions import ModbusError
 
-from .const import INDIVIDUAL_BC200_PACKS_CONFIRMED
+from .const import INDIVIDUAL_BC260_PACKS_CONFIRMED
 from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
     AC500,
@@ -64,7 +64,7 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             config.port,
             config.dev_type,
         )
-        # Balco260 only - BC200 packs beyond the first, built lazily once
+        # Balco260 only - BC260 packs beyond the first, built lazily once
         # d_num_battery_packs is known from the main device's own read, keyed
         # by pack number (2..MAX_BATTERY_PACKS). Pack 1's data already comes
         # from the main device's own fields (same Modbus slave address) - see
@@ -105,7 +105,7 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Overwrite the aggregate "Pack Summary" fields in result (they
         only report correctly at a different slave address than the main
         device's own - see aggregate_pack_summary()'s docstring), then read
-        BC200 packs 2..N into result as pack_{n}_{field}.
+        BC260 packs 2..N into result as pack_{n}_{field}.
 
         Balco260 only, per this integration's current scope - EP2000's
         battery-pack behavior is unconfirmed on real hardware. Packs share
@@ -123,11 +123,11 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         # Individual pack data (this block) isn't confirmed against real
         # hardware yet, unlike the aggregate summary above - see
-        # INDIVIDUAL_BC200_PACKS_CONFIRMED's own comment. d_num_battery_packs
+        # INDIVIDUAL_BC260_PACKS_CONFIRMED's own comment. d_num_battery_packs
         # is now accurate, but creating pack_2_*/pack_3_*/... entities from
         # data that reads as a clean 0 regardless of what's actually
         # attached would be worse than not creating them at all.
-        if not INDIVIDUAL_BC200_PACKS_CONFIRMED:
+        if not INDIVIDUAL_BC260_PACKS_CONFIRMED:
             return
 
         num_packs = result.get("d_num_battery_packs")
