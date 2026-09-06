@@ -7,6 +7,25 @@ CONF_OPTIONS = "options"
 
 DATA_COORDINATOR = "coordinator"
 
+# AC500 support (bluetti-modbus 0.15.0+) is community-confirmed against real
+# hardware, not yet BLUETTI-support-confirmed like Balco260/S Meter - see
+# bluetti-official/bluetti-modbus-tcp-slave#5. It was deliberately shipped
+# as a beta pre-release (0.0.39-beta.1, GitHub "prerelease" flag) to keep it
+# out of regular users' default update list - but `main` is a single linear
+# branch, so any *later*, ordinary (non-beta) release built from it (e.g.
+# 0.0.40) would otherwise carry AC500 right along with it, since the code
+# never left `main`. SemVer precedence made this concrete: 0.0.40 sorts
+# above 0.0.39-beta.1, so HACS would offer 0.0.40 - AC500 included - to
+# every user, beta opt-in or not, undoing the whole point of the beta tag.
+#
+# This flag decouples AC500's visibility from release/version mechanics
+# entirely: config_flow.py only offers "ac500" in its dropdown while this
+# is True, regardless of what version is installed. Existing config entries
+# already using "ac500" (from testing on the beta) are unaffected - this
+# only gates the dropdown for *new* entries. Flip to True once ItsMe00007/
+# gjniewenhuijse confirm it working inside a real HA install.
+AC500_CONFIRMED = False
+
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would
 # show the raw stored string ("smeter") instead of "S Meter".

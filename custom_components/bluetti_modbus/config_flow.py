@@ -21,7 +21,7 @@ from homeassistant.helpers.selector import (
 )
 from modbus_connection.exceptions import ModbusError
 
-from .const import DEVICE_TYPE_DISPLAY_NAMES, DOMAIN
+from .const import AC500_CONFIRMED, DEVICE_TYPE_DISPLAY_NAMES, DOMAIN
 from .types import InitialDeviceConfig
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
@@ -111,15 +111,20 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # "balco260"/"smeter" (match dev_type elsewhere),
                         # only the dropdown's display labels differ.
                         #
-                        # AC500 (bluetti_modbus_lib 0.15.0+): community-
-                        # confirmed against real hardware
-                        # (bluetti-official/bluetti-modbus-tcp-slave#5,
-                        # bluetti-registers#13), not yet BLUETTI-support-
-                        # confirmed like the other two - a smaller register
-                        # set (no BC260 expansion-pack support yet, see
-                        # bluetti_modbus_lib's own README).
+                        # AC500 only appears here while AC500_CONFIRMED is
+                        # True - see that constant's own comment in const.py
+                        # for why this can't just be a version/beta-release
+                        # matter. Not yet BLUETTI-support-confirmed like the
+                        # other two either way (bluetti-official/bluetti-
+                        # modbus-tcp-slave#5, bluetti-registers#13) - a
+                        # smaller register set (no BC260 expansion-pack
+                        # support yet, see bluetti_modbus_lib's own README).
                         options=[
-                            SelectOptionDict(value="ac500", label="AC500"),
+                            *(
+                                [SelectOptionDict(value="ac500", label="AC500")]
+                                if AC500_CONFIRMED
+                                else []
+                            ),
                             SelectOptionDict(value="balco260", label="Balco 260"),
                             SelectOptionDict(value="smeter", label="S Meter"),
                         ],

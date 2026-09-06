@@ -21,6 +21,13 @@ def _patched_client(read_side_effect=None, device_values=None):
     )
 
 
+def _type_options(data_schema):
+    for key, validator in data_schema.schema.items():
+        if str(key) == "type":
+            return validator.config["options"]
+    raise AssertionError("type field not found in the form's data_schema")
+
+
 class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
     async def test_no_input_shows_form(self):
         flow = _flow()
@@ -30,6 +37,32 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         show_form.assert_called_once()
         self.assertEqual(show_form.call_args.kwargs["step_id"], "user")
         self.assertEqual(result, "form")
+
+    async def test_ac500_not_offered_by_default(self):
+        # AC500_CONFIRMED is False by default - see its own comment in
+        # const.py for why this can't just be a version/beta-release
+        # matter (main is a single linear branch, so any later, ordinary
+        # release built from it would otherwise carry AC500 right along
+        # with it regardless of beta tagging).
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("ac500", values)
+        self.assertIn("balco260", values)
+        self.assertIn("smeter", values)
+
+    @patch("custom_components.bluetti_modbus.config_flow.AC500_CONFIRMED", True)
+    async def test_ac500_offered_once_confirmed(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertIn("ac500", values)
 
     async def test_creates_entry_titled_with_the_plain_product_name(self):
         # Regression test: the title used to have the serial number (or,
