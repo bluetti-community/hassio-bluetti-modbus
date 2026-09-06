@@ -582,7 +582,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             by_key["ac_a_v"].device_info, {"name": "Test Device Phase A"}
         )
 
-    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.pack_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
@@ -638,7 +638,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     async def test_no_pack_sensors_by_default_even_with_multiple_packs_reported(
         self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn, pack_device_info_fn
     ):
-        # INDIVIDUAL_BC200_PACKS_CONFIRMED is False by default - real-hardware
+        # INDIVIDUAL_BC260_PACKS_CONFIRMED is False by default - real-hardware
         # testing found individual pack data (slave 2+) unreliable even
         # though d_num_battery_packs (the aggregate count) is now accurate.
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
@@ -663,7 +663,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         pack_device_info_fn.assert_not_called()
         self.assertEqual([s for s in added if s._response_key.startswith("pack_")], [])
 
-    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
@@ -690,12 +690,12 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_setup_entry(hass, entry, added.extend)
 
-        # No BC200 pack sub-device (1 = only the built-in battery) - but the
+        # No BC260 pack sub-device (1 = only the built-in battery) - but the
         # battery's own sensors (unconditional, unprefixed) are still there.
         self.assertEqual([s for s in added if s._response_key.startswith("pack_")], [])
         self.assertTrue(len(added) > 0)
 
-    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC200_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
@@ -703,7 +703,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     async def test_no_pack_sensors_for_zero_installed_packs(
         self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
-        # The most common real-world value for a bare Balco260 with no BC200
+        # The most common real-world value for a bare Balco260 with no BC260
         # pack attached at all - distinct from "1" (see the test above) and
         # from "missing" (coordinator.data.get() returning None, also
         # excluded by the isinstance check in sensor.py). Confirmed against
@@ -750,7 +750,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
     """Balco260's built-in battery, on its own sub-device (const.py's
     FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO) - same PACK_INFO_FIELDS block as
-    BC200 packs 2..5 (TestAsyncSetupEntry's pack tests), but unconditional
+    BC260 packs 2..5 (TestAsyncSetupEntry's pack tests), but unconditional
     (a Balco260 always has a built-in battery) and without a pack_num
     prefix (its data comes from the main device's own read, under plain
     field names - see coordinator.py)."""
@@ -777,7 +777,7 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         )
 
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
-        coordinator.data = {}  # no BC200 packs - the battery still gets sensors
+        coordinator.data = {}  # no BC260 packs - the battery still gets sensors
         hass = MagicMock()
         hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")

@@ -22,7 +22,7 @@ class TestMetadataFor(unittest.TestCase):
     def test_only_b_soc_is_device_class_battery_not_b_soc_total(self):
         # Real hardware regression: with two device_class=BATTERY sensors on
         # one device, HA's Devices-page summary column picked b_soc_total
-        # (0% on a bare Balco260 with no BC200 pack) instead of b_soc (the
+        # (0% on a bare Balco260 with no BC260 pack) instead of b_soc (the
         # correct, always-populated 77% reading at the same moment). Only
         # one sensor per device may claim to be "the" battery.
         self.assertEqual(metadata_for("b_soc").device_class, SensorDeviceClass.BATTERY)

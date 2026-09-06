@@ -51,7 +51,7 @@ class TestAsyncGetConfigEntryDiagnostics(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["d_iot_serial"], "**REDACTED**")
         self.assertEqual(data["d_serial"], "**REDACTED**")
         self.assertEqual(data["b_serial"], "**REDACTED**")
-        # A BC200 pack's own serial (pack_N_b_serial) - a different literal
+        # A BC260 pack's own serial (pack_N_b_serial) - a different literal
         # key per pack, only ever matched by its "_b_serial" suffix.
         self.assertEqual(data["pack_2_b_serial"], "**REDACTED**")
 

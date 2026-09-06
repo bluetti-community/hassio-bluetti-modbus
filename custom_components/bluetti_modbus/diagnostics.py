@@ -20,7 +20,7 @@ _TO_REDACT_ENTRY = {"address"}
 
 def _is_serial_field(field_name: str) -> bool:
     """d_serial/d_iot_serial (main device) and b_serial/pack_N_b_serial (the
-    built-in battery/BC200 packs) are the device's real BLUETTI serial
+    built-in battery/BC260 packs) are the device's real BLUETTI serial
     numbers, tied to ownership/warranty - same reasoning as the address
     above, not something a diagnostics dump attached to a public issue
     should expose in the clear.
@@ -36,7 +36,7 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry.
 
     One physical device (plus, for Balco260, its built-in battery and any
-    BC200 packs - sub-devices of this same entry, see coordinator.py) per
+    BC260 packs - sub-devices of this same entry, see coordinator.py) per
     config entry - unlike some integrations, there's no multi-device
     aliasing to do here, just this one entry's own data. Only ever called
     while the entry is loaded (HA only offers the download button then), so
