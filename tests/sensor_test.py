@@ -492,20 +492,21 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         response_keys = {s._response_key for s in added}
-        # d_serial is no longer excluded - it's real data, just not "the"
+        # d_iot_serial is no longer excluded - it's real data, just not "the"
         # device serial anymore (see const.py's FIELDS_SHOWN_VIA_DEVICE_INFO
-        # - d_iot_serial replaced it there). d_num_inverters is unrelated,
-        # proving normal fields still get through.
-        self.assertIn("d_serial", response_keys)
+        # - d_serial replaced it there, BLUETTI-confirmed as "the complete
+        # device serial number"). d_num_inverters is unrelated, proving
+        # normal fields still get through.
+        self.assertIn("d_iot_serial", response_keys)
         self.assertIn("d_num_inverters", response_keys)
-        # d_ver_arm/d_ver_dsp/d_iot_ver/d_iot_serial feed the main
-        # DeviceInfo instead; b_ver_1 feeds the battery sub-device's -
-        # never plain sensors.
+        # d_ver_arm/d_ver_dsp/d_iot_ver/d_serial feed the main DeviceInfo
+        # instead; b_ver_1 feeds the battery sub-device's - never plain
+        # sensors.
         self.assertNotIn("d_ver_arm", response_keys)
         self.assertNotIn("d_ver_dsp", response_keys)
         self.assertNotIn("b_ver_1", response_keys)
         self.assertNotIn("d_iot_ver", response_keys)
-        self.assertNotIn("d_iot_serial", response_keys)
+        self.assertNotIn("d_serial", response_keys)
 
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")

@@ -103,14 +103,15 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     ):
         # d_ver_arm/d_ver_dsp/d_iot_ver already arrive as "major.minor.patch"
         # strings by this point - bluetti_modbus_lib's dotted_version()
-        # decodes them before they ever reach coordinator.data. d_iot_serial
-        # ("IoT SN"), not d_serial ("Inverter SN"), is the main device's
-        # serial_number - and b_ver_1 (BMS) no longer feeds this at all, it's
-        # the battery sub-device's own sw_version now (see
+        # decodes them before they ever reach coordinator.data. d_serial
+        # ("Inverter SN"), not d_iot_serial ("IoT SN"), is the main device's
+        # serial_number - BLUETTI support confirmed by email it's "the
+        # complete device serial number" - and b_ver_1 (BMS) no longer feeds
+        # this at all, it's the battery sub-device's own sw_version now (see
         # TestBatteryDeviceInfo).
         coordinator = MagicMock(
             data={
-                "d_iot_serial": 1234567890123,
+                "d_serial": 1234567890123,
                 "d_iot_ver": "50012.01.19",
                 "d_ver_arm": "50011.01.12",
                 "d_ver_dsp": "50014.01.10",
@@ -178,7 +179,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         # A version-1 entry cascades all the way to the current version in
         # one call - see async_migrate_entry's own docstring for why.
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_does_not_touch_an_already_disabled_d_timestamp_entity(self, er_module):
@@ -192,7 +193,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_d_timestamp_not_yet_registered_is_a_no_op(self, er_module):
@@ -207,7 +208,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         registry.async_get.assert_not_called()
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_non_smeter_device_skips_d_timestamp_handling(self, er_module):
@@ -221,7 +222,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_still_bumps_the_version(self, er_module):
@@ -235,7 +236,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         registry.async_get_entity_id.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_removes_retired_sensors_for_balco260(self, er_module):
@@ -274,7 +275,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_sensor_that_was_never_registered(self, er_module):
@@ -336,7 +337,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_switch_sensor_that_was_never_registered(
@@ -396,7 +397,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_b_ver_1_sensor_that_was_never_registered(
@@ -455,7 +456,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_d_iot_ver_sensor_that_was_never_registered(
@@ -513,7 +514,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_battery_sensor_that_was_never_registered(
@@ -563,14 +564,16 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         result = await async_migrate_entry(hass, entry)
 
         self.assertTrue(result)
-        er_module.async_entries_for_config_entry.assert_called_once_with(
-            registry, "entry1"
-        )
+        # Called twice on a balco260 entry cascading this far in one go -
+        # once by this step, once more by the 11 -> 12 step right after,
+        # which wipes every entity outright (see that step's own test).
+        # Both calls hit the same mocked registry.
+        er_module.async_entries_for_config_entry.assert_any_call(registry, "entry1")
         registry.async_update_entity.assert_called_once_with(
             "sensor.my_device_d_num_inverters",
             new_unique_id="entry1_my_device_d_num_inverters",
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_an_entity_unique_id_already_prefixed_with_the_entry_id(
@@ -593,6 +596,87 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         registry.async_update_entity.assert_not_called()
 
     @patch("custom_components.bluetti_modbus.er")
+    async def test_removes_every_entity_for_balco260_once_identity_switches_to_d_serial(
+        self, er_module
+    ):
+        # d_serial replaces d_iot_serial as the main device's identity
+        # source - every entity's unique_id is derived from it (see
+        # _unique_id_for()), and there's no live coordinator read here to
+        # recompute the old one, so every entity gets removed outright
+        # rather than renamed (see this step's own comment in __init__.py).
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        entities = [
+            MagicMock(entity_id="sensor.my_device_d_num_inverters"),
+            MagicMock(entity_id="sensor.my_device_d_serial"),
+            MagicMock(entity_id="switch.my_device_ac_o_switch"),
+        ]
+        er_module.async_entries_for_config_entry.return_value = entities
+        hass = MagicMock()
+        entry = self._entry(version=11, dev_type="balco260")
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        er_module.async_entries_for_config_entry.assert_called_once_with(
+            registry, "entry1"
+        )
+        removed = {c.args[0] for c in registry.async_remove.call_args_list}
+        self.assertEqual(
+            removed,
+            {
+                "sensor.my_device_d_num_inverters",
+                "sensor.my_device_d_serial",
+                "switch.my_device_ac_o_switch",
+            },
+        )
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_removes_every_entity_for_ep2000_too(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        entities = [MagicMock(entity_id="sensor.my_device_d_num_inverters")]
+        er_module.async_entries_for_config_entry.return_value = entities
+        hass = MagicMock()
+        entry = self._entry(version=11, dev_type="ep2000")
+
+        await async_migrate_entry(hass, entry)
+
+        registry.async_remove.assert_called_once_with("sensor.my_device_d_num_inverters")
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_smeter_skips_identity_switch_entity_removal(self, er_module):
+        # S Meter never declares d_serial or d_iot_serial at all - nothing
+        # to migrate.
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        hass = MagicMock()
+        entry = self._entry(version=11, dev_type="smeter")
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        er_module.async_entries_for_config_entry.assert_not_called()
+        registry.async_remove.assert_not_called()
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_invalid_entry_data_skips_identity_switch_entity_removal(
+        self, er_module
+    ):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        hass = MagicMock()
+        entry = self._entry(version=11, dev_type="balco260")
+        entry.data = {}
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        er_module.async_entries_for_config_entry.assert_not_called()
+        registry.async_remove.assert_not_called()
+
+    @patch("custom_components.bluetti_modbus.er")
     async def test_renames_the_old_illegible_default_title(self, er_module):
         registry = MagicMock()
         er_module.async_get.return_value = registry
@@ -609,7 +693,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # title the 3 -> 4 step just produced down to the plain product
         # name - see its own docstring.
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=11
+            entry, title="Balco 260", version=12
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -622,7 +706,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_skips_the_title_rename(self, er_module):
@@ -635,7 +719,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_adds_the_missing_space_for_an_entry_already_on_version_4(
@@ -654,7 +738,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # The 5 -> 6 step (same cascading call) strips the serial number the
         # 4 -> 5 step just re-spaced down to the plain product name.
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=11
+            entry, title="Balco 260", version=12
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -672,7 +756,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=11
+            entry, title="Balco 260", version=12
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -688,7 +772,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="S Meter", version=11
+            entry, title="S Meter", version=12
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -706,7 +790,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_skips_the_serial_suffix_drop(self, er_module):
@@ -719,12 +803,12 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=11)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=12)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_already_current_version_is_a_no_op(self, er_module):
         hass = MagicMock()
-        entry = self._entry(version=11)
+        entry = self._entry(version=12)
 
         result = await async_migrate_entry(hass, entry)
 
@@ -903,7 +987,7 @@ class TestUniqueIdFor(unittest.TestCase):
         registry = MagicMock()
         er_module.async_get.return_value = registry
         registry.async_get_entity_id.return_value = None
-        coordinator = self._coordinator(data={"d_iot_serial": 1234567890123})
+        coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
         result = _unique_id_for(
             coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
@@ -917,11 +1001,11 @@ class TestUniqueIdFor(unittest.TestCase):
     ):
         # b_soc is a PACK_INFO_FIELDS name with no pack_num - the built-in
         # battery sub-device (see battery_device_info()), whose own identity
-        # is b_serial, not the main device's d_iot_serial.
+        # is b_serial, not the main device's d_serial.
         registry = MagicMock()
         er_module.async_get.return_value = registry
         registry.async_get_entity_id.return_value = None
-        coordinator = self._coordinator(data={"b_serial": 999, "d_iot_serial": 111})
+        coordinator = self._coordinator(data={"b_serial": 999, "d_serial": 111})
 
         result = _unique_id_for(
             coordinator, {"name": "My Device Battery"}, "b_soc", "sensor"
@@ -969,7 +1053,7 @@ class TestUniqueIdFor(unittest.TestCase):
         registry = MagicMock()
         er_module.async_get.return_value = registry
         registry.async_get_entity_id.return_value = "sensor.my_device_d_num_inverters"
-        coordinator = self._coordinator(data={"d_iot_serial": 1234567890123})
+        coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
         result = _unique_id_for(
             coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
@@ -994,7 +1078,7 @@ class TestUniqueIdFor(unittest.TestCase):
         registry = MagicMock()
         er_module.async_get.return_value = registry
         registry.async_get_entity_id.return_value = None
-        coordinator = self._coordinator(data={"d_iot_serial": 1234567890123})
+        coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
         _unique_id_for(coordinator, {"name": "My Device"}, "d_num_inverters", "sensor")
 
