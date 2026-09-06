@@ -5,7 +5,11 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from modbus_connection.exceptions import ModbusConnectionError
 
 from custom_components.bluetti_modbus.coordinator import PollingCoordinator
-from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import Balco260, SMeter
+from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+    AC500,
+    Balco260,
+    SMeter,
+)
 
 
 def _result(name: str, value: object) -> MagicMock:
@@ -152,6 +156,20 @@ class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
         # EP2000/S Meter's battery-pack behavior is unconfirmed on real
         # hardware - this integration's scope is Balco260 only.
         client_cls.return_value.device = MagicMock(spec=SMeter)
+        client_cls.return_value.read = AsyncMock(return_value=[])
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        await coordinator._async_update_data()
+
+        aggregate_fn.assert_not_called()
+
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_skips_aggregate_summary_for_ac500(self, client_cls, aggregate_fn):
+        # AC500's own d_num_battery_packs means "device maximum," not
+        # Balco260's confirmed "actual installed count" (real-hardware
+        # testing) - aggregate_pack_summary() stays Balco260-only for now.
+        client_cls.return_value.device = MagicMock(spec=AC500)
         client_cls.return_value.read = AsyncMock(return_value=[])
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 

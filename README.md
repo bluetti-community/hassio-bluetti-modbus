@@ -15,6 +15,10 @@ This integration is provided without any warranty or support by Bluetti. I do no
 
 - Balco 260
 - S Meter
+- AC500 - community-confirmed against real hardware, not yet
+  BLUETTI-support-confirmed like the other two; a smaller register set (no
+  BC260 expansion-pack support yet) - see
+  [bluetti-official/bluetti-modbus-tcp-slave#5](https://github.com/bluetti-official/bluetti-modbus-tcp-slave/issues/5)
 
 EP2000 support was pulled pending confirmation that it actually exposes
 Modbus TCP at all - see
