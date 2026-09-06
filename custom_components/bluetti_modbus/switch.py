@@ -101,7 +101,7 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
 
     async def _async_write(self, value: int) -> None:
         try:
-            await self.coordinator.device.write(self._field_name, value)
+            await self.coordinator.async_write(self._field_name, value)
         except ModbusError as err:
             # Real-world log: a raw ModbusError left to propagate out of a
             # service call becomes an opaque "unknown_error" toast in the
