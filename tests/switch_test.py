@@ -57,23 +57,23 @@ class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):
 class TestAsyncTurnOnOff(unittest.IsolatedAsyncioTestCase):
     async def test_turn_on_writes_1_to_the_device(self):
         switch = _switch("ac_o_switch")
-        switch.coordinator.device.write = AsyncMock()
+        switch.coordinator.async_write = AsyncMock()
 
         await switch.async_turn_on()
 
-        switch.coordinator.device.write.assert_awaited_once_with("ac_o_switch", 1)
+        switch.coordinator.async_write.assert_awaited_once_with("ac_o_switch", 1)
 
     async def test_turn_off_writes_0_to_the_device(self):
         switch = _switch("ac_o_switch")
-        switch.coordinator.device.write = AsyncMock()
+        switch.coordinator.async_write = AsyncMock()
 
         await switch.async_turn_off()
 
-        switch.coordinator.device.write.assert_awaited_once_with("ac_o_switch", 0)
+        switch.coordinator.async_write.assert_awaited_once_with("ac_o_switch", 0)
 
     async def test_turn_on_optimistically_updates_is_on(self):
         switch = _switch("ac_o_switch")
-        switch.coordinator.device.write = AsyncMock()
+        switch.coordinator.async_write = AsyncMock()
 
         await switch.async_turn_on()
 
@@ -82,7 +82,7 @@ class TestAsyncTurnOnOff(unittest.IsolatedAsyncioTestCase):
 
     async def test_turn_off_optimistically_updates_is_on(self):
         switch = _switch("ac_o_switch")
-        switch.coordinator.device.write = AsyncMock()
+        switch.coordinator.async_write = AsyncMock()
 
         await switch.async_turn_off()
 
@@ -96,7 +96,7 @@ class TestAsyncTurnOnOff(unittest.IsolatedAsyncioTestCase):
         # message - this is what HA's own service-call handling expects an
         # entity to raise instead.
         switch = _switch("g_i_switch")
-        switch.coordinator.device.write = AsyncMock(
+        switch.coordinator.async_write = AsyncMock(
             side_effect=ModbusProtocolError("write_register(57009, 0): Expected response to match request")
         )
 

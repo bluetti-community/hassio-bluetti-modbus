@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 from typing import Any
@@ -64,6 +65,18 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             config.port,
             config.dev_type,
         )
+        # Confirmed on real hardware: a switch/number write landing while the
+        # periodic poll below is mid-flight can come back as
+        # ModbusProtocolError("Expected response to match request") - not
+        # because the write was rejected (the official BLUETTI app shows the
+        # new value took effect regardless), but because this device's
+        # Modbus TCP stack is fragile under overlapping requests on the same
+        # connection (see this class's own update_interval comment) and
+        # returns a response that doesn't match either request. Serializing
+        # every read and write through this lock means the device only ever
+        # sees one request in flight at a time, regardless of what HA
+        # schedules concurrently.
+        self._io_lock = asyncio.Lock()
         # Balco260 only - BC260 packs beyond the first, built lazily once
         # d_num_battery_packs is known from the main device's own read, keyed
         # by pack number (2..MAX_BATTERY_PACKS). Pack 1's data already comes
@@ -79,15 +92,26 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def device(self) -> AC500 | Balco260 | EP2000 | SMeter:
-        """The underlying bluetti_modbus_lib device - write() lives here."""
+        """The underlying bluetti_modbus_lib device - for reading fields.
+
+        Not for writing - call async_write() instead of device.write()
+        directly, so a write is serialized against the periodic poll below
+        via self._io_lock (see its own comment in __init__).
+        """
         return self._client.device
+
+    async def async_write(self, field_name: str, value: int) -> None:
+        """Write a single field, serialized against the periodic poll."""
+        async with self._io_lock:
+            await self.device.write(field_name, value)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
         try:
-            data = await self._client.read()
-            result = {k: v for k, v in [[d.name, d.value] for d in data]}
-            await self._async_update_battery_packs(result)
+            async with self._io_lock:
+                data = await self._client.read()
+                result = {k: v for k, v in [[d.name, d.value] for d in data]}
+                await self._async_update_battery_packs(result)
         except ModbusError as err:
             # bluetti-modbus-lib already retries once on transient
             # ACKNOWLEDGE/SERVER_DEVICE_BUSY and corrupted/timed-out

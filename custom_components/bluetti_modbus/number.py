@@ -103,7 +103,7 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Write the new value to the device."""
         try:
-            await self.coordinator.device.write(self._field_name, int(value))
+            await self.coordinator.async_write(self._field_name, int(value))
         except ModbusError as err:
             # See switch.py's _async_write for why this is HomeAssistantError,
             # not a bare propagated exception - a raw ModbusError left to

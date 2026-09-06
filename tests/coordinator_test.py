@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -89,6 +90,50 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         self.assertIs(coordinator.device, client_cls.return_value.device)
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_async_write_calls_device_write(self, client_cls):
+        client_cls.return_value.device.write = AsyncMock()
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        await coordinator.async_write("b_soc_low", 42)
+
+        client_cls.return_value.device.write.assert_awaited_once_with("b_soc_low", 42)
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_write_waits_for_an_in_flight_poll_to_finish(self, client_cls):
+        # Confirmed on real hardware: a write landing while the periodic
+        # poll is mid-flight can come back as ModbusProtocolError("Expected
+        # response to match request") - not because the device rejects the
+        # write (the official BLUETTI app shows the new value took effect
+        # regardless), but because this device's Modbus TCP stack is
+        # fragile under overlapping requests on the same connection.
+        # Serializing every read and write through the same lock means the
+        # device only ever sees one request in flight at a time.
+        read_started = asyncio.Event()
+        release_read = asyncio.Event()
+
+        async def slow_read():
+            read_started.set()
+            await release_read.wait()
+            return []
+
+        client_cls.return_value.read = slow_read
+        client_cls.return_value.device.write = AsyncMock()
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        update_task = asyncio.ensure_future(coordinator._async_update_data())
+        await read_started.wait()
+
+        write_task = asyncio.ensure_future(coordinator.async_write("ac_o_switch", 1))
+        await asyncio.sleep(0)
+        self.assertFalse(client_cls.return_value.device.write.called)
+
+        release_read.set()
+        await update_task
+        await write_task
+
+        client_cls.return_value.device.write.assert_awaited_once_with("ac_o_switch", 1)
 
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_aclose_closes_the_underlying_client(self, client_cls):

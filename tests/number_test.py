@@ -64,15 +64,15 @@ class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):
 class TestAsyncSetNativeValue(unittest.IsolatedAsyncioTestCase):
     async def test_writes_the_value_to_the_device(self):
         number = _number("b_soc_low")
-        number.coordinator.device.write = AsyncMock()
+        number.coordinator.async_write = AsyncMock()
 
         await number.async_set_native_value(42.0)
 
-        number.coordinator.device.write.assert_awaited_once_with("b_soc_low", 42)
+        number.coordinator.async_write.assert_awaited_once_with("b_soc_low", 42)
 
     async def test_optimistically_updates_native_value(self):
         number = _number("b_soc_low")
-        number.coordinator.device.write = AsyncMock()
+        number.coordinator.async_write = AsyncMock()
 
         await number.async_set_native_value(42.0)
 
@@ -84,7 +84,7 @@ class TestAsyncSetNativeValue(unittest.IsolatedAsyncioTestCase):
         # propagate out of a service call becomes an opaque "unknown_error"
         # toast in the frontend instead of a readable message.
         number = _number("b_soc_low")
-        number.coordinator.device.write = AsyncMock(
+        number.coordinator.async_write = AsyncMock(
             side_effect=ModbusProtocolError("write_register(57016, 42): Expected response to match request")
         )
 
