@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import struct
 from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from modbus_connection.exceptions import ModbusError
+from modbus_connection.exceptions import ModbusError, ModbusProtocolError
 
 from .const import INDIVIDUAL_BC260_PACKS_CONFIRMED
 from .types import FullDeviceConfig
@@ -24,6 +25,9 @@ from .vendor.bluetti_modbus_lib import (
     battery_pack,
 )
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
+
+# Modbus function code 0x06, "Write Single Register" - see _write_actually_succeeded.
+_WRITE_SINGLE_REGISTER_FUNCTION_CODE = 6
 
 
 class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -103,7 +107,47 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def async_write(self, field_name: str, value: int) -> None:
         """Write a single field, serialized against the periodic poll."""
         async with self._io_lock:
-            await self.device.write(field_name, value)
+            try:
+                await self.device.write(field_name, value)
+            except ModbusProtocolError as err:
+                if not self._write_actually_succeeded(err, value):
+                    raise
+                # Confirmed real-hardware BLUETTI firmware bug, reported
+                # upstream: a Write Single Register confirmation with the
+                # right function code and value, but a corrupted address (a
+                # value with no relation to any real Balco260 register,
+                # different on every write - looks like an unrelated
+                # internal value leaking into that field). The official
+                # BLUETTI app independently confirmed the write actually
+                # applies correctly both times this was captured - only the
+                # confirmation itself is wrong. Log it rather than silently
+                # dropping it, so this stays visible if it ever turns out to
+                # be broader than currently understood.
+                self.logger.warning(
+                    "Write to %s: device confirmation had a mismatched "
+                    "address (known BLUETTI firmware bug, function code and "
+                    "value both came back correct) - treating as successful. %s",
+                    field_name,
+                    err,
+                )
+
+    @staticmethod
+    def _write_actually_succeeded(err: ModbusProtocolError, value: int) -> bool:
+        """True if err is the confirmed BLUETTI firmware bug: a Write Single
+        Register confirmation with the right function code and value, but a
+        corrupted address - not a real failure, see async_write's own
+        comment. Anything else (a genuinely different value or function
+        code, or a response shaped unlike this specific bug) is a real
+        failure and must still raise.
+        """
+        cause = err.__cause__
+        response = getattr(cause, "response_bytes", None)
+        if not isinstance(response, bytes) or len(response) != 5:
+            return False
+        function_code: int
+        echoed_value: int
+        function_code, _address, echoed_value = struct.unpack(">BHH", response)
+        return function_code == _WRITE_SINGLE_REGISTER_FUNCTION_CODE and echoed_value == value
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
