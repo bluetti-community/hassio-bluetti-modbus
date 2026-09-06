@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 11
+_CURRENT_VERSION = 12
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -183,17 +183,27 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     under this entry rather than enumerating field names, unlike every
     step above.
 
-    No 11 -> 12 step: entity unique_id was refined once more after this -
-    preferring a real device serial number over entry_id where the device
-    itself reports one over Modbus, per HA's own documented unique_id
-    guidance (entry_id is meant as a last resort - see _unique_id_for()'s
-    own docstring). That reconciliation can't live here, though - unlike
-    every step above, it needs a live device read to know a serial, and
-    this function only ever runs before the coordinator's first refresh.
-    See _unique_id_for()
-    instead, called every time an entity is constructed (always after that
-    first refresh), self-healing and idempotent rather than a one-time
-    versioned step.
+    11 -> 12: d_serial ("Inverter SN") replaces d_iot_serial ("IoT SN") as
+    the main device's own serial_number/unique_id identity - reversing the
+    9 -> 10 step above, now that BLUETTI support has confirmed by email
+    (2026-09-06) that d_serial is "the complete device serial number" (the
+    official app's own primary "Numéro de série" field is exactly the model
+    name prefixed to this register's value; d_iot_serial is what the app
+    itself labels as the secondary "Numéro de série carte de communication"
+    - see _modbus_identity()'s own docstring). d_iot_serial becomes a plain
+    sensor for the first time, same treatment the app gives it.
+
+    Unlike every step above, this can't rename entities in place: this
+    function has no live coordinator read, so it can't reconstruct the
+    *old*, already-serial-based unique_id (d_iot_serial's value) any more
+    than it could compute the new one - _unique_id_for()'s own self-healing
+    rename only ever recognizes the entry_id-based legacy form (from before
+    any serial was known at all), not a different-serial-based one. Every
+    entity on affected devices is removed outright instead, letting the
+    normal setup path recreate them fresh under the new scheme - a
+    deliberate breaking change, called out prominently in this release's
+    notes (any automation/dashboard referencing the old entity_ids needs
+    updating).
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -331,6 +341,21 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 )
         version = 11
 
+    if version == 11:
+        # d_serial replaces d_iot_serial as the main device's identity
+        # source (see this function's own docstring and _modbus_identity())
+        # - every entity's unique_id on Balco260/EP2000 is derived from it
+        # (see _unique_id_for()), so this isn't just about d_serial's own
+        # entity. No live coordinator read here means no way to recompute
+        # the old (d_iot_serial-based) unique_id to rename from - wipe every
+        # entity on affected devices instead and let normal setup recreate
+        # them fresh under the new scheme. S Meter never declares either
+        # field, so it's untouched.
+        if config is not None and config.dev_type in ("balco260", "ep2000"):
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                registry.async_remove(entity_entry.entity_id)
+        version = 12
+
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
     else:
@@ -354,21 +379,26 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None, str | None]:
-    """(serial_number, sw_version) from d_iot_serial/d_iot_ver/d_ver_arm/
+    """(serial_number, sw_version) from d_serial/d_iot_ver/d_ver_arm/
     d_ver_dsp, if read yet.
 
-    d_iot_serial (the IoT/communication module's own serial number, per the
-    official register spec's "IoT SN" abbreviation) is what
-    DeviceInfo.serial_number uses - not d_serial (the inverter's own
-    "Inverter SN") or b_serial (the battery's own "Pack SN", now the battery
-    sub-device's own identity - see battery_device_info()). Unlike bluetti-
-    home-assistant (which discards every serial - a cloud-known one already
-    covers that role there), this integration has no such other source, so
-    one of these three has to be picked as "the" serial; d_iot_serial was
-    chosen as the closest match to "the unit itself", confirmed against real
-    hardware and the user's own installation. (None, None) before the
-    coordinator's first successful refresh, or if no coordinator is given
-    (e.g. S Meter, which doesn't declare these fields at all).
+    d_serial (the inverter's own serial number, per the official register
+    spec's "Inverter SN" abbreviation) is what DeviceInfo.serial_number
+    uses - not d_iot_serial (the IoT/communication module's own "IoT SN")
+    or b_serial (the battery's own "Pack SN", now the battery sub-device's
+    own identity - see battery_device_info()). BLUETTI support confirmed by
+    email (2026-09-06) that d_serial is "the complete device serial
+    number": the official app's own primary, unqualified "Numéro de série"
+    field (distinct from its secondary "Numéro de série carte de
+    communication", which is d_iot_serial) is exactly the device model name
+    prefixed to this register's decoded value (e.g.
+    "Balco2602611110033917" - the model name isn't repeated here since
+    DeviceInfo.model already carries it separately). d_iot_serial previously
+    held this slot (see git history) - demoted to a plain sensor now,
+    matching how the app itself treats it as secondary rather than dropping
+    it. (None, None) before the coordinator's first successful refresh, or
+    if no coordinator is given (e.g. S Meter, which doesn't declare these
+    fields at all).
 
     b_ver_1 (BMS, the battery's own firmware) is deliberately not here - it
     moved to battery_device_info()'s own sw_version, since BMS is the
@@ -377,7 +407,7 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     if coordinator is None:
         return None, None
     data = coordinator.data or {}
-    serial = data.get("d_iot_serial")
+    serial = data.get("d_serial")
     iot = data.get("d_iot_ver")
     arm = data.get("d_ver_arm")
     dsp = data.get("d_ver_dsp")
@@ -433,6 +463,16 @@ def _unique_id_for(
     in place so it keeps its history instead of getting a second,
     disconnected entity_id. A no-op once already reconciled, or for as long
     as no serial is available yet.
+
+    The main device's own identity source switched from d_iot_serial to
+    d_serial (see _modbus_identity()'s own docstring for why) - this
+    self-healing rename only ever looks for the *entry_id-based* legacy
+    unique_id, not a *different-serial-based* one, so it can't seamlessly
+    carry over an already-reconciled d_iot_serial-based unique_id to the new
+    d_serial-based one. The 11 -> 12 migration handles that transition by
+    removing every entity on affected devices outright rather than
+    computing an unknowable-offline old unique_id - a deliberate, called-out
+    breaking change (see that step's own comment and this release's notes).
     """
     data = coordinator.data or {}
     if pack_num is not None:
@@ -440,7 +480,7 @@ def _unique_id_for(
     elif response_key in PACK_INFO_FIELDS:
         serial = data.get("b_serial")
     else:
-        serial = data.get("d_iot_serial")
+        serial = data.get("d_serial")
     identity = str(serial) if serial is not None else coordinator.config_entry.entry_id
 
     name = device_info.get("name")

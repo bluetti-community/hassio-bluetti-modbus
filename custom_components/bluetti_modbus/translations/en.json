@@ -437,8 +437,8 @@
       "d_iot_model": {
         "name": "IoT Module Model"
       },
-      "d_serial": {
-        "name": "Inverter Serial Number"
+      "d_iot_serial": {
+        "name": "IoT Serial Number"
       },
       "pack_b_type": {
         "name": "Battery Type"

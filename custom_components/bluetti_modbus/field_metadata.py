@@ -200,16 +200,19 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "d_inverter_3_v": _VOLTAGE,
     "d_inverter_phase_count": _DIAGNOSTIC,
     "d_iot_model": _DIAGNOSTIC,
-    # d_iot_serial isn't here - it's the main DeviceInfo.serial_number
-    # instead (see const.py's FIELDS_SHOWN_VIA_DEVICE_INFO). d_iot_ver isn't
-    # here either - it joins ARM/DSP in DeviceInfo.sw_version, same set.
+    # d_iot_serial ("IoT SN" - the communication/IoT module's own identity,
+    # a third, distinct serial from d_serial and b_serial, the battery's
+    # own) is no longer "the" device serial (see d_serial below) - the app
+    # itself treats it as secondary, not absent, so it's a plain sensor
+    # here rather than being dropped. d_iot_ver isn't here - it joins
+    # ARM/DSP in DeviceInfo.sw_version, same set as d_serial below.
+    "d_iot_serial": _DIAGNOSTIC,
     "d_phase_count": _DIAGNOSTIC,
     "d_self_consumption": _MEASUREMENT,
-    # d_serial ("Inverter SN" - a third, distinct serial from d_iot_serial
-    # and b_serial, the battery's own, confirmed against the official
-    # register spec's own abbreviations) is no longer "the" device serial,
-    # but it's real data - a plain sensor for the first time.
-    "d_serial": _DIAGNOSTIC,
+    # d_serial isn't here - it's the main DeviceInfo.serial_number instead
+    # (see const.py's FIELDS_SHOWN_VIA_DEVICE_INFO) - BLUETTI support
+    # confirmed by email it's "the complete device serial number", the
+    # official app's own primary "Numéro de série" field.
     "g_1_i_c": _CURRENT,
     "g_1_i_p": _POWER,
     "g_1_i_v": _VOLTAGE,
