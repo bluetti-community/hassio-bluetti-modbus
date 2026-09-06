@@ -43,6 +43,26 @@ class TestMetadataFor(unittest.TestCase):
         self.assertEqual(metadata.category, EntityCategory.DIAGNOSTIC)
         self.assertFalse(metadata.enabled_by_default)
 
+    def test_local_inverter_fields_are_disabled_by_default(self):
+        # Real-hardware testing (2026-09-06) found these 5 "(Single)"/
+        # per-inverter Balco260 fields permanently read a clean, error-free
+        # 0, while their _total/phase-1 counterparts (same measurement)
+        # demonstrably changed in real time on the same live device - not a
+        # width/sign decode bug, since both registers of each pair match
+        # what the official spec declares. Flagged with BLUETTI support, not
+        # yet confirmed either way - disabled rather than removed, since a
+        # genuinely multi-inverter Balco260 might need them if this turns
+        # out to work there.
+        for field in (
+            "ac_o_e_local",
+            "ac_o_p_local",
+            "g_i_e_local",
+            "g_i_p_local",
+            "g_o_e_local",
+        ):
+            metadata = metadata_for(field)
+            self.assertFalse(metadata.enabled_by_default, field)
+
     def test_switch_field_has_no_metadata(self):
         metadata = metadata_for("ac_o_switch")
         self.assertIsNone(metadata.device_class)
