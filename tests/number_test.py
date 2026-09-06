@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from homeassistant.exceptions import HomeAssistantError
+from modbus_connection.exceptions import ModbusProtocolError
+
 from custom_components.bluetti_modbus.number import (
     BluettiNumberEntity,
     async_setup_entry,
@@ -75,6 +78,22 @@ class TestAsyncSetNativeValue(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(number.native_value, 42.0)
         number.async_write_ha_state.assert_called_once()
+
+    async def test_write_failure_raises_homeassistant_error(self):
+        # See switch.py's _async_write for why: a raw ModbusError left to
+        # propagate out of a service call becomes an opaque "unknown_error"
+        # toast in the frontend instead of a readable message.
+        number = _number("b_soc_low")
+        number.coordinator.device.write = AsyncMock(
+            side_effect=ModbusProtocolError("write_register(57016, 42): Expected response to match request")
+        )
+
+        with self.assertRaises(HomeAssistantError):
+            await number.async_set_native_value(42.0)
+
+        # Not applied - the device never confirmed the write.
+        self.assertIsNone(number.native_value)
+        number.async_write_ha_state.assert_not_called()
 
 
 class TestHandleCoordinatorUpdate(unittest.TestCase):

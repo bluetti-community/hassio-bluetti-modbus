@@ -7,9 +7,11 @@ import logging
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from modbus_connection.exceptions import ModbusError
 
 from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
@@ -67,6 +69,11 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
         super().__init__(coordinator)
         self._field_name = field_name
         self._attr_device_info = device_info
+        # HA's own Entity._attr_device_info is typed `DeviceInfo | None` -
+        # kept separately, narrowed to the always-real value this class is
+        # constructed with, so _async_write below doesn't need a None check
+        # for something that's never actually None here.
+        self._device_name = device_info.get("name")
         self._attr_translation_key = field_name
         self._attr_unique_id = _unique_id_for(coordinator, device_info, field_name, "switch")
 
@@ -93,7 +100,20 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
         await self._async_write(0)
 
     async def _async_write(self, value: int) -> None:
-        await self.coordinator.device.write(self._field_name, value)
+        try:
+            await self.coordinator.device.write(self._field_name, value)
+        except ModbusError as err:
+            # Real-world log: a raw ModbusError left to propagate out of a
+            # service call becomes an opaque "unknown_error" toast in the
+            # frontend, with a full traceback in the log for what's often
+            # just a transient Modbus write failure - the same class of
+            # error _async_update_data (coordinator.py) already turns into a
+            # clean UpdateFailed for reads. HomeAssistantError is what HA's
+            # own service-call handling expects an entity to raise instead,
+            # to show the user a readable message.
+            raise HomeAssistantError(
+                f"Failed to write to {self._device_name} {self._field_name}: {err}"
+            ) from err
         # Optimistic - the next poll (30s) reconciles with what the device
         # actually accepted, same as every other write-capable HA entity.
         self._attr_is_on = bool(value)

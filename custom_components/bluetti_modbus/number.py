@@ -7,9 +7,11 @@ import logging
 from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from modbus_connection.exceptions import ModbusError
 
 from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
@@ -75,6 +77,11 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
         super().__init__(coordinator)
         self._field_name = field_name
         self._attr_device_info = device_info
+        # HA's own Entity._attr_device_info is typed `DeviceInfo | None` -
+        # kept separately, narrowed to the always-real value this class is
+        # constructed with, so async_set_native_value below doesn't need a
+        # None check for something that's never actually None here.
+        self._device_name = device_info.get("name")
         self._attr_translation_key = field_name
         self._attr_unique_id = _unique_id_for(coordinator, device_info, field_name, "number")
         self._attr_native_min_value, self._attr_native_max_value = _FIELD_BOUNDS[field_name]
@@ -95,7 +102,17 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         """Write the new value to the device."""
-        await self.coordinator.device.write(self._field_name, int(value))
+        try:
+            await self.coordinator.device.write(self._field_name, int(value))
+        except ModbusError as err:
+            # See switch.py's _async_write for why this is HomeAssistantError,
+            # not a bare propagated exception - a raw ModbusError left to
+            # propagate out of a service call becomes an opaque
+            # "unknown_error" toast in the frontend instead of a readable
+            # message.
+            raise HomeAssistantError(
+                f"Failed to write to {self._device_name} {self._field_name}: {err}"
+            ) from err
         # Optimistic - the next poll (30s) reconciles with what the device
         # actually accepted, same as every other write-capable HA entity.
         self._attr_native_value = value
