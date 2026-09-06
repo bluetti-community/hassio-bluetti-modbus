@@ -2,6 +2,8 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.components.switch import SwitchDeviceClass
+from homeassistant.exceptions import HomeAssistantError
+from modbus_connection.exceptions import ModbusProtocolError
 
 from custom_components.bluetti_modbus.switch import (
     BluettiSwitchEntity,
@@ -86,6 +88,24 @@ class TestAsyncTurnOnOff(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(switch.is_on)
         switch.async_write_ha_state.assert_called_once()
+
+    async def test_write_failure_raises_homeassistant_error(self):
+        # Real-world log: a raw ModbusError left to propagate out of a
+        # service call becomes an opaque "unknown_error" toast in the
+        # frontend, with a full traceback in the log, instead of a readable
+        # message - this is what HA's own service-call handling expects an
+        # entity to raise instead.
+        switch = _switch("g_i_switch")
+        switch.coordinator.device.write = AsyncMock(
+            side_effect=ModbusProtocolError("write_register(57009, 0): Expected response to match request")
+        )
+
+        with self.assertRaises(HomeAssistantError):
+            await switch.async_turn_off()
+
+        # Not applied - the device never confirmed the write.
+        self.assertIsNone(switch.is_on)
+        switch.async_write_ha_state.assert_not_called()
 
 
 class TestHandleCoordinatorUpdate(unittest.TestCase):
