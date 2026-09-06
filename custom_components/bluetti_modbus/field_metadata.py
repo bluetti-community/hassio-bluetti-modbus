@@ -30,12 +30,39 @@ class FieldMetadata:
 
 
 _POWER = FieldMetadata(device_class=SensorDeviceClass.POWER, state_class=SensorStateClass.MEASUREMENT)
+# g_i_p_local/ac_o_p_local (50215/50217, "Each Inverter Information") -
+# real-hardware testing (2026-09-06) found these read a clean, error-free 0
+# permanently, even while their _total/phase-1 counterparts (same
+# measurement) demonstrably changed in real time on the same live device -
+# not an idle-moment coincidence, and not a width/sign decode bug (both
+# registers of each pair read 0 too, matching what the "2 registers"
+# official spec declares). Looks like these specific registers simply
+# aren't populated by this Balco260's firmware, contradicting the spec -
+# flagged with BLUETTI support, not yet confirmed either way. Disabled by
+# default rather than removed: a single-inverter Balco260 (the only kind
+# tested so far) has an exact substitute in the _total/phase-1 fields, but
+# a genuinely multi-inverter one might need the real per-inverter
+# breakdown if this ever turns out to work there.
+_POWER_DISABLED = FieldMetadata(
+    device_class=SensorDeviceClass.POWER,
+    state_class=SensorStateClass.MEASUREMENT,
+    enabled_by_default=False,
+)
 _VOLTAGE = FieldMetadata(device_class=SensorDeviceClass.VOLTAGE, state_class=SensorStateClass.MEASUREMENT)
 _CURRENT = FieldMetadata(device_class=SensorDeviceClass.CURRENT, state_class=SensorStateClass.MEASUREMENT)
 _ENERGY_DIAGNOSTIC = FieldMetadata(
     device_class=SensorDeviceClass.ENERGY,
     state_class=SensorStateClass.TOTAL_INCREASING,
     category=EntityCategory.DIAGNOSTIC,
+)
+# g_i_e_local/g_o_e_local (50223/50225) - same real-hardware finding as
+# _POWER_DISABLED above (a permanent, error-free 0 while the _total
+# counterparts actively accumulate) - see that constant's own comment.
+_ENERGY_DIAGNOSTIC_DISABLED = FieldMetadata(
+    device_class=SensorDeviceClass.ENERGY,
+    state_class=SensorStateClass.TOTAL_INCREASING,
+    category=EntityCategory.DIAGNOSTIC,
+    enabled_by_default=False,
 )
 _DIAGNOSTIC = FieldMetadata(category=EntityCategory.DIAGNOSTIC)
 # The official register spec (55112, "Unix timestamp") has no remark beyond
@@ -160,8 +187,8 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "ac_3_o_c": _CURRENT,
     "ac_3_o_p": _POWER,
     "ac_3_o_v": _VOLTAGE,
-    "ac_o_e_local": _ENERGY_DIAGNOSTIC,
-    "ac_o_p_local": _POWER,
+    "ac_o_e_local": _ENERGY_DIAGNOSTIC_DISABLED,
+    "ac_o_p_local": _POWER_DISABLED,
     "ac_phase_count": _DIAGNOSTIC,
     "b_alarm_portable": _DIAGNOSTIC,
     "b_alarm_residential": _DIAGNOSTIC,
@@ -222,9 +249,9 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "g_3_i_c": _CURRENT,
     "g_3_i_p": _POWER,
     "g_3_i_v": _VOLTAGE,
-    "g_i_e_local": _ENERGY_DIAGNOSTIC,
-    "g_i_p_local": _POWER,
-    "g_o_e_local": _ENERGY_DIAGNOSTIC,
+    "g_i_e_local": _ENERGY_DIAGNOSTIC_DISABLED,
+    "g_i_p_local": _POWER_DISABLED,
+    "g_o_e_local": _ENERGY_DIAGNOSTIC_DISABLED,
     # pv_1-4_i_type: an enum (0/1/2/3 = reserve/car/adapter/other, 100/101 =
     # DC PV/AC PV per the official register spec's remark column - not
     # sequential) - bluetti_modbus_lib doesn't decode it yet, so this reads
