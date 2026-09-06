@@ -81,6 +81,23 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(create_entry.call_args.kwargs["title"], "S Meter")
 
+    async def test_creates_entry_titled_with_the_plain_product_name_ac500(self):
+        # AC500 (bluetti_modbus_lib 0.15.0+): community-confirmed against
+        # real hardware, not yet BLUETTI-support-confirmed like the other
+        # two device types - selectable in the dropdown regardless.
+        flow = _flow()
+        with (
+            _patched_client(device_values={}),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_create_entry", return_value="entry") as create_entry,
+        ):
+            await flow.async_step_user(
+                {"address": "10.2.1.60", "port": 502, "type": "ac500"}
+            )
+
+        self.assertEqual(create_entry.call_args.kwargs["title"], "AC500")
+
     async def test_defaults_port_and_type_when_missing(self):
         flow = _flow()
         with (

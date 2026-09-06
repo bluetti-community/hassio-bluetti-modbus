@@ -14,6 +14,7 @@ from modbus_connection.exceptions import ModbusError
 from .const import INDIVIDUAL_BC200_PACKS_CONFIRMED
 from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
+    AC500,
     EP2000,
     MAX_BATTERY_PACKS,
     Balco260,
@@ -77,7 +78,7 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._aggregate_summary: Balco260 | None = None
 
     @property
-    def device(self) -> Balco260 | EP2000 | SMeter:
+    def device(self) -> AC500 | Balco260 | EP2000 | SMeter:
         """The underlying bluetti_modbus_lib device - write() lives here."""
         return self._client.device
 

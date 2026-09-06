@@ -109,7 +109,16 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # (both two words) - the stored values stay
                         # "balco260"/"smeter" (match dev_type elsewhere),
                         # only the dropdown's display labels differ.
+                        #
+                        # AC500 (bluetti_modbus_lib 0.15.0+): community-
+                        # confirmed against real hardware
+                        # (bluetti-official/bluetti-modbus-tcp-slave#5,
+                        # bluetti-registers#13), not yet BLUETTI-support-
+                        # confirmed like the other two - a smaller register
+                        # set (no BC260 expansion-pack support yet, see
+                        # bluetti_modbus_lib's own README).
                         options=[
+                            SelectOptionDict(value="ac500", label="AC500"),
                             SelectOptionDict(value="balco260", label="Balco 260"),
                             SelectOptionDict(value="smeter", label="S Meter"),
                         ],
