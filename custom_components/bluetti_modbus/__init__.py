@@ -370,6 +370,14 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     coordinator's first successful refresh, or if no coordinator is given
     (e.g. S Meter, which doesn't declare these fields at all).
 
+    AC500 exception: it doesn't declare d_iot_serial/d_iot_ver at all (real
+    hardware confirmed these fields are simply absent, see
+    bluetti-official/bluetti-modbus-tcp-slave#5) but does declare d_serial -
+    used as its identity source instead, with d_serial itself excluded from
+    sensor.py's plain-sensor handling for this device only (see
+    FIELDS_NOT_SHOWN in const.py). Not a change to Balco260/EP2000's own
+    choice above.
+
     b_ver_1 (BMS, the battery's own firmware) is deliberately not here - it
     moved to battery_device_info()'s own sw_version, since BMS is the
     battery's firmware, not the main unit's.
@@ -377,18 +385,26 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     if coordinator is None:
         return None, None
     data = coordinator.data or {}
-    serial = data.get("d_iot_serial")
+    if coordinator.config.dev_type == "ac500":
+        serial = data.get("d_serial")
+    else:
+        serial = data.get("d_iot_serial")
     iot = data.get("d_iot_ver")
     arm = data.get("d_ver_arm")
     dsp = data.get("d_ver_dsp")
     serial_number = str(serial) if serial is not None else None
-    sw_version = None
-    if iot is not None or arm is not None or dsp is not None:
-        sw_version = (
-            f"IoT v{iot if iot is not None else '?'}, "
-            f"ARM v{arm if arm is not None else '?'}, "
-            f"DSP v{dsp if dsp is not None else '?'}"
-        )
+    # Only a field this device actually declares gets a segment - omitted
+    # entirely otherwise, rather than a permanent "v?" placeholder (real
+    # hardware regression: AC500 has no d_iot_ver at all, so the old
+    # always-3-segments format showed "IoT v?" on every single poll).
+    segments = []
+    if iot is not None:
+        segments.append(f"IoT v{iot}")
+    if arm is not None:
+        segments.append(f"ARM v{arm}")
+    if dsp is not None:
+        segments.append(f"DSP v{dsp}")
+    sw_version = ", ".join(segments) if segments else None
     return serial_number, sw_version
 
 

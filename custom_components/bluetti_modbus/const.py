@@ -43,14 +43,41 @@ FIELDS_SHOWN_VIA_BINARY_SENSOR = {"d_status"}
 # handling for a device where it isn't, so nothing is lost there.
 FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
 
-# ac_o_switch/g_i_switch/g_o_switch (57001/57009/57010): AC output, grid
-# charging, and grid feed-in controls - genuinely user-actuated switches, not
-# readings. Routed to switch.py instead of sensor.py, but only where
-# bluetti_modbus_lib actually marks the field writable=True (currently
-# Balco260 only - see that library's import.py), same gating as
-# FIELDS_SHOWN_VIA_NUMBER below - sensor.py falls back to its normal
-# read-only handling for a device where it isn't, so nothing is lost there.
-FIELDS_SHOWN_VIA_SWITCH = {"ac_o_switch", "g_i_switch", "g_o_switch"}
+# ac_o_switch/g_i_switch/g_o_switch (57001/57009/57010, Balco260) and
+# dc_o_switch (57005, AC500 only) - AC output, grid charging, grid feed-in,
+# and DC output controls - genuinely user-actuated switches, not readings.
+# Routed to switch.py instead of sensor.py, but only where
+# bluetti_modbus_lib actually marks the field writable=True (Balco260's
+# ac_o_switch/g_i_switch/g_o_switch, and - each independently confirmed on
+# real hardware by a different tester, see
+# bluetti-official/bluetti-modbus-tcp-slave#5 - AC500's ac_o_switch/
+# dc_o_switch; AC500's own g_i_switch is confirmed non-functional there
+# instead, see FIELDS_NOT_SHOWN below), same gating as FIELDS_SHOWN_VIA_NUMBER
+# below - sensor.py falls back to its normal read-only handling for a device
+# where a name here isn't writable, so nothing is lost there.
+FIELDS_SHOWN_VIA_SWITCH = {"ac_o_switch", "dc_o_switch", "g_i_switch", "g_o_switch"}
+
+# Read, but excluded from every platform outright, per device type - not
+# shown as a sensor, switch, or anything else.
+#
+# ac500 / g_i_switch (57009, same address as Balco260's, a real switch
+# there): reads a clean, error-free 1 regardless of state on real AC500
+# hardware, per two independent testers
+# (bluetti-official/bluetti-modbus-tcp-slave#5,
+# bluetti-community/bluetti-registers#13: "the AC500 does not have Grid
+# Input/output switches") - a stuck, always-1 reading carries no real
+# information, so it doesn't even earn a diagnostic sensor.
+#
+# ac500 / d_serial: AC500's own identity source (see _modbus_identity() in
+# __init__.py) - excluded here the same way FIELDS_SHOWN_VIA_DEVICE_INFO
+# excludes it for Balco260/EP2000, but AC500-only: this beta branch predates
+# the d_iot_serial -> d_serial identity migration those two already went
+# through on main, and backporting that migration wholesale here (rather
+# than this narrow, AC500-only exception) is out of scope for testing this
+# device specifically.
+FIELDS_NOT_SHOWN: dict[str, frozenset[str]] = {
+    "ac500": frozenset({"g_i_switch", "d_serial"}),
+}
 
 # d_ver_arm/d_ver_dsp/d_iot_ver/d_iot_serial (Balco260/EP2000 only - S
 # Meter's address range doesn't include these): the main unit's own

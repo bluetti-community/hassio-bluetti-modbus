@@ -138,6 +138,43 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             "IoT v50012.01.19, ARM v50011.01.12, DSP v50014.01.10",
         )
 
+    @patch("custom_components.bluetti_modbus.dr")
+    @patch("custom_components.bluetti_modbus.PollingCoordinator")
+    async def test_ac500_uses_d_serial_and_omits_the_missing_iot_segment(
+        self, coordinator_cls, dr_module
+    ):
+        # AC500 doesn't declare d_iot_serial/d_iot_ver at all (real hardware
+        # confirmed, see _modbus_identity()'s own docstring) - d_serial is
+        # its identity source instead, and the sw_version string must not
+        # carry a permanent "IoT v?" placeholder for a field this device
+        # never reports (the exact regression this fixes).
+        coordinator = MagicMock(
+            config=MagicMock(dev_type="ac500"),
+            data={
+                "d_serial": 9876543210987,
+                "d_ver_arm": "50011.01.12",
+                "d_ver_dsp": "50014.01.10",
+            },
+        )
+        coordinator.async_config_entry_first_refresh = AsyncMock()
+        coordinator_cls.return_value = coordinator
+        device_registry = MagicMock()
+        dr_module.async_get.return_value = device_registry
+
+        entry = MagicMock()
+        entry.entry_id = "entry1"
+        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "ac500"}
+
+        hass = MagicMock()
+        hass.data = {}
+        hass.config_entries.async_forward_entry_setups = AsyncMock()
+
+        await async_setup_entry(hass, entry)
+
+        _, kwargs = device_registry.async_get_or_create.call_args
+        self.assertEqual(kwargs["serial_number"], "9876543210987")
+        self.assertEqual(kwargs["sw_version"], "ARM v50011.01.12, DSP v50014.01.10")
+
     async def test_setup_with_invalid_entry_data_returns_false(self):
         entry = MagicMock()
         entry.data = {}
@@ -264,6 +301,11 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 "sensor.my_device_ac_o_switch",
                 "sensor.my_device_g_i_switch",
                 "sensor.my_device_g_o_switch",
+                # dc_o_switch is AC500-only hardware, but the migration code
+                # iterates FIELDS_SHOWN_VIA_SWITCH regardless of dev_type (see
+                # __init__.py) and this test's registry mock resolves every
+                # entity_id unconditionally, so it shows up here too.
+                "sensor.my_device_dc_o_switch",
                 "sensor.my_device_b_ver_1",
                 "sensor.my_device_d_iot_ver",
                 "sensor.my_device_d_iot_serial",
@@ -309,7 +351,13 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # at version 6 with ac_o_switch/g_i_switch/g_o_switch still
         # registered as plain sensors. Cascading 6 -> 10 also hits the
         # 7 -> 8, 8 -> 9, and 9 -> 10 steps, same permissive side_effect
-        # picking them up too.
+        # picking them up too. dc_o_switch (AC500-only) is iterated the same
+        # way even for this Balco260 entry - harmless in real use (a
+        # Balco260 entry never has that entity to begin with, so
+        # async_get_entity_id() would return None there), but this test's
+        # permissive side_effect above doesn't distinguish that, matching
+        # what the real migration code actually does: iterate every name in
+        # FIELDS_SHOWN_VIA_SWITCH, regardless of device type.
         registry = MagicMock()
         er_module.async_get.return_value = registry
         registry.async_get_entity_id.side_effect = lambda domain, dom, uid: f"sensor.{uid}"
@@ -324,6 +372,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             removed,
             {
                 "sensor.my_device_ac_o_switch",
+                "sensor.my_device_dc_o_switch",
                 "sensor.my_device_g_i_switch",
                 "sensor.my_device_g_o_switch",
                 "sensor.my_device_b_ver_1",
