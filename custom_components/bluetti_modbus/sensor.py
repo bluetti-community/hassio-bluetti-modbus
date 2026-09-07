@@ -30,6 +30,7 @@ from . import device_info as dev_info
 from .const import (
     DATA_COORDINATOR,
     DOMAIN,
+    FIELDS_NOT_SHOWN,
     FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO,
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
     FIELDS_SHOWN_VIA_DEVICE_INFO,
@@ -144,6 +145,8 @@ async def async_setup_entry(
     assert bluetti_device is not None
     sensor_fields = []
     for f in bluetti_device.get_sensors():
+        if f in FIELDS_NOT_SHOWN:
+            continue
         if f in FIELDS_SHOWN_VIA_BINARY_SENSOR:
             continue
         if f in FIELDS_SHOWN_VIA_DEVICE_INFO:

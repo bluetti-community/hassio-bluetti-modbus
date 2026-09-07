@@ -99,8 +99,8 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "g_o_e_total": _ENERGY_DIAGNOSTIC,
     "pv_ac_e": _ENERGY_DIAGNOSTIC,
     "d_inverter_status": _DIAGNOSTIC,
-    "d_inverter_warning": _DIAGNOSTIC,
-    "d_inverter_fault": _DIAGNOSTIC,
+    # d_inverter_fault/d_inverter_warning are deliberately absent - no entity
+    # is created for them at all, see const.py's FIELDS_NOT_SHOWN.
     "d_inverter_type": _DIAGNOSTIC,
     "g_i_f": FieldMetadata(device_class=SensorDeviceClass.FREQUENCY, state_class=SensorStateClass.MEASUREMENT),
     "pv_1_i_p": _POWER,

@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 12
+_CURRENT_VERSION = 13
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -204,6 +204,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     deliberate breaking change, called out prominently in this release's
     notes (any automation/dashboard referencing the old entity_ids needs
     updating).
+
+    12 -> 13: d_inverter_fault/d_inverter_warning get no entity at all any
+    more (see const.py's FIELDS_NOT_SHOWN for why - the library's enums only
+    decode their zero member, so a real fault reads as "unknown"). Remove
+    the old sensor entities explicitly, once, same as the 2 -> 3, 6 -> 7,
+    7 -> 8 and 8 -> 9 steps - matched here by unique_id suffix, since the
+    11 -> 12 step means those ids now start with a serial this function
+    can't read offline.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -355,6 +363,24 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
                 registry.async_remove(entity_entry.entity_id)
         version = 12
+
+    if version == 12:
+        # d_inverter_fault/d_inverter_warning get no entity at all now (see
+        # const.py's FIELDS_NOT_SHOWN) - remove the ones already registered.
+        # Matched by unique_id suffix rather than rebuilt from the field
+        # name like the 8 -> 9 and 9 -> 10 steps above: since the 11 -> 12
+        # step those ids start with the device's own serial, which this
+        # function can't know without a live read. get_unique_id() slugifies
+        # "{identity} {device name} {field}", so the field name is always
+        # the trailing component. S Meter declares neither field, same as
+        # the 8 -> 9, 9 -> 10 and 11 -> 12 steps above.
+        if config is not None and config.dev_type in ("balco260", "ep2000"):
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.unique_id.endswith(
+                    ("_d_inverter_fault", "_d_inverter_warning")
+                ):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 13
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)

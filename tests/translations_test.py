@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from custom_components.bluetti_modbus.const import (
+    FIELDS_NOT_SHOWN,
     FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO,
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
     FIELDS_SHOWN_VIA_DEVICE_INFO,
@@ -42,6 +43,8 @@ class TestTranslationsCoverAllShownFields(unittest.TestCase):
             device = get_device(dev_type)
             assert device is not None  # _DEV_TYPES are all real device types
             for name in device.field_names():
+                if name in FIELDS_NOT_SHOWN:
+                    continue
                 if name in FIELDS_SHOWN_VIA_BINARY_SENSOR:
                     continue
                 if name in FIELDS_SHOWN_VIA_DEVICE_INFO:
@@ -82,6 +85,8 @@ class TestNoDuplicateSensorNames(unittest.TestCase):
             assert device is not None  # _DEV_TYPES are all real device types
             names_seen: dict[str, str] = {}
             for name in device.field_names():
+                if name in FIELDS_NOT_SHOWN:
+                    continue
                 if name in FIELDS_SHOWN_VIA_BINARY_SENSOR:
                     continue
                 if name in FIELDS_SHOWN_VIA_DEVICE_INFO:

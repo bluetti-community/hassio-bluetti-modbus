@@ -54,6 +54,20 @@ SMETER_PHASE_FIELDS: dict[str, tuple[str, ...]] = {
 # instead of sensor.py, which only handles numeric/enum/string values.
 FIELDS_SHOWN_VIA_BINARY_SENSOR = {"d_status"}
 
+# d_inverter_fault/d_inverter_warning: no entity at all, on any platform.
+# bluetti_modbus_lib's InverterFault/InverterWarning enums only declare
+# their zero member (NoFault = 0 / NoWarning = 0), so a real, non-zero
+# fault or warning code has nothing to decode to - modbus_connection
+# decodes an unrecognized enum value to None, which reaches HA as
+# "unknown". That means these read a steady "No Fault"/"No Warning" right
+# up until something actually goes wrong, and then go blank: worse than
+# absent, since a user watching them would read the blank as a glitch
+# rather than the alarm it really is. Bring them back as binary sensors or
+# proper enum sensors once the library decodes real codes - the same call
+# the Core integration made for the same reason
+# (home-assistant/core#180602's own EXCLUDED_FIELDS).
+FIELDS_NOT_SHOWN = {"d_inverter_fault", "d_inverter_warning"}
+
 # b_soc_low/b_soc_high (57016/57017): battery empty/full SOC thresholds,
 # 0-100% - genuinely user-configurable settings, not readings. Routed to
 # number.py instead of sensor.py, but only where bluetti_modbus_lib actually
