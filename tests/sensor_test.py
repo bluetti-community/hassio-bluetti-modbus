@@ -348,6 +348,48 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_fault_and_warning_fields_get_no_entity_at_all(
+        self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
+    ):
+        # bluetti_modbus_lib's InverterFault/InverterWarning enums only
+        # declare their zero member, so a real fault code decodes to None
+        # and reaches HA as "unknown" - see const.py's FIELDS_NOT_SHOWN.
+        config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+            "name": f"Test Device Phase {phase.upper()}"
+        }
+
+        field = MagicMock(address=50001, unit="W")
+        field.name = "ac_o_p_total"
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = [
+            "d_inverter_fault",
+            "d_inverter_warning",
+            "ac_o_p_total",
+        ]
+        bluetti_device.get_field.side_effect = lambda name: {"ac_o_p_total": field}[name]
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        # Both would raise on get_field (not in the side_effect dict) if
+        # they weren't skipped before ever being looked up.
+        self.assertEqual([s._response_key for s in added], ["ac_o_p_total"])
+
+    @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_writable_b_soc_low_is_skipped_number_py_handles_it(
         self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
     ):

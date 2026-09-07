@@ -64,18 +64,6 @@
           "abnormal_off_grid": "Abnormal Off-Grid"
         }
       },
-      "d_inverter_warning": {
-        "name": "Inverter Warning",
-        "state": {
-          "no_warning": "No Warning"
-        }
-      },
-      "d_inverter_fault": {
-        "name": "Inverter Fault",
-        "state": {
-          "no_fault": "No Fault"
-        }
-      },
       "d_inverter_type": {
         "name": "Inverter Type"
       },
