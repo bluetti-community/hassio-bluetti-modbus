@@ -8,8 +8,8 @@ from decimal import Decimal
 from enum import Enum
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
-    SensorEntity,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -249,8 +249,14 @@ async def async_setup_entry(
     async_add_entities(sensors_to_add)
 
 
-class BluettiSensor(CoordinatorEntity, SensorEntity):
-    """Bluetti universal sensor."""
+class BluettiSensor(CoordinatorEntity, RestoreSensor):
+    """Bluetti universal sensor.
+
+    RestoreSensor (instead of plain SensorEntity) so TOTAL_INCREASING energy
+    counters can restore their last known value across an HA restart - see
+    async_added_to_hass()'s own comment for why only those, not every
+    sensor, actually use the restored value.
+    """
 
     def __init__(
         self,
@@ -313,6 +319,16 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
             self._attr_device_class = device_class
         if state_class is not None:
             self._attr_state_class = state_class
+        # Stored plainly rather than read back from _attr_state_class in
+        # async_added_to_hass() - that attribute is backed by a
+        # cached_property on SensorEntity in this HA version, which raises
+        # AttributeError when read before ever being set (confirmed
+        # directly: a bare, freshly-constructed SensorEntity() already
+        # fails the same way) rather than falling back to a default.
+        self._restorable = state_class in (
+            SensorStateClass.TOTAL,
+            SensorStateClass.TOTAL_INCREASING,
+        )
         if category is not None:
             # SensorEntity refuses to be added with entity_category CONFIG
             # (homeassistant/components/sensor/__init__.py) - it's reserved
@@ -326,7 +342,23 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         self._attr_entity_registry_enabled_default = enabled_by_default
 
     async def async_added_to_hass(self) -> None:
-        """Prime state from whatever the coordinator already has.
+        """Restore a TOTAL_INCREASING reading, then prime state from
+        whatever the coordinator already has.
+
+        Only TOTAL_INCREASING (and TOTAL) sensors restore anything - the
+        energy counters (see field_metadata.py's _ENERGY_DIAGNOSTIC*
+        presets). Restoring an instantaneous reading (voltage, power, an
+        enum status...) across a restart would show a stale, possibly wrong
+        value until the next poll; a monotonically-increasing counter's old
+        value is still correct, just not current - exactly the distinction
+        modbus_connection's own integration guide calls out: these sensors
+        "must remain available during device offline periods and restore
+        their last value...to preserve energy dashboard history".
+
+        Marks available=True on a successful restore (normally False until
+        _handle_coordinator_update() below runs) so the restored value is
+        actually visible for the brief window before that happens, rather
+        than sitting in _attr_native_value unseen.
 
         CoordinatorEntity.async_added_to_hass() only registers a listener for
         FUTURE updates (confirmed against homeassistant's update_coordinator.py) -
@@ -335,9 +367,17 @@ class BluettiSensor(CoordinatorEntity, SensorEntity):
         created (see __init__.py), coordinator.data is already populated;
         without this, this sensor would stay unavailable (_attr_available
         starts False in __init__) until the coordinator's next scheduled
-        poll, up to update_interval (30s) later.
+        poll, up to update_interval (30s) later - _handle_coordinator_update()
+        below still runs regardless of whether a value was just restored, so
+        a restored value only remains visible if this device doesn't answer
+        this particular field on the very next poll either.
         """
         await super().async_added_to_hass()
+        if self._restorable:
+            last_data = await self.async_get_last_sensor_data()
+            if last_data is not None:
+                self._attr_native_value = last_data.native_value
+                self._attr_available = True
         self._handle_coordinator_update()
 
     @property

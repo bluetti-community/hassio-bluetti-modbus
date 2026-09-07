@@ -1,8 +1,12 @@
 import unittest
 from enum import Enum
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorExtraStoredData,
+    SensorStateClass,
+)
 from homeassistant.const import EntityCategory
 
 from custom_components.bluetti_modbus.sensor import (
@@ -252,6 +256,72 @@ class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(sensor.available)
         self.assertEqual(sensor.native_value, 2)
+
+    async def test_restores_a_total_increasing_value_the_coordinator_lacks(self):
+        # The energy-counter case the doc calls out: a restart where this
+        # exact field isn't in the coordinator's data yet (device slow to
+        # answer this one field, say) - the restored reading stays visible
+        # rather than the entity going unavailable with no value at all.
+        sensor = _sensor(
+            response_key="g_o_e_total", state_class=SensorStateClass.TOTAL_INCREASING
+        )
+        sensor.async_get_last_sensor_data = AsyncMock(
+            return_value=SensorExtraStoredData(33.3, "kWh")
+        )
+        sensor.coordinator.data = {}  # this poll doesn't have this field (yet)
+
+        await sensor.async_added_to_hass()
+
+        self.assertTrue(sensor.available)
+        self.assertEqual(sensor.native_value, 33.3)
+
+    async def test_live_data_overrides_a_restored_value_when_both_are_present(self):
+        # The common case: async_config_entry_first_refresh() already
+        # succeeded before this entity was created, so live data is already
+        # there - it wins over whatever was restored, which is now stale.
+        sensor = _sensor(
+            response_key="g_o_e_total", state_class=SensorStateClass.TOTAL_INCREASING
+        )
+        sensor.async_get_last_sensor_data = AsyncMock(
+            return_value=SensorExtraStoredData(33.3, "kWh")
+        )
+        sensor.coordinator.data = {"g_o_e_total": 40.1}
+
+        await sensor.async_added_to_hass()
+
+        self.assertTrue(sensor.available)
+        self.assertEqual(sensor.native_value, 40.1)
+
+    async def test_does_not_restore_a_non_total_increasing_field(self):
+        # Restoring an instantaneous reading (voltage, power, a status
+        # enum...) across a restart would show a stale, possibly wrong
+        # value until the next poll - only energy counters restore.
+        sensor = _sensor(
+            response_key="ac_o_p_total", state_class=SensorStateClass.MEASUREMENT
+        )
+        sensor.async_get_last_sensor_data = AsyncMock(
+            return_value=SensorExtraStoredData(999, "W")
+        )
+        sensor.coordinator.data = {}
+
+        await sensor.async_added_to_hass()
+
+        sensor.async_get_last_sensor_data.assert_not_called()
+        self.assertFalse(sensor.available)
+
+    async def test_no_stored_data_falls_through_to_coordinator_priming(self):
+        # First-ever setup, or nothing was ever restored - normal priming
+        # from live coordinator data still works exactly as before.
+        sensor = _sensor(
+            response_key="g_o_e_total", state_class=SensorStateClass.TOTAL_INCREASING
+        )
+        sensor.async_get_last_sensor_data = AsyncMock(return_value=None)
+        sensor.coordinator.data = {"g_o_e_total": 12.5}
+
+        await sensor.async_added_to_hass()
+
+        self.assertTrue(sensor.available)
+        self.assertEqual(sensor.native_value, 12.5)
 
 
 class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
