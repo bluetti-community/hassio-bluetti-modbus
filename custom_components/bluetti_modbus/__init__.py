@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 13
+_CURRENT_VERSION = 14
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -212,6 +212,18 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     7 -> 8 and 8 -> 9 steps - matched here by unique_id suffix, since the
     11 -> 12 step means those ids now start with a serial this function
     can't read offline.
+
+    13 -> 14: pv_1_i_type/pv_2_i_type (AC500 only) switched to disabled by
+    default (sensor.py, unconfirmed against real hardware - see
+    bluetti-official/bluetti-modbus-tcp-slave#5), but
+    entity_registry_enabled_default only applies the first time an entity is
+    ever registered - same class of issue as the 1 -> 2 step above. AC500
+    only ever shipped on the beta track before this version existed, so
+    real installs migrating in from there may already have these enabled;
+    disable them explicitly, once, for dev_type == "ac500" entries only -
+    same guard as the 1 -> 2 step (never fights a user who re-enables them
+    themselves afterward, and a no-op if a beta install already had them
+    disabled).
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -382,6 +394,26 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     registry.async_remove(entity_entry.entity_id)
         version = 13
 
+    if version == 13:
+        # pv_1_i_type/pv_2_i_type unique_id for the main device, no
+        # sub-device involved - matched by unique_id suffix rather than
+        # rebuilt from the field name, same reasoning as the 12 -> 13 step
+        # above (get_unique_id() slugifies "{identity} {device name}
+        # {field}", so the field name is always the trailing component,
+        # regardless of which identity scheme a real AC500 install
+        # migrating in from the beta track happens to already be on).
+        if config is not None and config.dev_type == "ac500":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if (
+                    entity_entry.unique_id.endswith(("_pv_1_i_type", "_pv_2_i_type"))
+                    and entity_entry.disabled_by is None
+                ):
+                    registry.async_update_entity(
+                        entity_entry.entity_id,
+                        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+                    )
+        version = 14
+
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
     else:
@@ -429,6 +461,14 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     b_ver_1 (BMS, the battery's own firmware) is deliberately not here - it
     moved to battery_device_info()'s own sw_version, since BMS is the
     battery's firmware, not the main unit's.
+
+    AC500 exception: it doesn't declare d_iot_ver at all (real hardware
+    confirmed this field is simply absent, see bluetti-official/bluetti-
+    modbus-tcp-slave#5) - only a field this device actually declares gets a
+    segment below, omitted entirely otherwise, rather than a permanent "v?"
+    placeholder (real hardware regression: AC500 showed "IoT v?" on every
+    single poll before this). d_serial itself needs no AC500-specific
+    handling - every device already uses it uniformly, above.
     """
     if coordinator is None:
         return None, None
@@ -438,13 +478,14 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     arm = data.get("d_ver_arm")
     dsp = data.get("d_ver_dsp")
     serial_number = str(serial) if serial is not None else None
-    sw_version = None
-    if iot is not None or arm is not None or dsp is not None:
-        sw_version = (
-            f"IoT v{iot if iot is not None else '?'}, "
-            f"ARM v{arm if arm is not None else '?'}, "
-            f"DSP v{dsp if dsp is not None else '?'}"
-        )
+    segments = []
+    if iot is not None:
+        segments.append(f"IoT v{iot}")
+    if arm is not None:
+        segments.append(f"ARM v{arm}")
+    if dsp is not None:
+        segments.append(f"DSP v{dsp}")
+    sw_version = ", ".join(segments) if segments else None
     return serial_number, sw_version
 
 

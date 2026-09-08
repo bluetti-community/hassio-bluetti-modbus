@@ -109,6 +109,9 @@
       "ac_o_switch": {
         "name": "AC Output Switch"
       },
+      "dc_o_switch": {
+        "name": "DC Output Switch"
+      },
       "g_i_switch": {
         "name": "Grid Charging Switch"
       },
@@ -559,6 +562,9 @@
     "switch": {
       "ac_o_switch": {
         "name": "AC Output Switch"
+      },
+      "dc_o_switch": {
+        "name": "DC Output Switch"
       },
       "g_i_switch": {
         "name": "Grid Charging Switch"

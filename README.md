@@ -45,7 +45,7 @@ documentation and verified against real hardware.
 | --- | --- | --- |
 | **Balco 260** | ✅ Confirmed | Full support: 119 fields, switches, SoC thresholds, battery sub-device. Verified against real hardware and BLUETTI's official register spec. |
 | **S Meter** | ✅ Confirmed | 31 fields, per-phase sub-devices. Verified against real hardware. |
-| **AC500** | 🧪 Beta | 30 fields. Community-confirmed on real hardware, not yet BLUETTI-support-confirmed. Hidden from the setup dropdown by default - see [Enabling AC500](#enabling-ac500). |
+| **AC500** | ✅ Confirmed | 30 fields, switches, SoC thresholds. Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. |
 
 **EP2000 is not supported.** Its Modbus TCP support was withdrawn pending
 confirmation the device exposes Modbus TCP at all - a real-world report found an
@@ -103,7 +103,7 @@ _or manually:_
 3. Fill in:
    * **Address** - the IP address or hostname of your device.
    * **Port** - `502` unless you changed it on the device.
-   * **Type** - Balco 260 or S Meter.
+   * **Type** - Balco 260, S Meter, or AC500.
 
 The device is contacted straight away, so a wrong address or a device with Modbus TCP
 still disabled fails immediately rather than after setup.
@@ -111,14 +111,6 @@ still disabled fails immediately rather than after setup.
 The poll interval is fixed at 30 seconds and is not configurable: this device's
 Modbus TCP stack has been observed becoming unresponsive under heavier polling, to
 the point of needing a factory reset to recover.
-
-### Enabling AC500
-
-AC500 support works on real hardware but has not been confirmed by BLUETTI, so it is
-hidden from the setup dropdown. To try it, set `AC500_CONFIRMED = True` in
-`custom_components/bluetti_modbus/const.py` and restart Home Assistant. Feedback on
-[#5](https://github.com/bluetti-official/bluetti-modbus-tcp-slave/issues/5) is
-welcome - it's what will get the flag flipped on by default.
 
 ## Entities 🧩
 

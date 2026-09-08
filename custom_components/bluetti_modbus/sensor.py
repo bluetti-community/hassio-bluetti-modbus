@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import re
 from decimal import Decimal
@@ -28,6 +29,7 @@ from . import (
 )
 from . import device_info as dev_info
 from .const import (
+    AC500_FIELDS_NOT_SHOWN,
     DATA_COORDINATOR,
     DOMAIN,
     FIELDS_NOT_SHOWN,
@@ -147,6 +149,8 @@ async def async_setup_entry(
     for f in bluetti_device.get_sensors():
         if f in FIELDS_NOT_SHOWN:
             continue
+        if config.dev_type == "ac500" and f in AC500_FIELDS_NOT_SHOWN:
+            continue
         if f in FIELDS_SHOWN_VIA_BINARY_SENSOR:
             continue
         if f in FIELDS_SHOWN_VIA_DEVICE_INFO:
@@ -174,6 +178,27 @@ async def async_setup_entry(
 
     for field in sensor_fields:
         metadata = metadata_for(field.name)
+        # b_soc_total is deliberately not device_class=BATTERY elsewhere
+        # (see field_metadata.py's own comment) because Balco260/S Meter
+        # also have a plain b_soc, which claims that role instead - AC500
+        # has no such field at all (confirmed: absent from its own register
+        # map), so b_soc_total is the only SoC reading it will ever have,
+        # and skipping this override would leave AC500 with no battery-icon
+        # sensor whatsoever.
+        if config.dev_type == "ac500" and field.name == "b_soc_total":
+            metadata = dataclasses.replace(metadata, device_class=SensorDeviceClass.BATTERY)
+        # pv_1_i_type/pv_2_i_type share PvType (0=Reserve, 100/101=DcPv/
+        # AcPv) with Balco260, where it's confirmed correct - but on a real
+        # AC500 with 2 confirmed-connected DC PV strings, both read
+        # "Reserve" (raw 0) instead of "DcPv", and there's no confirmation
+        # yet of what AC500's own firmware actually means by that value
+        # (bluetti-official/bluetti-modbus-tcp-slave#5). Disabled by
+        # default on AC500 only - not Balco260, where it isn't wrong - until
+        # BLUETTI or further real-hardware testing confirms the mapping;
+        # showing a plausible-looking but potentially-wrong type string by
+        # default would be worse than not showing it at all.
+        if config.dev_type == "ac500" and field.name in ("pv_1_i_type", "pv_2_i_type"):
+            metadata = dataclasses.replace(metadata, enabled_by_default=False)
         field_phase = _PHASE_FOR_FIELD.get(field.name)
         field_device_info = phase_device_infos[field_phase] if field_phase else device_info
         sensors_to_add.append(

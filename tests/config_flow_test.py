@@ -38,24 +38,11 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(show_form.call_args.kwargs["step_id"], "user")
         self.assertEqual(result, "form")
 
-    async def test_ac500_not_offered_by_default(self):
-        # AC500_CONFIRMED is False by default - see its own comment in
-        # const.py for why this can't just be a version/beta-release
-        # matter (main is a single linear branch, so any later, ordinary
-        # release built from it would otherwise carry AC500 right along
-        # with it regardless of beta tagging).
-        flow = _flow()
-        with patch.object(flow, "async_show_form", return_value="form") as show_form:
-            await flow.async_step_user()
-
-        options = _type_options(show_form.call_args.kwargs["data_schema"])
-        values = {o["value"] for o in options}
-        self.assertNotIn("ac500", values)
-        self.assertIn("balco260", values)
-        self.assertIn("smeter", values)
-
-    @patch("custom_components.bluetti_modbus.config_flow.AC500_CONFIRMED", True)
-    async def test_ac500_offered_once_confirmed(self):
+    async def test_ac500_offered_by_default(self):
+        # AC500_CONFIRMED is True by default now - ItsMe00007 confirmed the
+        # beta-line fixes working on a real AC500 inside a real HA install
+        # (see that constant's own comment in const.py) and asked for AC500
+        # to join the normal release line.
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
@@ -63,6 +50,21 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         options = _type_options(show_form.call_args.kwargs["data_schema"])
         values = {o["value"] for o in options}
         self.assertIn("ac500", values)
+        self.assertIn("balco260", values)
+        self.assertIn("smeter", values)
+
+    @patch("custom_components.bluetti_modbus.config_flow.AC500_CONFIRMED", False)
+    async def test_ac500_not_offered_if_unconfirmed(self):
+        # The flag mechanism itself still works, even though AC500_CONFIRMED
+        # is True by default now - proven by patching it back to False,
+        # matching BALCO500_CONFIRMED's own equivalent test below.
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("ac500", values)
 
     async def test_balco500_not_offered_by_default(self):
         # BALCO500_CONFIRMED is False by default - see its own comment in
