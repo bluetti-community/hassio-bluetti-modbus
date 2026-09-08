@@ -13,5 +13,5 @@
         "tmodbus[async-serial]>=0.6.1",
         "probatio>=0.11.4"
     ],
-    "version": "0.0.39-beta.4"
+    "version": "0.0.39-beta.5"
 }

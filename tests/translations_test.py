@@ -20,8 +20,11 @@ _TRANSLATIONS_PATH = (
 )
 
 # Only device types actually reachable via config_flow.py's dropdown - not
-# EP2000, which isn't offered there yet.
-_DEV_TYPES = ("balco260", "smeter")
+# EP2000, which isn't offered there yet. ac500 included since
+# bluetti-community/hassio-bluetti-modbus#81 (dc_o_switch shown with no name
+# at all) - a real report that this exact coverage check, extended to
+# ac500, would have caught before it ever shipped.
+_DEV_TYPES = ("ac500", "balco260", "smeter")
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):

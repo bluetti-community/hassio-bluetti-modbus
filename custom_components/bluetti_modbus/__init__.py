@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-_CURRENT_VERSION = 11
+_CURRENT_VERSION = 12
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -183,14 +183,24 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     under this entry rather than enumerating field names, unlike every
     step above.
 
-    No 11 -> 12 step: entity unique_id was refined once more after this -
-    preferring a real device serial number over entry_id where the device
-    itself reports one over Modbus, per HA's own documented unique_id
-    guidance (entry_id is meant as a last resort - see _unique_id_for()'s
-    own docstring). That reconciliation can't live here, though - unlike
-    every step above, it needs a live device read to know a serial, and
-    this function only ever runs before the coordinator's first refresh.
-    See _unique_id_for()
+    11 -> 12: pv_1_i_type/pv_2_i_type (AC500 only) switched to disabled by
+    default (sensor.py, unconfirmed against real hardware - see
+    bluetti-official/bluetti-modbus-tcp-slave#5), but
+    entity_registry_enabled_default only applies the first time an entity is
+    ever registered - same class of issue as the 1 -> 2 step above, and
+    reported for real on an AC500 upgrading from an earlier beta
+    (bluetti-community/hassio-bluetti-modbus#82). Disable them explicitly,
+    once, for dev_type == "ac500" entries only - same guard as the 1 -> 2
+    step (never fights a user who re-enables them themselves afterward).
+
+    Unrelated to the step above: entity unique_id was refined once more
+    after version 11 - preferring a real device serial number over entry_id
+    where the device itself reports one over Modbus, per HA's own
+    documented unique_id guidance (entry_id is meant as a last resort - see
+    _unique_id_for()'s own docstring). That reconciliation doesn't live
+    here, though - unlike every version step above, it needs a live device
+    read to know a serial, and this function only ever runs before the
+    coordinator's first refresh. See _unique_id_for()
     instead, called every time an entity is constructed (always after that
     first refresh), self-healing and idempotent rather than a one-time
     versioned step.
@@ -330,6 +340,24 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     new_unique_id=f"{prefix}_{entity_entry.unique_id}",
                 )
         version = 11
+
+    if version == 11:
+        # pv_1_i_type/pv_2_i_type unique_id for the main device, no
+        # sub-device involved - same construction _unique_id_for() uses at
+        # entity-creation time (identity falls back to entry.entry_id here,
+        # since AC500 declares no d_iot_serial for _unique_id_for() to pick
+        # up instead - see that function's own docstring).
+        if config is not None and config.dev_type == "ac500":
+            for field_name in ("pv_1_i_type", "pv_2_i_type"):
+                unique_id = get_unique_id(f"{entry.entry_id} {entry.title} {field_name}")
+                entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+                if entity_id is not None:
+                    existing = registry.async_get(entity_id)
+                    if existing is not None and existing.disabled_by is None:
+                        registry.async_update_entity(
+                            entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION
+                        )
+        version = 12
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
