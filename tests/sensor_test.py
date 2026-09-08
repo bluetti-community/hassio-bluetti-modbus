@@ -652,6 +652,60 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual([s._response_key for s in added], ["b_soc_low"])
 
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_ac500_field_overrides(self, config_cls, dev_info_fn, get_device_fn):
+        # AC500-only exceptions layered on top of the device-agnostic
+        # metadata from field_metadata.py - see const.py's
+        # AC500_FIELDS_NOT_SHOWN and sensor.py's dataclasses.replace()
+        # overrides for the real-hardware evidence behind each one.
+        config_cls.from_dict.return_value = MagicMock(dev_type="ac500", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+
+        def _field(name):
+            f = MagicMock(address=50001, unit=None, writable=False)
+            f.name = name
+            return f
+
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = [
+            "g_i_switch",
+            "b_soc_total",
+            "pv_1_i_type",
+            "pv_2_i_type",
+            "d_num_inverters",
+        ]
+        bluetti_device.get_field.side_effect = _field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        by_key = {s._response_key: s for s in added}
+        # g_i_switch (stuck at 1 on real AC500 hardware) is excluded
+        # outright - not even a diagnostic sensor.
+        self.assertNotIn("g_i_switch", by_key)
+        # d_num_inverters is unrelated, proving normal fields still get
+        # through untouched.
+        self.assertIn("d_num_inverters", by_key)
+        # AC500 has no plain b_soc - b_soc_total is its only SoC reading, so
+        # it earns the battery device class here (unlike Balco260/S Meter,
+        # where b_soc already claims that role).
+        self.assertEqual(by_key["b_soc_total"]._attr_device_class, SensorDeviceClass.BATTERY)
+        # Unconfirmed on real AC500 hardware (both read "Reserve" with PV
+        # strings connected) - disabled by default until confirmed.
+        self.assertFalse(by_key["pv_1_i_type"]._attr_entity_registry_enabled_default)
+        self.assertFalse(by_key["pv_2_i_type"]._attr_entity_registry_enabled_default)
+
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")

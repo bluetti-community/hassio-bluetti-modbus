@@ -165,11 +165,16 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_setup_entry(hass, entry, added.extend)
 
-        self.assertEqual(len(added), 3)
+        # dev_type is arbitrary here - this test is about the general
+        # mechanism (every FIELDS_SHOWN_VIA_SWITCH name gets an entity once
+        # get_field() reports it writable), not about which switches a real
+        # Balco260 specifically has, hence the blanket writable=True mock
+        # matching every name in that set, dc_o_switch (AC500-only) included.
+        self.assertEqual(len(added), 4)
         self.assertTrue(all(isinstance(e, BluettiSwitchEntity) for e in added))
         self.assertEqual(
             {e._field_name for e in added},
-            {"ac_o_switch", "g_i_switch", "g_o_switch"},
+            {"ac_o_switch", "dc_o_switch", "g_i_switch", "g_o_switch"},
         )
 
     @patch("custom_components.bluetti_modbus.switch.dev_info")

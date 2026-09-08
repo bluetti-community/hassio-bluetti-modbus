@@ -10,21 +10,24 @@ DATA_COORDINATOR = "coordinator"
 # AC500 support (bluetti-modbus 0.15.0+) is community-confirmed against real
 # hardware, not yet BLUETTI-support-confirmed like Balco260/S Meter - see
 # bluetti-official/bluetti-modbus-tcp-slave#5. It was deliberately shipped
-# as a beta pre-release (0.0.39-beta.1, GitHub "prerelease" flag) to keep it
-# out of regular users' default update list - but `main` is a single linear
-# branch, so any *later*, ordinary (non-beta) release built from it (e.g.
-# 0.0.40) would otherwise carry AC500 right along with it, since the code
-# never left `main`. SemVer precedence made this concrete: 0.0.40 sorts
-# above 0.0.39-beta.1, so HACS would offer 0.0.40 - AC500 included - to
-# every user, beta opt-in or not, undoing the whole point of the beta tag.
+# as a beta pre-release (0.0.39-beta.1 through beta.5, GitHub "prerelease"
+# flag) to keep it out of regular users' default update list while it was
+# still being iterated on - `main` is a single linear branch, so any later,
+# ordinary (non-beta) release built from it would otherwise have carried
+# AC500 right along with it, since the code never left `main`.
 #
-# This flag decouples AC500's visibility from release/version mechanics
+# This flag decoupled AC500's visibility from release/version mechanics
 # entirely: config_flow.py only offers "ac500" in its dropdown while this
 # is True, regardless of what version is installed. Existing config entries
-# already using "ac500" (from testing on the beta) are unaffected - this
-# only gates the dropdown for *new* entries. Flip to True once ItsMe00007/
-# gjniewenhuijse confirm it working inside a real HA install.
-AC500_CONFIRMED = False
+# already using "ac500" (from testing on the beta line) are unaffected
+# either way - this only ever gated the dropdown for *new* entries.
+#
+# Flipped to True: ItsMe00007 confirmed the beta-line fixes (dc_o_switch
+# naming, pv_1/2_i_type disabled, IoT v? firmware display, battery SoC
+# device class) working on a real AC500 inside a real HA install and asked
+# for AC500 to join the normal release line - see the discussion on
+# bluetti-official/bluetti-modbus-tcp-slave#5.
+AC500_CONFIRMED = True
 
 # Balco 500 (bluetti-modbus 0.19.0+) reuses Balco260's own register set -
 # BLUETTI's own official register spec files both under the same generic
@@ -80,6 +83,19 @@ FIELDS_SHOWN_VIA_BINARY_SENSOR = {"d_status"}
 # (home-assistant/core#180602's own EXCLUDED_FIELDS).
 FIELDS_NOT_SHOWN = {"d_inverter_fault", "d_inverter_warning"}
 
+# g_i_switch (57009, same address as Balco260's, a real switch there): reads
+# a clean, error-free 1 regardless of state on real AC500 hardware, per two
+# independent testers (bluetti-official/bluetti-modbus-tcp-slave#5,
+# bluetti-community/bluetti-registers#13: "the AC500 does not have Grid
+# Input/output switches") - a stuck, always-1 reading carries no real
+# information, so it doesn't even earn a diagnostic sensor. Balco260/EP2000
+# are unaffected - g_i_switch is a genuine, working switch there (see
+# FIELDS_SHOWN_VIA_SWITCH below). A flat set, not a dict keyed by dev_type
+# like DEVICE_TYPE_DISPLAY_NAMES above - AC500 is the only device with a
+# per-field exclusion like this so far, and a dict for one entry would be
+# premature.
+AC500_FIELDS_NOT_SHOWN = {"g_i_switch"}
+
 # b_soc_low/b_soc_high (57016/57017): battery empty/full SOC thresholds,
 # 0-100% - genuinely user-configurable settings, not readings. Routed to
 # number.py instead of sensor.py, but only where bluetti_modbus_lib actually
@@ -88,14 +104,20 @@ FIELDS_NOT_SHOWN = {"d_inverter_fault", "d_inverter_warning"}
 # handling for a device where it isn't, so nothing is lost there.
 FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
 
-# ac_o_switch/g_i_switch/g_o_switch (57001/57009/57010): AC output, grid
-# charging, and grid feed-in controls - genuinely user-actuated switches, not
-# readings. Routed to switch.py instead of sensor.py, but only where
-# bluetti_modbus_lib actually marks the field writable=True (currently
-# Balco260 only - see that library's import.py), same gating as
+# ac_o_switch/g_i_switch/g_o_switch (57001/57009/57010, Balco260) and
+# dc_o_switch (57005, AC500 only) - AC output, grid charging, grid feed-in,
+# and DC output controls - genuinely user-actuated switches, not readings.
+# Routed to switch.py instead of sensor.py, but only where
+# bluetti_modbus_lib actually marks the field writable=True (Balco260's
+# ac_o_switch/g_i_switch/g_o_switch, and - each independently confirmed on
+# real hardware by a different tester, see
+# bluetti-official/bluetti-modbus-tcp-slave#5 - AC500's ac_o_switch/
+# dc_o_switch; AC500's own g_i_switch is confirmed non-functional there
+# instead, see AC500_FIELDS_NOT_SHOWN above), same gating as
 # FIELDS_SHOWN_VIA_NUMBER below - sensor.py falls back to its normal
-# read-only handling for a device where it isn't, so nothing is lost there.
-FIELDS_SHOWN_VIA_SWITCH = {"ac_o_switch", "g_i_switch", "g_o_switch"}
+# read-only handling for a device where a name here isn't writable, so
+# nothing is lost there.
+FIELDS_SHOWN_VIA_SWITCH = {"ac_o_switch", "dc_o_switch", "g_i_switch", "g_o_switch"}
 
 # d_ver_arm/d_ver_dsp/d_iot_ver/d_serial (Balco260/EP2000 only - S Meter's
 # address range doesn't include these): the main unit's own identity, not

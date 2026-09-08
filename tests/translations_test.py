@@ -21,8 +21,13 @@ _TRANSLATIONS_PATH = (
 )
 
 # Only device types actually reachable via config_flow.py's dropdown - not
-# EP2000, which isn't offered there yet.
-_DEV_TYPES = ("balco260", "smeter")
+# EP2000, which isn't offered there yet. ac500 included since a missing
+# translation (dc_o_switch, added alongside AC500_CONFIRMED graduating to
+# True) is exactly the kind of real bug this coverage check exists to
+# catch - balco500 isn't included: it's still gated behind
+# BALCO500_CONFIRMED, and reuses Balco260's exact field names (no new ones
+# of its own that could go untranslated).
+_DEV_TYPES = ("ac500", "balco260", "smeter")
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):

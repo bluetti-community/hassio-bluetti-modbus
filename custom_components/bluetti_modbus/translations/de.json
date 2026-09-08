@@ -99,6 +99,9 @@
       "ac_o_switch": {
         "name": "AC-Ausgang Schalter"
       },
+      "dc_o_switch": {
+        "name": "DC-Ausgang Schalter"
+      },
       "g_i_switch": {
         "name": "Netzbezug Schalter"
       },
