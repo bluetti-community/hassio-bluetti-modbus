@@ -1,0 +1,38 @@
+name: "Release"
+
+# Attaches a zip of custom_components/bluetti_modbus/ to every GitHub
+# release, matching hacs.json's zip_release/filename - without this, HACS
+# falls back to downloading the full repo source instead of a distinct,
+# per-release asset, and its download counter (which counts asset
+# downloads, not repo clones) never moves. See bluetti-community's own
+# hacs.json for the paired configuration, and
+# https://www.hacs.xyz/docs/publish/action/ for HACS's own documented
+# pattern this follows.
+
+on:
+  release:
+    types:
+      - "published"
+
+permissions: {}
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+    steps:
+      - name: "Checkout the repository"
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: "ZIP the integration directory"
+        shell: "bash"
+        run: |
+          cd "${{ github.workspace }}/custom_components/bluetti_modbus"
+          zip bluetti_modbus.zip -r ./
+
+      - name: "Upload the ZIP file to the release"
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: ${{ github.workspace }}/custom_components/bluetti_modbus/bluetti_modbus.zip
