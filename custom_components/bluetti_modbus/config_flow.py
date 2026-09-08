@@ -21,7 +21,12 @@ from homeassistant.helpers.selector import (
 )
 from modbus_connection.exceptions import ModbusError
 
-from .const import AC500_CONFIRMED, DEVICE_TYPE_DISPLAY_NAMES, DOMAIN
+from .const import (
+    AC500_CONFIRMED,
+    BALCO500_CONFIRMED,
+    DEVICE_TYPE_DISPLAY_NAMES,
+    DOMAIN,
+)
 from .types import InitialDeviceConfig
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
@@ -120,6 +125,10 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # modbus-tcp-slave#5, bluetti-registers#13) - a
                         # smaller register set (no BC260 expansion-pack
                         # support yet, see bluetti_modbus_lib's own README).
+                        #
+                        # Balco 500 (BALCO500_CONFIRMED) is gated the same
+                        # way, but entirely untested - see that constant's
+                        # own comment.
                         options=[
                             *(
                                 [SelectOptionDict(value="ac500", label="AC500")]
@@ -127,6 +136,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 else []
                             ),
                             SelectOptionDict(value="balco260", label="Balco 260"),
+                            *(
+                                [SelectOptionDict(value="balco500", label="Balco 500")]
+                                if BALCO500_CONFIRMED
+                                else []
+                            ),
                             SelectOptionDict(value="smeter", label="S Meter"),
                         ],
                         mode=SelectSelectorMode.DROPDOWN,
