@@ -64,6 +64,30 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ac500", values)
 
+    async def test_balco500_not_offered_by_default(self):
+        # BALCO500_CONFIRMED is False by default - see its own comment in
+        # const.py. Unlike AC500, no community member has real Balco 500
+        # hardware at all yet.
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("balco500", values)
+        self.assertIn("balco260", values)
+        self.assertIn("smeter", values)
+
+    @patch("custom_components.bluetti_modbus.config_flow.BALCO500_CONFIRMED", True)
+    async def test_balco500_offered_once_confirmed(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertIn("balco500", values)
+
     async def test_creates_entry_titled_with_the_plain_product_name(self):
         # Regression test: the title used to have the serial number (or,
         # lacking one, the address) crammed into it. Now it's just the

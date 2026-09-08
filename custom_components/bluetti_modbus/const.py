@@ -26,12 +26,24 @@ DATA_COORDINATOR = "coordinator"
 # gjniewenhuijse confirm it working inside a real HA install.
 AC500_CONFIRMED = False
 
+# Balco 500 (bluetti-modbus 0.19.0+) reuses Balco260's own register set -
+# BLUETTI's own official register spec files both under the same generic
+# "BalcoXX" tab, not a Balco260-specific one (see bluetti-community/
+# bluetti-registers#27). Unlike AC500, no community member has a physical
+# unit yet at all, so this isn't just BLUETTI-support-unconfirmed the way
+# AC500 is - it's entirely untested against real hardware. Same mechanism
+# as AC500_CONFIRMED above: config_flow.py only offers "balco500" in its
+# dropdown while this is True, decoupled from release/version mechanics.
+# Flip to True once someone can actually test it on a real Balco 500.
+BALCO500_CONFIRMED = False
+
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would
 # show the raw stored string ("smeter") instead of "S Meter".
 DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
     "ac500": "AC500",
     "balco260": "Balco 260",
+    "balco500": "Balco 500",
     "smeter": "S Meter",
 }
 
