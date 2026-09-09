@@ -13,6 +13,7 @@ class FullDeviceConfig:
         self.port = initial.port
         self.name = initial.name
         self.dev_type = initial.dev_type
+        self.serial = initial.serial
 
     @staticmethod
     def from_dict(raw: Mapping[str, Any]) -> "FullDeviceConfig | None":

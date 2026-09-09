@@ -14,13 +14,13 @@ def _flow() -> BluettiConfigFlow:
 
 def _discovery_info(
     host: str = "10.2.1.80",
-    name: str = "SMeter2614110629663._bluetti._tcp.local.",
+    name: str = "SMeter1234567890123._bluetti._tcp.local.",
 ) -> ZeroconfServiceInfo:
     return ZeroconfServiceInfo(
         ip_address=ip_address(host),
         ip_addresses=[ip_address(host)],
         port=80,
-        hostname="smeter2614110629663.local.",
+        hostname="smeter1234567890123.local.",
         type="_bluetti._tcp.local.",
         name=name,
         properties={},
@@ -294,7 +294,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
     async def test_extracts_the_serial_from_the_mdns_name_and_shows_confirm_form(
         self,
     ):
-        # "SMeter2614110629663" -> "2614110629663" - confirmed against a
+        # "SMeter1234567890123" -> "1234567890123" - confirmed against a
         # real S Meter's own local web UI reporting that exact serial for
         # that exact mDNS instance name.
         flow = _flow()
@@ -313,11 +313,11 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
 
         abort_match.assert_called_once_with({"address": "10.2.1.80"})
         set_uid.assert_awaited_once_with(
-            "2614110629663", raise_on_progress=False
+            "1234567890123", raise_on_progress=False
         )
         abort_check.assert_called_once()
         self.assertEqual(
-            flow.context["title_placeholders"], {"name": "S Meter 2614110629663"}
+            flow.context["title_placeholders"], {"name": "S Meter 1234567890123"}
         )
         self.assertEqual(show_form.call_args.kwargs["step_id"], "zeroconf_confirm")
         self.assertEqual(
@@ -394,7 +394,7 @@ class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
     async def test_confirming_creates_the_entry(self):
         flow = _flow()
         flow._discovered_host = "10.2.1.80"
-        flow._discovered_serial = "2614110629663"
+        flow._discovered_serial = "1234567890123"
         with patch.object(
             flow, "async_create_entry", return_value="entry"
         ) as create_entry:
@@ -408,6 +408,7 @@ class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
                 "port": 502,
                 "name": "S Meter",
                 "type": "smeter",
+                "serial": "1234567890123",
             },
         )
         self.assertEqual(result, "entry")

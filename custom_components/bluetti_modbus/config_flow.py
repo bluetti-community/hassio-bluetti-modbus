@@ -196,9 +196,9 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         product line.
 
         The instance name is the product name immediately followed by the
-        device's own real serial number, e.g. "SMeter2614110629663" -
+        device's own real serial number, e.g. "SMeter1234567890123" -
         confirmed against a real S Meter's own local web UI ("SN:
-        2614110629663" for that exact instance). S Meter has no
+        1234567890123" for that exact instance). S Meter has no
         serial-equivalent Modbus register at all (see
         _modbus_identity()'s docstring in __init__.py), so this mDNS name
         is the only way to learn its serial before ever connecting to it.
@@ -238,7 +238,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Ask the user to confirm adding a zeroconf-discovered S Meter."""
         if user_input is not None:
             data = InitialDeviceConfig(
-                self._discovered_host, 502, "S Meter", "smeter"
+                self._discovered_host,
+                502,
+                "S Meter",
+                "smeter",
+                serial=self._discovered_serial,
             )
             return self.async_create_entry(
                 title="S Meter",
