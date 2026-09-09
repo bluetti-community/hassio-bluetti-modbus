@@ -1,6 +1,8 @@
 import unittest
+from ipaddress import ip_address
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from modbus_connection.exceptions import ModbusConnectionError
 
 from custom_components.bluetti_modbus.config_flow import BluettiConfigFlow
@@ -8,6 +10,21 @@ from custom_components.bluetti_modbus.config_flow import BluettiConfigFlow
 
 def _flow() -> BluettiConfigFlow:
     return BluettiConfigFlow()
+
+
+def _discovery_info(
+    host: str = "10.2.1.80",
+    name: str = "SMeter2614110629663._bluetti._tcp.local.",
+) -> ZeroconfServiceInfo:
+    return ZeroconfServiceInfo(
+        ip_address=ip_address(host),
+        ip_addresses=[ip_address(host)],
+        port=80,
+        hostname="smeter2614110629663.local.",
+        type="_bluetti._tcp.local.",
+        name=name,
+        properties={},
+    )
 
 
 def _patched_client(read_side_effect=None, device_values=None):
@@ -271,3 +288,126 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
             )
 
         client.aclose.assert_awaited_once()
+
+
+class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
+    async def test_extracts_the_serial_from_the_mdns_name_and_shows_confirm_form(
+        self,
+    ):
+        # "SMeter2614110629663" -> "2614110629663" - confirmed against a
+        # real S Meter's own local web UI reporting that exact serial for
+        # that exact mDNS instance name.
+        flow = _flow()
+        # The real flow manager always replaces the base class's frozen
+        # default (a MappingProxyType) with a real dict before calling any
+        # step - constructing the flow directly here skips that.
+        flow.context = {}
+        with (
+            _patched_client(device_values={}),
+            patch.object(flow, "_async_abort_entries_match") as abort_match,
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
+            patch.object(flow, "_abort_if_unique_id_configured") as abort_check,
+            patch.object(flow, "async_show_form", return_value="form") as show_form,
+        ):
+            result = await flow.async_step_zeroconf(_discovery_info())
+
+        abort_match.assert_called_once_with({"address": "10.2.1.80"})
+        set_uid.assert_awaited_once_with(
+            "2614110629663", raise_on_progress=False
+        )
+        abort_check.assert_called_once()
+        self.assertEqual(
+            flow.context["title_placeholders"], {"name": "S Meter 2614110629663"}
+        )
+        self.assertEqual(show_form.call_args.kwargs["step_id"], "zeroconf_confirm")
+        self.assertEqual(
+            show_form.call_args.kwargs["description_placeholders"],
+            {"address": "10.2.1.80"},
+        )
+        self.assertEqual(result, "form")
+
+    async def test_uses_the_modbus_port_not_the_advertised_web_ui_port(self):
+        # The mDNS record advertises port 80 (the device's own web UI) -
+        # Modbus TCP is always 502 here, deliberately not read from the
+        # discovery info.
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={}) as client_cls,
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form"),
+        ):
+            await flow.async_step_zeroconf(_discovery_info())
+
+        client_cls.assert_called_once_with("10.2.1.80", 502, "smeter")
+
+    async def test_aborts_when_modbus_does_not_respond(self):
+        flow = _flow()
+        with (
+            _patched_client(read_side_effect=ModbusConnectionError("no route")),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_abort", return_value="aborted") as async_abort,
+        ):
+            result = await flow.async_step_zeroconf(_discovery_info())
+
+        async_abort.assert_called_once_with(reason="cannot_connect")
+        self.assertEqual(result, "aborted")
+
+    async def test_client_is_always_closed_after_the_connectivity_check(self):
+        flow = _flow()
+        with (
+            _patched_client(
+                read_side_effect=ModbusConnectionError("down")
+            ) as client_cls,
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_abort", return_value="aborted"),
+        ):
+            await flow.async_step_zeroconf(_discovery_info())
+
+        client_cls.return_value.aclose.assert_awaited_once()
+
+
+class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
+    async def test_no_input_shows_the_confirm_form(self):
+        flow = _flow()
+        flow._discovered_host = "10.2.1.80"
+        with (
+            patch.object(flow, "_set_confirm_only") as set_confirm_only,
+            patch.object(flow, "async_show_form", return_value="form") as show_form,
+        ):
+            result = await flow.async_step_zeroconf_confirm()
+
+        set_confirm_only.assert_called_once()
+        self.assertEqual(show_form.call_args.kwargs["step_id"], "zeroconf_confirm")
+        self.assertEqual(
+            show_form.call_args.kwargs["description_placeholders"],
+            {"address": "10.2.1.80"},
+        )
+        self.assertEqual(result, "form")
+
+    async def test_confirming_creates_the_entry(self):
+        flow = _flow()
+        flow._discovered_host = "10.2.1.80"
+        flow._discovered_serial = "2614110629663"
+        with patch.object(
+            flow, "async_create_entry", return_value="entry"
+        ) as create_entry:
+            result = await flow.async_step_zeroconf_confirm({})
+
+        self.assertEqual(create_entry.call_args.kwargs["title"], "S Meter")
+        self.assertEqual(
+            create_entry.call_args.kwargs["data"],
+            {
+                "address": "10.2.1.80",
+                "port": 502,
+                "name": "S Meter",
+                "type": "smeter",
+            },
+        )
+        self.assertEqual(result, "entry")
