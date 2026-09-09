@@ -64,8 +64,13 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             dev_type = user_input.get(CONF_TYPE, "balco260")
 
             client = BluettiModbusClient(address, port, dev_type)
+            serial: object = None
             try:
                 await client.read()
+                # S Meter declares no serial-equivalent field over Modbus at
+                # all (see _modbus_identity()'s own docstring) - .get()
+                # simply finds nothing there, no dev_type check needed here.
+                serial = client.device.values.get("d_serial")
             except (ModbusError, TimeoutError) as err:
                 errors["base"] = "cannot_connect"
                 description_placeholders["error"] = str(err)
@@ -81,7 +86,22 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # device page or by renaming one themselves.
                 name = DEVICE_TYPE_DISPLAY_NAMES.get(dev_type, dev_type)
 
-                await self.async_set_unique_id(address, raise_on_progress=False)
+                # IP addresses are explicitly against HA's own unique_id
+                # guidance (they can change - DHCP lease renewal, network
+                # reconfiguration) - prefer the device's own real serial
+                # number, same policy _unique_id_for() already uses at the
+                # entity level. Falls back to the address for S Meter (no
+                # serial available over Modbus) or if this read genuinely
+                # didn't return one. _async_abort_entries_match catches a
+                # duplicate-by-address even when an *existing* entry hasn't
+                # been reconciled from its own older, address-only unique_id
+                # yet (see _reconcile_config_entry_unique_id() in
+                # __init__.py) - the two would otherwise not match.
+                self._async_abort_entries_match({CONF_ADDRESS: address})
+                await self.async_set_unique_id(
+                    str(serial) if serial is not None else address,
+                    raise_on_progress=False,
+                )
                 self._abort_if_unique_id_configured()
 
                 data = InitialDeviceConfig(

@@ -101,6 +101,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         with (
             _patched_client(device_values={"d_serial": 1234567890123}),
+            patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
             patch.object(flow, "_abort_if_unique_id_configured") as abort_check,
             patch.object(flow, "async_create_entry", return_value="entry") as create_entry,
@@ -109,7 +110,10 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
                 {"address": "10.2.1.60", "port": 502, "type": "balco260"}
             )
 
-        set_uid.assert_awaited_once_with("10.2.1.60", raise_on_progress=False)
+        # The device's own real serial number is preferred over the address
+        # (see the flow's own comment on why) - a real d_serial reported
+        # here means the address is never even reached as a fallback.
+        set_uid.assert_awaited_once_with("1234567890123", raise_on_progress=False)
         abort_check.assert_called_once()
         self.assertEqual(create_entry.call_args.kwargs["title"], "Balco 260")
         self.assertEqual(
@@ -123,6 +127,48 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(result, "entry")
 
+    async def test_falls_back_to_the_address_for_unique_id_when_no_serial_is_reported(
+        self,
+    ):
+        # S Meter (no serial register at all) and any device that simply
+        # hasn't reported one yet both land here - same fallback either way.
+        flow = _flow()
+        with (
+            _patched_client(device_values={}),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_create_entry", return_value="entry"),
+        ):
+            await flow.async_step_user(
+                {"address": "10.2.1.60", "port": 502, "type": "smeter"}
+            )
+
+        set_uid.assert_awaited_once_with("10.2.1.60", raise_on_progress=False)
+
+    async def test_aborts_for_an_address_already_configured_under_an_older_unique_id(
+        self,
+    ):
+        # _async_abort_entries_match catches a duplicate-by-address even
+        # when an *existing* entry hasn't been reconciled from its own
+        # older, address-only unique_id to a serial-based one yet (see
+        # _reconcile_config_entry_unique_id() in __init__.py) - plain
+        # _abort_if_unique_id_configured alone wouldn't, since the two
+        # would no longer match once this flow prefers the serial instead.
+        flow = _flow()
+        with (
+            _patched_client(device_values={"d_serial": 1234567890123}),
+            patch.object(flow, "_async_abort_entries_match") as abort_match,
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_create_entry", return_value="entry"),
+        ):
+            await flow.async_step_user(
+                {"address": "10.2.1.60", "port": 502, "type": "balco260"}
+            )
+
+        abort_match.assert_called_once_with({"address": "10.2.1.60"})
+
     async def test_creates_entry_titled_with_the_plain_product_name_no_serial(self):
         # S Meter has no serial number register at all (confirmed by
         # BLUETTI) - and any device could, in principle, fail to report one.
@@ -130,6 +176,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         with (
             _patched_client(device_values={}),
+            patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
             patch.object(flow, "async_create_entry", return_value="entry") as create_entry,
@@ -147,6 +194,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         with (
             _patched_client(device_values={}),
+            patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
             patch.object(flow, "async_create_entry", return_value="entry") as create_entry,
@@ -161,6 +209,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         with (
             _patched_client(),
+            patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
             patch.object(flow, "async_create_entry", return_value="entry") as create_entry,
