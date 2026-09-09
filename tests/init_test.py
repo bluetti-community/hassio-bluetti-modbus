@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from custom_components.bluetti_modbus import (
+    _reconcile_config_entry_unique_id,
     _unique_id_for,
     async_migrate_entry,
     async_setup_entry,
@@ -147,6 +148,52 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         result = await async_setup_entry(hass, entry)
 
         self.assertFalse(result)
+
+
+class TestReconcileConfigEntryUniqueId(unittest.TestCase):
+    def _coordinator(self, *, dev_type="balco260", data=None):
+        return MagicMock(config=MagicMock(dev_type=dev_type), data=data or {})
+
+    def test_renames_unique_id_from_address_to_serial(self):
+        hass = MagicMock()
+        entry = MagicMock(unique_id="10.2.1.60")
+        coordinator = self._coordinator(data={"d_serial": 1234567890123})
+
+        _reconcile_config_entry_unique_id(hass, entry, coordinator)
+
+        hass.config_entries.async_update_entry.assert_called_once_with(
+            entry, unique_id="1234567890123"
+        )
+
+    def test_is_a_no_op_once_already_reconciled(self):
+        hass = MagicMock()
+        entry = MagicMock(unique_id="1234567890123")
+        coordinator = self._coordinator(data={"d_serial": 1234567890123})
+
+        _reconcile_config_entry_unique_id(hass, entry, coordinator)
+
+        hass.config_entries.async_update_entry.assert_not_called()
+
+    def test_is_a_no_op_for_smeter(self):
+        # S Meter declares no serial-equivalent field over Modbus at all -
+        # nothing to reconcile to, regardless of what dev_type == "smeter"'s
+        # own coordinator.data happens to contain.
+        hass = MagicMock()
+        entry = MagicMock(unique_id="10.2.1.60")
+        coordinator = self._coordinator(dev_type="smeter", data={"d_serial": 1234567890123})
+
+        _reconcile_config_entry_unique_id(hass, entry, coordinator)
+
+        hass.config_entries.async_update_entry.assert_not_called()
+
+    def test_is_a_no_op_when_no_serial_is_known_yet(self):
+        hass = MagicMock()
+        entry = MagicMock(unique_id="10.2.1.60")
+        coordinator = self._coordinator(data={})
+
+        _reconcile_config_entry_unique_id(hass, entry, coordinator)
+
+        hass.config_entries.async_update_entry.assert_not_called()
 
 
 class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):

@@ -57,6 +57,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id].setdefault(DATA_COORDINATOR, coordinator)
 
+    _reconcile_config_entry_unique_id(hass, entry, coordinator)
+
     # Registered explicitly, before the platforms below create any entity:
     # S Meter's per-phase sub-devices (see phase_device_info()) link back to
     # this device via via_device_id, which only resolves against a device
@@ -76,6 +78,46 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     logger.debug("Setup done")
 
     return True
+
+
+def _reconcile_config_entry_unique_id(
+    hass: HomeAssistant, entry: ConfigEntry, coordinator: PollingCoordinator
+) -> None:
+    """Rename this entry's own unique_id from its IP address to its real
+    device serial number, once one is known.
+
+    HA's own documented unique_id guidance (https://developers.home-
+    assistant.io/docs/entity_registry_index/, already the reasoning behind
+    _unique_id_for()'s identical choice at the entity level) explicitly
+    prohibits basing one on an IP address - it can change (DHCP lease
+    renewal, network reconfiguration), unlike the device's own serial.
+    config_flow.py already prefers the serial for a *new* entry when one is
+    available at setup time; this is what reconciles an *existing* entry
+    still on the older, IP-only scheme once a live read confirms one.
+
+    S Meter is skipped entirely - it declares no serial-equivalent field
+    over Modbus at all (see _modbus_identity()'s own docstring), so there is
+    nothing to reconcile to here. A newly *discovered* S Meter (see
+    config_flow.py's zeroconf step) gets a real, mDNS-sourced serial
+    instead, from the moment its entry is created - only an S Meter added
+    through the older, manual-IP-only flow stays on its IP permanently to
+    reconcile.
+
+    Self-healing, not a versioned migration step - same reasoning as
+    _unique_id_for(): async_migrate_entry() has no coordinator, so it can't
+    know a serial until a live read has happened, which only exists here,
+    after async_config_entry_first_refresh(). A no-op once already
+    reconciled, or for as long as no serial is available yet.
+    """
+    if coordinator.config.dev_type == "smeter":
+        return
+    serial = (coordinator.data or {}).get("d_serial")
+    if serial is None:
+        return
+    new_unique_id = str(serial)
+    if entry.unique_id == new_unique_id:
+        return
+    hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
 _CURRENT_VERSION = 14
