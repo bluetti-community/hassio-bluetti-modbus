@@ -1053,6 +1053,47 @@ class TestDeviceInfo(unittest.TestCase):
 
         self.assertIsNone(device_info(entry))
 
+    def test_falls_back_to_the_entry_s_own_serial_when_modbus_has_none(self):
+        # S Meter has no serial-equivalent Modbus register at all (see
+        # _modbus_identity()'s own docstring) - its only possible source is
+        # the one zeroconf discovery learned from the mDNS instance name and
+        # stored on the config entry itself (see async_step_zeroconf in
+        # config_flow.py).
+        entry = MagicMock()
+        entry.data = {
+            "address": "10.2.1.80",
+            "port": 502,
+            "name": "n",
+            "type": "smeter",
+            "serial": "1234567890123",
+        }
+        entry.title = "My S Meter"
+
+        info = device_info(entry)
+
+        self.assertEqual(info["serial_number"], "1234567890123")
+
+    def test_prefers_the_live_modbus_serial_over_the_entry_s_own_serial(self):
+        # Can't happen for a real device today (only S Meter ever has
+        # config.serial set, and S Meter never has a Modbus d_serial) - but
+        # this pins the intended priority: a live Modbus read is always more
+        # trustworthy than what was learned once, out of band, at discovery
+        # time.
+        entry = MagicMock()
+        entry.data = {
+            "address": "10.2.1.60",
+            "port": 502,
+            "name": "n",
+            "type": "balco260",
+            "serial": "stale-value",
+        }
+        entry.title = "My Balco260"
+        coordinator = MagicMock(data={"d_serial": 1234567890123})
+
+        info = device_info(entry, coordinator)
+
+        self.assertEqual(info["serial_number"], "1234567890123")
+
 
 class TestPhaseDeviceInfo(unittest.TestCase):
     @patch("custom_components.bluetti_modbus.dr")

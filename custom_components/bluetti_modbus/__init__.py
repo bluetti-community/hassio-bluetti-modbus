@@ -642,6 +642,15 @@ def device_info(
     # least once) - a key present with value None would overwrite what the
     # main device registration already set, see this function's docstring.
     serial_number, sw_version = _modbus_identity(coordinator)
+    # S Meter has no serial-equivalent Modbus register at all (see
+    # _modbus_identity()'s own docstring), so it never gets one this way -
+    # config.serial is its only possible source, learned once from zeroconf
+    # discovery's own mDNS instance name (see async_step_zeroconf in
+    # config_flow.py) and stored in the config entry at creation time.
+    # Every other device type already gets a live one above and never has
+    # config.serial set at all, so this never overrides a real Modbus read.
+    if serial_number is None:
+        serial_number = config.serial
     if serial_number is not None:
         info["serial_number"] = serial_number
     if sw_version is not None:
