@@ -19,6 +19,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
     TextSelector,
 )
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from modbus_connection.exceptions import ModbusError
 
 from .const import (
@@ -39,16 +40,22 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # Bumped for the one-time d_timestamp-disable, d_serial/d_ver_arm/
     # d_ver_dsp-removal, legible-default-title, title-spacing,
     # drop-serial-from-title, switch-entities, b_ver_1-removal,
-    # d_iot_ver-removal, battery-sub-device, unique_id-entry_id-prefix, and
-    # d_serial-replaces-d_iot_serial-as-identity, and
-    # fault/warning-entity-removal migrations - see
-    # __init__.py's async_migrate_entry(). Must stay in sync with
-    # _CURRENT_VERSION there - this is what HA stamps a newly created
-    # entry's version with.
-    VERSION = 13
+    # d_iot_ver-removal, battery-sub-device, unique_id-entry_id-prefix,
+    # d_serial-replaces-d_iot_serial-as-identity, fault/warning-entity-
+    # removal, and ac500-pv-type-disable migrations - see __init__.py's
+    # async_migrate_entry(). Must stay in sync with _CURRENT_VERSION there -
+    # this is what HA stamps a newly created entry's version with (a fresh
+    # entry created at a stale VERSION here would otherwise immediately
+    # trigger a real migration step on its very next setup, for no reason).
+    VERSION = 14
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")
+        # Only ever set by async_step_zeroconf, read back by
+        # async_step_zeroconf_confirm - the two always run as one flow
+        # instance, in that order.
+        self._discovered_host: str = ""
+        self._discovered_serial: str = ""
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -174,4 +181,72 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
             errors=errors,
             description_placeholders=description_placeholders,
+        )
+
+    async def async_step_zeroconf(
+        self, discovery_info: ZeroconfServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle an S Meter discovered via mDNS (_bluetti._tcp).
+
+        S Meter is the only device type that advertises this service today
+        (confirmed via avahi-browse against real hardware) - manifest.json's
+        zeroconf matcher ("smeter*", lowercase - HA lowercases the instance
+        name before matching, see homeassistant/components/zeroconf/
+        discovery.py) only ever routes here for a name that starts with the
+        product line.
+
+        The instance name is the product name immediately followed by the
+        device's own real serial number, e.g. "SMeter2614110629663" -
+        confirmed against a real S Meter's own local web UI ("SN:
+        2614110629663" for that exact instance). S Meter has no
+        serial-equivalent Modbus register at all (see
+        _modbus_identity()'s docstring in __init__.py), so this mDNS name
+        is the only way to learn its serial before ever connecting to it.
+
+        The advertised port (80, the device's own web UI) is not used for
+        the connectivity check below - Modbus TCP is always port 502 here.
+        """
+        host = discovery_info.host
+        serial = discovery_info.name.split(".")[0][len("smeter") :]
+
+        # Catches a duplicate-by-address even against an existing entry
+        # still on its own older, address-only unique_id (see
+        # _reconcile_config_entry_unique_id() in __init__.py) - plain
+        # _abort_if_unique_id_configured alone wouldn't, if that entry
+        # hasn't been reconciled to this same serial yet.
+        self._async_abort_entries_match({CONF_ADDRESS: host})
+        await self.async_set_unique_id(serial, raise_on_progress=False)
+        self._abort_if_unique_id_configured()
+
+        client = BluettiModbusClient(host, 502, "smeter")
+        try:
+            await client.read()
+        except (ModbusError, TimeoutError):
+            return self.async_abort(reason="cannot_connect")
+        finally:
+            await client.aclose()
+
+        self._discovered_host = host
+        self._discovered_serial = serial
+        self.context["title_placeholders"] = {"name": f"S Meter {serial}"}
+
+        return await self.async_step_zeroconf_confirm()
+
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask the user to confirm adding a zeroconf-discovered S Meter."""
+        if user_input is not None:
+            data = InitialDeviceConfig(
+                self._discovered_host, 502, "S Meter", "smeter"
+            )
+            return self.async_create_entry(
+                title="S Meter",
+                data={**data.as_dict},
+            )
+
+        self._set_confirm_only()
+        return self.async_show_form(
+            step_id="zeroconf_confirm",
+            description_placeholders={"address": self._discovered_host},
         )

@@ -13,5 +13,11 @@
         "tmodbus[async-serial]>=0.6.1",
         "probatio>=0.11.4"
     ],
-    "version": "0.0.55"
+    "version": "0.0.56",
+    "zeroconf": [
+        {
+            "type": "_bluetti._tcp.local.",
+            "name": "smeter*"
+        }
+    ]
 }
