@@ -35,6 +35,21 @@ def _discovery_info(
     )
 
 
+def _balco260_discovery_info(
+    host: str = "10.2.1.128",
+    name: str = "blhems-aabbccddeeff._bluetti._tcp.local.",
+) -> ZeroconfServiceInfo:
+    return ZeroconfServiceInfo(
+        ip_address=ip_address(host),
+        ip_addresses=[ip_address(host)],
+        port=80,
+        hostname="blhems-aabbccddeeff.local.",
+        type="_bluetti._tcp.local.",
+        name=name,
+        properties={},
+    )
+
+
 def _patched_client(read_side_effect=None, device_values=None):
     client = MagicMock()
     client.read = AsyncMock(side_effect=read_side_effect)
@@ -331,7 +346,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(show_form.call_args.kwargs["step_id"], "zeroconf_confirm")
         self.assertEqual(
             show_form.call_args.kwargs["description_placeholders"],
-            {"address": "10.2.1.80"},
+            {"name": "S Meter", "address": "10.2.1.80"},
         )
         self.assertEqual(result, "form")
 
@@ -461,10 +476,176 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
         show_form.assert_called_once()
 
 
+class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
+    async def test_routes_a_blhems_name_to_the_balco260_flow(self):
+        flow = _flow()
+        with patch.object(
+            flow, "_async_step_zeroconf_balco260", new=AsyncMock(return_value="balco260")
+        ) as balco260_step:
+            result = await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        balco260_step.assert_awaited_once()
+        self.assertEqual(result, "balco260")
+
+    async def test_routes_a_blhems_name_case_insensitively(self):
+        # HA lowercases the instance name before ever matching it against
+        # manifest.json's "blhems-*" pattern - confirmed real capture used
+        # lowercase throughout, but this must not depend on that.
+        flow = _flow()
+        with patch.object(
+            flow, "_async_step_zeroconf_balco260", new=AsyncMock(return_value="balco260")
+        ) as balco260_step:
+            await flow.async_step_zeroconf(
+                _balco260_discovery_info(name="BLHEMS-AABBCCDDEEFF._bluetti._tcp.local.")
+            )
+
+        balco260_step.assert_awaited_once()
+
+    async def test_routes_a_smeter_name_to_the_smeter_flow(self):
+        flow = _flow()
+        with patch.object(
+            flow, "_async_step_zeroconf_smeter", new=AsyncMock(return_value="smeter")
+        ) as smeter_step:
+            result = await flow.async_step_zeroconf(_discovery_info())
+
+        smeter_step.assert_awaited_once()
+        self.assertEqual(result, "smeter")
+
+
+class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
+    async def test_reads_the_serial_via_modbus_and_shows_confirm_form(self):
+        # Unlike S Meter, the mDNS name carries no usable identity of its
+        # own here ("blhems-<MAC address>", not a serial) - the real serial
+        # comes from the same Modbus read that already serves as the
+        # connectivity check.
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={"d_serial": 1234567890123}),
+            patch.object(flow, "_async_abort_entries_match") as abort_match,
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
+            patch.object(flow, "_abort_if_unique_id_configured") as abort_check,
+            patch.object(flow, "async_show_form", return_value="form") as show_form,
+        ):
+            result = await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        abort_match.assert_called_once_with({"address": "10.2.1.128"})
+        set_uid.assert_awaited_once_with("1234567890123", raise_on_progress=False)
+        abort_check.assert_called_once()
+        self.assertEqual(
+            flow.context["title_placeholders"], {"name": "Balco 260 1234567890123"}
+        )
+        self.assertEqual(show_form.call_args.kwargs["step_id"], "zeroconf_confirm")
+        self.assertEqual(
+            show_form.call_args.kwargs["description_placeholders"],
+            {"name": "Balco 260", "address": "10.2.1.128"},
+        )
+        self.assertIsNone(flow._discovered_firmware_version)
+        self.assertEqual(result, "form")
+
+    async def test_uses_the_modbus_port_not_the_advertised_web_ui_port(self):
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={"d_serial": 1234567890123}) as client_cls,
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form"),
+        ):
+            await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        client_cls.assert_called_once_with("10.2.1.128", 502, "balco260")
+
+    async def test_does_not_query_the_websocket(self):
+        # No independently confirmed value over what a live Modbus read
+        # already provides (see _async_step_zeroconf_balco260's own
+        # docstring) - and it would need authentication S Meter's own
+        # equivalent doesn't, which this flow has no way to provide.
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={"d_serial": 1234567890123}),
+            patch(
+                "custom_components.bluetti_modbus.config_flow.async_query_smeter",
+                new=AsyncMock(),
+            ) as query_ws,
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form"),
+        ):
+            await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        query_ws.assert_not_awaited()
+
+    async def test_aborts_when_modbus_does_not_respond(self):
+        flow = _flow()
+        with (
+            _patched_client(read_side_effect=ModbusConnectionError("no route")),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_abort", return_value="aborted") as async_abort,
+        ):
+            result = await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        async_abort.assert_called_once_with(reason="cannot_connect")
+        self.assertEqual(result, "aborted")
+
+    async def test_aborts_for_an_address_already_configured_before_connecting(self):
+        # Cheap, I/O-free dedupe happens before the Modbus attempt - same
+        # ordering as the manual flow, and no reason to connect to a device
+        # already configured under this address.
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={"d_serial": 1234567890123}) as client_cls,
+            patch.object(flow, "_async_abort_entries_match") as abort_match,
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form"),
+        ):
+            await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        abort_match.assert_called_once_with({"address": "10.2.1.128"})
+        client_cls.assert_called_once()
+
+    async def test_falls_back_to_the_host_when_no_serial_is_reported(self):
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={}),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form"),
+        ):
+            await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        set_uid.assert_awaited_once_with("10.2.1.128", raise_on_progress=False)
+
+    async def test_client_is_always_closed_after_the_connectivity_check(self):
+        flow = _flow()
+        with (
+            _patched_client(
+                read_side_effect=ModbusConnectionError("down")
+            ) as client_cls,
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_abort", return_value="aborted"),
+        ):
+            await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        client_cls.return_value.aclose.assert_awaited_once()
+
+
 class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
     async def test_no_input_shows_the_confirm_form(self):
         flow = _flow()
         flow._discovered_host = "10.2.1.80"
+        flow._discovered_dev_type = "smeter"
         with (
             patch.object(flow, "_set_confirm_only") as set_confirm_only,
             patch.object(flow, "async_show_form", return_value="form") as show_form,
@@ -475,7 +656,7 @@ class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(show_form.call_args.kwargs["step_id"], "zeroconf_confirm")
         self.assertEqual(
             show_form.call_args.kwargs["description_placeholders"],
-            {"address": "10.2.1.80"},
+            {"name": "S Meter", "address": "10.2.1.80"},
         )
         self.assertEqual(result, "form")
 
@@ -483,6 +664,7 @@ class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         flow._discovered_host = "10.2.1.80"
         flow._discovered_serial = "1234567890123"
+        flow._discovered_dev_type = "smeter"
         with patch.object(
             flow, "async_create_entry", return_value="entry"
         ) as create_entry:
@@ -505,6 +687,7 @@ class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         flow._discovered_host = "10.2.1.80"
         flow._discovered_serial = "1234567890123"
+        flow._discovered_dev_type = "smeter"
         flow._discovered_firmware_version = "V300510106"
         with patch.object(
             flow, "async_create_entry", return_value="entry"
@@ -514,3 +697,26 @@ class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             create_entry.call_args.kwargs["data"]["firmware_version"], "V300510106"
         )
+
+    async def test_confirming_a_balco260_creates_the_entry(self):
+        flow = _flow()
+        flow._discovered_host = "10.2.1.128"
+        flow._discovered_serial = "1234567890123"
+        flow._discovered_dev_type = "balco260"
+        with patch.object(
+            flow, "async_create_entry", return_value="entry"
+        ) as create_entry:
+            result = await flow.async_step_zeroconf_confirm({})
+
+        self.assertEqual(create_entry.call_args.kwargs["title"], "Balco 260")
+        self.assertEqual(
+            create_entry.call_args.kwargs["data"],
+            {
+                "address": "10.2.1.128",
+                "port": 502,
+                "name": "Balco 260",
+                "type": "balco260",
+                "serial": "1234567890123",
+            },
+        )
+        self.assertEqual(result, "entry")

@@ -23,13 +23,19 @@ class InitialDeviceConfig:
         self.port = port
         self.name = name
         self.dev_type = dev_type
-        # Only ever known out-of-band, from zeroconf discovery's own mDNS
-        # instance name (see async_step_zeroconf in config_flow.py) - S
-        # Meter has no serial-equivalent Modbus register at all, so a
-        # manually added S Meter (async_step_user) has no way to learn this
-        # and leaves it None, same as every non-S-Meter device (which
-        # already gets its serial live from Modbus - see _modbus_identity()
-        # in __init__.py).
+        # Only ever known out-of-band, at zeroconf discovery time (see
+        # config_flow.py) - never set by a manually added device
+        # (async_step_user), which has no equivalent out-of-band source.
+        # S Meter has no serial-equivalent Modbus register at all, so this
+        # is its only possible source, ever - see _modbus_identity()'s own
+        # docstring in __init__.py. Balco260 already gets a live one from
+        # Modbus on every poll and doesn't need this as a fallback the way
+        # S Meter does, but zeroconf discovery learns it anyway as a
+        # byproduct of its own connectivity check - harmless to store: it's
+        # never actually read back for a device whose live Modbus value is
+        # already available (see device_info()'s own fallback order), and
+        # gives a real, correct serial to show before that first live read
+        # happens at all.
         self.serial = serial
         # Only ever known out-of-band too, from a best-effort query against
         # the S Meter's own undocumented WebSocket API during zeroconf
