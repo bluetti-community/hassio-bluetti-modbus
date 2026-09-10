@@ -67,6 +67,44 @@ class TestInitialDeviceConfig(unittest.TestCase):
         )
         self.assertIsNone(config.serial)
 
+    def test_firmware_version_defaults_to_none_and_is_omitted_from_as_dict(self):
+        config = InitialDeviceConfig("10.2.1.60", 502, "n", "smeter")
+        self.assertIsNone(config.firmware_version)
+        self.assertNotIn("firmware_version", config.as_dict)
+
+    def test_as_dict_includes_firmware_version_when_given(self):
+        config = InitialDeviceConfig(
+            "10.2.1.60", 502, "n", "smeter", firmware_version="V300510106"
+        )
+        self.assertEqual(
+            config.as_dict,
+            {
+                "address": "10.2.1.60",
+                "port": 502,
+                "name": "n",
+                "type": "smeter",
+                "firmware_version": "V300510106",
+            },
+        )
+
+    def test_from_dict_recovers_the_firmware_version(self):
+        config = InitialDeviceConfig.from_dict(
+            {
+                "address": "10.2.1.60",
+                "port": 502,
+                "name": "n",
+                "type": "smeter",
+                "firmware_version": "V300510106",
+            }
+        )
+        self.assertEqual(config.firmware_version, "V300510106")
+
+    def test_from_dict_defaults_the_firmware_version_to_none_when_absent(self):
+        config = InitialDeviceConfig.from_dict(
+            {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
+        )
+        self.assertIsNone(config.firmware_version)
+
 
 class TestFullDeviceConfig(unittest.TestCase):
     def test_from_dict_with_valid_data(self):
@@ -98,3 +136,21 @@ class TestFullDeviceConfig(unittest.TestCase):
             {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
         )
         self.assertIsNone(config.serial)
+
+    def test_from_dict_recovers_the_firmware_version(self):
+        config = FullDeviceConfig.from_dict(
+            {
+                "address": "10.2.1.60",
+                "port": 502,
+                "name": "n",
+                "type": "smeter",
+                "firmware_version": "V300510106",
+            }
+        )
+        self.assertEqual(config.firmware_version, "V300510106")
+
+    def test_from_dict_defaults_the_firmware_version_to_none_when_absent(self):
+        config = FullDeviceConfig.from_dict(
+            {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
+        )
+        self.assertIsNone(config.firmware_version)

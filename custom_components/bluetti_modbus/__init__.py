@@ -653,6 +653,13 @@ def device_info(
         serial_number = config.serial
     if serial_number is not None:
         info["serial_number"] = serial_number
+    # Same reasoning as config.serial above, but for firmware - S Meter's
+    # only source is a one-time, best-effort WebSocket query made during
+    # zeroconf discovery (see smeter_ws.py), not a live Modbus read, so this
+    # can go stale after a firmware update - see config.firmware_version's
+    # own docstring.
+    if sw_version is None:
+        sw_version = config.firmware_version
     if sw_version is not None:
         info["sw_version"] = sw_version
 

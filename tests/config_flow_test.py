@@ -6,6 +6,14 @@ from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from modbus_connection.exceptions import ModbusConnectionError
 
 from custom_components.bluetti_modbus.config_flow import BluettiConfigFlow
+from custom_components.bluetti_modbus.smeter_ws import SmeterWsInfo
+
+
+def _patched_ws_query(firmware_version=None, modbus_tcp_enabled=None):
+    return patch(
+        "custom_components.bluetti_modbus.config_flow.async_query_smeter",
+        AsyncMock(return_value=SmeterWsInfo(firmware_version, modbus_tcp_enabled)),
+    )
 
 
 def _flow() -> BluettiConfigFlow:
@@ -304,6 +312,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
         flow.context = {}
         with (
             _patched_client(device_values={}),
+            _patched_ws_query(),
             patch.object(flow, "_async_abort_entries_match") as abort_match,
             patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
             patch.object(flow, "_abort_if_unique_id_configured") as abort_check,
@@ -334,6 +343,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
         flow.context = {}
         with (
             _patched_client(device_values={}) as client_cls,
+            _patched_ws_query(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
@@ -347,6 +357,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         with (
             _patched_client(read_side_effect=ModbusConnectionError("no route")),
+            _patched_ws_query(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
@@ -363,6 +374,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             _patched_client(
                 read_side_effect=ModbusConnectionError("down")
             ) as client_cls,
+            _patched_ws_query(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
@@ -371,6 +383,82 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             await flow.async_step_zeroconf(_discovery_info())
 
         client_cls.return_value.aclose.assert_awaited_once()
+
+    async def test_queries_the_websocket_on_the_advertised_web_ui_port(self):
+        # Not the Modbus port (502) - the WebSocket lives on the same port
+        # as the device's own web UI (80, per real mDNS captures), which
+        # discovery_info.port already carries.
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={}),
+            patch(
+                "custom_components.bluetti_modbus.config_flow.async_query_smeter",
+                new=AsyncMock(return_value=SmeterWsInfo(None, None)),
+            ) as query_ws,
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form"),
+        ):
+            await flow.async_step_zeroconf(_discovery_info())
+
+        query_ws.assert_awaited_once_with(flow.hass, "10.2.1.80", 80)
+
+    async def test_aborts_early_when_modbus_tcp_is_confirmed_disabled(self):
+        # A best-effort WebSocket query (see smeter_ws.py) confirmed the
+        # device itself reports Modbus TCP is turned off - a more specific
+        # reason than the generic "cannot_connect" the Modbus attempt below
+        # would otherwise produce, and no reason to even attempt it.
+        flow = _flow()
+        with (
+            _patched_client() as client_cls,
+            _patched_ws_query(modbus_tcp_enabled=False),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_abort", return_value="aborted") as async_abort,
+        ):
+            result = await flow.async_step_zeroconf(_discovery_info())
+
+        async_abort.assert_called_once_with(reason="modbus_tcp_disabled")
+        client_cls.assert_not_called()
+        self.assertEqual(result, "aborted")
+
+    async def test_stores_the_firmware_version_learned_from_the_websocket_query(self):
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={}),
+            _patched_ws_query(firmware_version="V300510106", modbus_tcp_enabled=True),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form"),
+        ):
+            await flow.async_step_zeroconf(_discovery_info())
+
+        self.assertEqual(flow._discovered_firmware_version, "V300510106")
+
+    async def test_a_failed_websocket_query_does_not_block_discovery(self):
+        # "Best effort": learning nothing from the WebSocket (see
+        # smeter_ws.py's own docstring for why it never raises) must never
+        # stop a real, working Modbus-based discovery.
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_client(device_values={}),
+            _patched_ws_query(),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form") as show_form,
+        ):
+            result = await flow.async_step_zeroconf(_discovery_info())
+
+        self.assertIsNone(flow._discovered_firmware_version)
+        self.assertEqual(result, "form")
+        show_form.assert_called_once()
 
 
 class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
@@ -412,3 +500,17 @@ class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
             },
         )
         self.assertEqual(result, "entry")
+
+    async def test_confirming_includes_the_firmware_version_when_known(self):
+        flow = _flow()
+        flow._discovered_host = "10.2.1.80"
+        flow._discovered_serial = "1234567890123"
+        flow._discovered_firmware_version = "V300510106"
+        with patch.object(
+            flow, "async_create_entry", return_value="entry"
+        ) as create_entry:
+            await flow.async_step_zeroconf_confirm({})
+
+        self.assertEqual(
+            create_entry.call_args.kwargs["data"]["firmware_version"], "V300510106"
+        )

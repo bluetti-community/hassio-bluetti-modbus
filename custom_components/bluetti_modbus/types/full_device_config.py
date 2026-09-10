@@ -14,6 +14,7 @@ class FullDeviceConfig:
         self.name = initial.name
         self.dev_type = initial.dev_type
         self.serial = initial.serial
+        self.firmware_version = initial.firmware_version
 
     @staticmethod
     def from_dict(raw: Mapping[str, Any]) -> "FullDeviceConfig | None":

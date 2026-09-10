@@ -28,6 +28,7 @@ from .const import (
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
 )
+from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
@@ -56,6 +57,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # instance, in that order.
         self._discovered_host: str = ""
         self._discovered_serial: str = ""
+        self._discovered_firmware_version: str | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -204,7 +206,15 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         is the only way to learn its serial before ever connecting to it.
 
         The advertised port (80, the device's own web UI) is not used for
-        the connectivity check below - Modbus TCP is always port 502 here.
+        the Modbus connectivity check below - Modbus TCP is always port 502
+        here. It is used, though, for a best-effort query (see smeter_ws.py)
+        against the same device's own undocumented WebSocket API - real
+        hardware confirms it answers there unauthenticated, unlike
+        Balco260's own equivalent. A confirmed-disabled Modbus TCP setting
+        aborts early with a specific reason instead of the connectivity
+        check's own generic one; any other outcome (including the query
+        itself failing or timing out) never blocks this flow - see
+        async_query_smeter's own docstring for why.
         """
         host = discovery_info.host
         serial = discovery_info.name.split(".")[0][len("smeter") :]
@@ -218,6 +228,10 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(serial, raise_on_progress=False)
         self._abort_if_unique_id_configured()
 
+        ws_info = await async_query_smeter(self.hass, host, discovery_info.port or 80)
+        if ws_info.modbus_tcp_enabled is False:
+            return self.async_abort(reason="modbus_tcp_disabled")
+
         client = BluettiModbusClient(host, 502, "smeter")
         try:
             await client.read()
@@ -228,6 +242,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self._discovered_host = host
         self._discovered_serial = serial
+        self._discovered_firmware_version = ws_info.firmware_version
         self.context["title_placeholders"] = {"name": f"S Meter {serial}"}
 
         return await self.async_step_zeroconf_confirm()
@@ -243,6 +258,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "S Meter",
                 "smeter",
                 serial=self._discovered_serial,
+                firmware_version=self._discovered_firmware_version,
             )
             return self.async_create_entry(
                 title="S Meter",
