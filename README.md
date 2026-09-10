@@ -22,7 +22,9 @@ documentation and verified against real hardware.
 * **Fully local.** Nothing leaves your network. Works alongside the cloud-based
   [BLUETTI](https://github.com/bluetti-official/bluetti-home-assistant) integration on
   the same device if you want both.
-* **Set up from the UI.** No YAML - add the integration, enter the IP address, done.
+* **Set up from the UI.** No YAML. S Meter and Balco 260 are discovered automatically on
+  your network (see [Configuration](#configuration-)) - for everything else, add the
+  integration, enter the IP address, done.
 * **Entities built from the device's own register map.** Every field the device
   reports becomes an entity, with the right device class, unit and precision applied
   automatically. Nothing is hard-coded per model.
@@ -97,6 +99,21 @@ _or manually:_
 2. Restart Home Assistant.
 
 ## Configuration 🛠️
+
+### Discovered automatically (S Meter, Balco 260)
+
+Both devices advertise themselves on the local network (mDNS/zeroconf) once Modbus TCP
+is enabled (see [Prerequisites](#prerequisites-)) - Home Assistant finds them on its own,
+usually within a minute or two:
+
+1. Go to **Settings** → **Devices & services**. A **Discovered** card shows your device.
+2. Select **Configure**, confirm, done.
+
+If it doesn't show up (a different subnet/VLAN than Home Assistant, for example, or
+mDNS/multicast blocked on your network), use manual setup below instead - both reach the
+same integration either way.
+
+### Manual setup (everything else, or if discovery doesn't find your device)
 
 1. Go to **Settings** → **Devices & services** → **+ Add integration**.
 2. Search for **Bluetti Modbus**.
