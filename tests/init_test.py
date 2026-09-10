@@ -1094,6 +1094,42 @@ class TestDeviceInfo(unittest.TestCase):
 
         self.assertEqual(info["serial_number"], "1234567890123")
 
+    def test_falls_back_to_the_entry_s_own_firmware_version_when_modbus_has_none(self):
+        # S Meter's only source is a one-time, best-effort WebSocket query
+        # made during zeroconf discovery (see smeter_ws.py), stored on the
+        # config entry itself - not a live Modbus read.
+        entry = MagicMock()
+        entry.data = {
+            "address": "10.2.1.80",
+            "port": 502,
+            "name": "n",
+            "type": "smeter",
+            "firmware_version": "V300510106",
+        }
+        entry.title = "My S Meter"
+
+        info = device_info(entry)
+
+        self.assertEqual(info["sw_version"], "V300510106")
+
+    def test_prefers_the_live_modbus_firmware_over_the_entry_s_own_firmware(self):
+        # Same reasoning as the serial priority test above - can't happen
+        # for a real device today, but pins the intended priority.
+        entry = MagicMock()
+        entry.data = {
+            "address": "10.2.1.60",
+            "port": 502,
+            "name": "n",
+            "type": "balco260",
+            "firmware_version": "stale-value",
+        }
+        entry.title = "My Balco260"
+        coordinator = MagicMock(data={"d_ver_arm": "1.0", "d_ver_dsp": "2.0"})
+
+        info = device_info(entry, coordinator)
+
+        self.assertEqual(info["sw_version"], "ARM v1.0, DSP v2.0")
+
 
 class TestPhaseDeviceInfo(unittest.TestCase):
     @patch("custom_components.bluetti_modbus.dr")

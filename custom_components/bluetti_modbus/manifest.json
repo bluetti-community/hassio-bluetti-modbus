@@ -13,7 +13,7 @@
         "tmodbus[async-serial]>=0.6.1",
         "probatio>=0.11.4"
     ],
-    "version": "0.0.57",
+    "version": "0.0.58",
     "zeroconf": [
         {
             "type": "_bluetti._tcp.local.",

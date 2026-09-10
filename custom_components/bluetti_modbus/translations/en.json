@@ -19,7 +19,8 @@
     "abort": {
       "no_unconfigured_devices": "No devices found",
       "already_configured": "Device is already configured",
-      "cannot_connect": "Failed to connect to the device"
+      "cannot_connect": "Failed to connect to the device",
+      "modbus_tcp_disabled": "Modbus TCP is disabled on this device - enable it in the device's own web settings, then try again"
     }
   },
   "entity": {

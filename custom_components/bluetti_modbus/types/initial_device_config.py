@@ -6,6 +6,7 @@ CONF_PORT = "port"
 CONF_NAME = "name"
 CONF_TYPE = "type"
 CONF_SERIAL = "serial"
+CONF_FIRMWARE_VERSION = "firmware_version"
 
 
 class InitialDeviceConfig:
@@ -16,6 +17,7 @@ class InitialDeviceConfig:
         name: str,
         dev_type: str,
         serial: str | None = None,
+        firmware_version: str | None = None,
     ):
         self.address = address
         self.port = port
@@ -29,6 +31,15 @@ class InitialDeviceConfig:
         # already gets its serial live from Modbus - see _modbus_identity()
         # in __init__.py).
         self.serial = serial
+        # Only ever known out-of-band too, from a best-effort query against
+        # the S Meter's own undocumented WebSocket API during zeroconf
+        # discovery (see smeter_ws.py) - captured once at add time and
+        # never refreshed afterwards (unlike sw_version for other device
+        # types, which is read live from Modbus on every poll), so this can
+        # go stale after a firmware update. Accepted trade-off - see
+        # smeter_ws.py's own docstring for why nothing better is available
+        # for S Meter today.
+        self.firmware_version = firmware_version
 
     @staticmethod
     def from_dict(raw: Mapping[str, Any]) -> "InitialDeviceConfig | None":
@@ -41,6 +52,7 @@ class InitialDeviceConfig:
             raw[CONF_NAME],
             raw[CONF_TYPE],
             raw.get(CONF_SERIAL),
+            raw.get(CONF_FIRMWARE_VERSION),
         )
 
     @property
@@ -53,6 +65,8 @@ class InitialDeviceConfig:
         }
         if self.serial is not None:
             data[CONF_SERIAL] = self.serial
+        if self.firmware_version is not None:
+            data[CONF_FIRMWARE_VERSION] = self.firmware_version
         return data
 
     @staticmethod
