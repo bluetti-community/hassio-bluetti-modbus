@@ -9,8 +9,8 @@
         }
       },
       "zeroconf_confirm": {
-        "title": "Discovered S Meter",
-        "description": "Do you want to set up the S Meter found at {address}?"
+        "title": "Discovered device",
+        "description": "Do you want to set up the {name} found at {address}?"
       }
     },
     "error": {
