@@ -120,7 +120,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 15
+_CURRENT_VERSION = 16
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -276,6 +276,19 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     duplication was actually reported - on a Balco260 the same field may be
     carrying readings someone already built on, and nothing says it is
     redundant there.
+
+    15 -> 16: g_i_p_local/ac_o_p_local have been disabled by default since
+    the 2026-09-06 real-hardware finding (field_metadata.py's
+    _POWER_DISABLED), but nothing ever migrated the entries that already had
+    them registered - so an install predating that change still shows them,
+    which is the other half of #92: on the reporter's AC500 "Grid Input
+    Power" reads the same as "Total Grid Input Power", per-inverter and
+    system-wide being the same thing on a single-inverter system. Same
+    dev_type == "ac500" guard and same reasoning as the 14 -> 15 step: on a
+    Balco260 these read a permanent 0 rather than a duplicate, and a
+    multi-inverter one might still be the case where they carry the real
+    breakdown, so leave those entries alone rather than disabling an entity
+    their owner may have deliberately kept.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -480,6 +493,22 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         disabled_by=er.RegistryEntryDisabler.INTEGRATION,
                     )
         version = 15
+
+    if version == 15:
+        # The two AC500 declares of the per-inverter family disabled on
+        # 2026-09-06; matched by unique_id suffix for the same reason as the
+        # 12 -> 13 through 14 -> 15 steps above.
+        if config is not None and config.dev_type == "ac500":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if (
+                    entity_entry.unique_id.endswith(("_g_i_p_local", "_ac_o_p_local"))
+                    and entity_entry.disabled_by is None
+                ):
+                    registry.async_update_entity(
+                        entity_entry.entity_id,
+                        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+                    )
+        version = 16
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
