@@ -13,15 +13,15 @@
         "tmodbus[async-serial]>=0.6.1",
         "probatio>=0.11.4"
     ],
-    "version": "0.0.60",
+    "version": "0.0.61",
     "zeroconf": [
         {
             "type": "_bluetti._tcp.local.",
             "name": "smeter*"
         },
         {
-            "type": "_bluetti._tcp.local.",
-            "name": "blhems-*"
+            "type": "_http._tcp.local.",
+            "name": "bluetti hems*"
         }
     ]
 }

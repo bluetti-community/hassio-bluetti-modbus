@@ -191,18 +191,27 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Route a zeroconf discovery to the matching device type's own flow.
 
-        manifest.json declares two zeroconf matchers under the same
-        "_bluetti._tcp" service (see its own comments), each routing here
-        for a different instance-name prefix (case-insensitive - HA
-        lowercases the name before matching, see
-        homeassistant/components/zeroconf/discovery.py): "smeter*" for an
-        S Meter, "blhems-*" for a Balco260 - confirmed via avahi-browse and
-        a real Balco260's own getNetworkStatusRsp (over its WebSocket, see
-        _async_step_zeroconf_balco260) reporting "blhems-<its own MAC
-        address, lowercase, no separators>" as its mdns_hostname.
+        manifest.json declares two zeroconf matchers, each under its own
+        service type and routing here for a different instance-name prefix
+        (case-insensitive - HA lowercases the name before matching, see
+        homeassistant/components/zeroconf/discovery.py): "_bluetti._tcp" +
+        "smeter*" for an S Meter, "_http._tcp" + "bluetti hems*" for a
+        Balco260 - both confirmed against real hardware via an actual mDNS
+        browser (not just avahi-browse's own summary, which doesn't
+        distinguish service types as clearly): the Balco260 advertises
+        under the generic "_http._tcp" service (shared with unrelated
+        devices on the network, the same reason Shelly's own manifest.json
+        narrows some of its own zeroconf matchers by name), as "Bluetti
+        HEMS[-N]" (an mDNS conflict-resolution suffix may or may not be
+        appended, depending on what else is on the network) - not the
+        "blhems-<MAC address>" an earlier revision assumed, which was
+        actually this device's own DNS *hostname* (its own getNetworkStatusRsp's
+        "mdns_hostname" field, over its WebSocket), a different thing from
+        the mDNS *service instance name* zeroconf discovery actually
+        matches on.
         """
         instance_name = discovery_info.name.split(".")[0]
-        if instance_name.lower().startswith("blhems-"):
+        if instance_name.lower().startswith("bluetti hems"):
             return await self._async_step_zeroconf_balco260(discovery_info)
         return await self._async_step_zeroconf_smeter(discovery_info)
 
@@ -265,13 +274,18 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a Balco260 discovered via mDNS.
 
         Unlike S Meter, the mDNS instance name here carries no usable
-        identity of its own - "blhems-<MAC address>" (confirmed via a real
-        Balco260's own getNetworkStatusRsp, received over its WebSocket
-        after logging in with its default "admin"/empty-password
-        credentials: mdns_hostname was "blhems-aabbccddeeff.local" for a
-        device whose sta_mac was "AA:BB:CC:DD:EE:FF") is the device's
-        network interface identity, not its own serial number the way S
-        Meter's mDNS name is.
+        identity of its own - "Bluetti HEMS[-N]" (confirmed against real
+        hardware via Home Assistant's own network-discovery view; an
+        optional "-N" suffix is ordinary mDNS conflict-resolution numbering
+        when more than one such device is on the network, not part of the
+        name itself) is a fixed, generic product label, not the device's
+        own serial number the way S Meter's mDNS name is - and not the
+        "blhems-<MAC address>" DNS *hostname* a still-unconfirmed earlier
+        revision of this comment assumed either (see that device's own
+        getNetworkStatusRsp, received over its WebSocket after logging in
+        with its default "admin"/empty-password credentials, for where
+        that string actually comes from - a real value, just answering a
+        different question than "what does zeroconf discovery match on").
 
         That WebSocket capture's own device_info/getVersionRsp (serial
         "1234567890123", firmware "arm:V500110112,dsp:V500140110,
