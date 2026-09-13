@@ -175,6 +175,12 @@ integration - documented here so you don't have to rediscover them.
   real Balco 260 while their `_total` counterparts change normally at the same
   moment. They are **disabled by default**; the `_total`/phase-1 sensors are the
   ones to use. Reported to BLUETTI.
+* **`pv_i_p_local` repeats the PV total.** Unlike the fields above it carries
+  real values, but it measures this one inverter - which on a single-inverter
+  system is the whole system, so it repeats `pv_i_p_total` and, with only one PV
+  string in use, `pv_1_i_p`. Also **disabled by default**; enable it if you run
+  several inverters together. (`pv_i_e_local` stays enabled: on an AC500 it is
+  the only cumulative PV energy reading there is.)
 * **Inverter fault/warning are not exposed.** The library's fault and warning enums
   only decode their "no fault"/"no warning" value, so those sensors would go blank
   exactly when something went wrong. They will return once real codes can be

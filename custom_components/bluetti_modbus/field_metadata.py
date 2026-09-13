@@ -265,8 +265,22 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "pv_ac_e_local": _ENERGY_DIAGNOSTIC,
     "pv_ac_p_local": _POWER,
     "pv_dc_count": _DIAGNOSTIC,
+    # pv_i_e_local (50229) stays enabled despite being from the same
+    # "Each Inverter Information" block as the disabled fields above: AC500
+    # declares no pv_i_e_total, so this is its only cumulative PV energy
+    # reading and disabling it would leave an Energy dashboard with nothing
+    # to draw on.
     "pv_i_e_local": _ENERGY_DIAGNOSTIC,
-    "pv_i_p_local": _POWER,
+    # pv_i_p_local (50219, "PV Charging Power (Single)") is disabled for a
+    # different reason than the permanent zero documented on
+    # _POWER_DISABLED: it carries real values on a live AC500, but measures
+    # this one inverter, which on a single-inverter system - every install
+    # tested so far - is the whole system, so it just repeats pv_i_p_total
+    # and, with only one PV string in use, pv_1_i_p
+    # (bluetti-community/hassio-bluetti-modbus#92). Still enable-able for a
+    # genuinely multi-inverter system, same as the fields above: register
+    # 50001 allows 1~10, "one master, multiple slaves".
+    "pv_i_p_local": _POWER_DISABLED,
 }
 
 
