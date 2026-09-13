@@ -37,14 +37,14 @@ def _discovery_info(
 
 def _balco260_discovery_info(
     host: str = "10.2.1.128",
-    name: str = "blhems-aabbccddeeff._bluetti._tcp.local.",
+    name: str = "Bluetti HEMS-2._http._tcp.local.",
 ) -> ZeroconfServiceInfo:
     return ZeroconfServiceInfo(
         ip_address=ip_address(host),
         ip_addresses=[ip_address(host)],
         port=80,
         hostname="blhems-aabbccddeeff.local.",
-        type="_bluetti._tcp.local.",
+        type="_http._tcp.local.",
         name=name,
         properties={},
     )
@@ -477,7 +477,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
 
 
 class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
-    async def test_routes_a_blhems_name_to_the_balco260_flow(self):
+    async def test_routes_a_bluetti_hems_name_to_the_balco260_flow(self):
         flow = _flow()
         with patch.object(
             flow, "_async_step_zeroconf_balco260", new=AsyncMock(return_value="balco260")
@@ -487,16 +487,30 @@ class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
         balco260_step.assert_awaited_once()
         self.assertEqual(result, "balco260")
 
-    async def test_routes_a_blhems_name_case_insensitively(self):
-        # HA lowercases the instance name before ever matching it against
-        # manifest.json's "blhems-*" pattern - confirmed real capture used
-        # lowercase throughout, but this must not depend on that.
+    async def test_routes_a_bluetti_hems_name_without_the_conflict_suffix(self):
+        # The "-N" is ordinary mDNS conflict-resolution numbering, not part
+        # of the name itself - a lone device on the network reports no
+        # suffix at all (confirmed against real hardware).
         flow = _flow()
         with patch.object(
             flow, "_async_step_zeroconf_balco260", new=AsyncMock(return_value="balco260")
         ) as balco260_step:
             await flow.async_step_zeroconf(
-                _balco260_discovery_info(name="BLHEMS-AABBCCDDEEFF._bluetti._tcp.local.")
+                _balco260_discovery_info(name="Bluetti HEMS._http._tcp.local.")
+            )
+
+        balco260_step.assert_awaited_once()
+
+    async def test_routes_a_bluetti_hems_name_case_insensitively(self):
+        # HA lowercases the instance name before ever matching it against
+        # manifest.json's "bluetti hems*" pattern - confirmed real capture
+        # used mixed case ("Bluetti HEMS-2"), so this must not depend on it.
+        flow = _flow()
+        with patch.object(
+            flow, "_async_step_zeroconf_balco260", new=AsyncMock(return_value="balco260")
+        ) as balco260_step:
+            await flow.async_step_zeroconf(
+                _balco260_discovery_info(name="BLUETTI HEMS-2._http._tcp.local.")
             )
 
         balco260_step.assert_awaited_once()
@@ -515,9 +529,9 @@ class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
 class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
     async def test_reads_the_serial_via_modbus_and_shows_confirm_form(self):
         # Unlike S Meter, the mDNS name carries no usable identity of its
-        # own here ("blhems-<MAC address>", not a serial) - the real serial
-        # comes from the same Modbus read that already serves as the
-        # connectivity check.
+        # own here ("Bluetti HEMS[-N]", a fixed generic label, not a
+        # serial) - the real serial comes from the same Modbus read that
+        # already serves as the connectivity check.
         flow = _flow()
         flow.context = {}
         with (
