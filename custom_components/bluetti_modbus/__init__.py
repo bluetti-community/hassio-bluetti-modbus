@@ -120,7 +120,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 14
+_CURRENT_VERSION = 15
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -266,6 +266,16 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     same guard as the 1 -> 2 step (never fights a user who re-enables them
     themselves afterward, and a no-op if a beta install already had them
     disabled).
+
+    14 -> 15: pv_i_p_local switched to disabled by default
+    (field_metadata.py) - on a single-inverter system it duplicates
+    pv_i_p_total, as reported on a real AC500 (#92). Same
+    first-registration-only caveat as the 1 -> 2 and 13 -> 14 steps, so
+    disable it explicitly here too. Guarded to dev_type == "ac500", where
+    every install came off the beta track with it enabled and the
+    duplication was actually reported - on a Balco260 the same field may be
+    carrying readings someone already built on, and nothing says it is
+    redundant there.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -455,6 +465,21 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         disabled_by=er.RegistryEntryDisabler.INTEGRATION,
                     )
         version = 14
+
+    if version == 14:
+        # Matched by unique_id suffix for the same reason as the 12 -> 13 and
+        # 13 -> 14 steps above.
+        if config is not None and config.dev_type == "ac500":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if (
+                    entity_entry.unique_id.endswith("_pv_i_p_local")
+                    and entity_entry.disabled_by is None
+                ):
+                    registry.async_update_entity(
+                        entity_entry.entity_id,
+                        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+                    )
+        version = 15
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
