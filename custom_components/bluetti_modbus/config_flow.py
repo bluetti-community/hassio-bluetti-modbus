@@ -193,27 +193,43 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Route a zeroconf discovery to the matching device type's own flow.
 
-        manifest.json declares two zeroconf matchers, each under its own
-        service type and routing here for a different instance-name prefix
-        (case-insensitive - HA lowercases the name before matching, see
-        homeassistant/components/zeroconf/discovery.py): "_bluetti._tcp" +
-        "smeter*" for an S Meter, "_http._tcp" + "bluetti hems*" for a
-        Balco260 - both confirmed against real hardware via an actual mDNS
-        browser (not just avahi-browse's own summary, which doesn't
-        distinguish service types as clearly): the Balco260 advertises
-        under the generic "_http._tcp" service (shared with unrelated
-        devices on the network, the same reason Shelly's own manifest.json
-        narrows some of its own zeroconf matchers by name), as "Bluetti
-        HEMS[-N]" (an mDNS conflict-resolution suffix may or may not be
-        appended, depending on what else is on the network) - not the
-        "blhems-<MAC address>" an earlier revision assumed, which was
-        actually this device's own DNS *hostname* (its own getNetworkStatusRsp's
-        "mdns_hostname" field, over its WebSocket), a different thing from
-        the mDNS *service instance name* zeroconf discovery actually
-        matches on.
+        manifest.json declares three zeroconf matchers, each routing here
+        for a different instance-name prefix (case-insensitive - HA
+        lowercases the name before matching, see
+        homeassistant/components/zeroconf/discovery.py):
+
+        - "_bluetti._tcp" + "smeter*": an S Meter. Confirmed against real
+          hardware.
+        - "_http._tcp" + "bluetti hems*": a Balco260 on current firmware.
+          Confirmed against real hardware via an actual mDNS browser (not
+          just avahi-browse's own summary, which doesn't distinguish
+          service types as clearly): it advertises under the generic
+          "_http._tcp" service (shared with unrelated devices on the
+          network, the same reason Shelly's own manifest.json narrows some
+          of its own zeroconf matchers by name), as "Bluetti HEMS[-N]" (an
+          mDNS conflict-resolution suffix may or may not be appended,
+          depending on what else is on the network) - not the
+          "blhems-<MAC address>" an earlier revision assumed, which was
+          actually this device's own DNS *hostname* (its own
+          getNetworkStatusRsp's "mdns_hostname" field, over its
+          WebSocket), a different thing from the mDNS *service instance
+          name* zeroconf discovery actually matches on.
+        - "_bluetti._tcp" + "balco260*": a Balco260 on a future firmware.
+          BLUETTI support wrote (2026-09-14) that they will "standardize
+          the management of the Balco260's mDNS and try to keep it
+          consistent with the S Meter": instance name "Balco260 + SN",
+          service "_bluetti._tcp" instead of "_http._tcp". Declared ahead
+          of that firmware so discovery keeps working the day it ships,
+          without an integration update - NOT yet confirmed against real
+          hardware, and the exact separator between "Balco260" and the SN
+          (if any) is unknown, which is why only the prefix is relied on:
+          the balco260 flow learns the serial from the device's own
+          d_serial register over Modbus anyway, never from this name. The
+          "_http._tcp" matcher stays for every device still on today's
+          firmware.
         """
-        instance_name = discovery_info.name.split(".")[0]
-        if instance_name.lower().startswith("bluetti hems"):
+        instance_name = discovery_info.name.split(".")[0].lower()
+        if instance_name.startswith(("bluetti hems", "balco260")):
             return await self._async_step_zeroconf_balco260(discovery_info)
         return await self._async_step_zeroconf_smeter(discovery_info)
 
