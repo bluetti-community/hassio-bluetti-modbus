@@ -225,9 +225,11 @@ Logs are under **Settings** → **System** → **Logs**.
 1. **Settings** → **Devices & services** → **Bluetti Modbus**.
 2. Open the device, then the **⋮** menu → **Download diagnostics**.
 
-The file contains every field the device last reported, with the address and serial
-numbers redacted. Attach it to a bug report - almost every question about a missing
-or wrong sensor is answered by one.
+The file contains every field the device last reported, plus the raw register words
+behind them (read once more at download time), with the address and serial numbers
+redacted. Attach it to a bug report - almost every question about a missing or wrong
+sensor is answered by one, and the raw words settle whether a wrong value is a decode
+problem on our side or what the device actually sent.
 
 ### Common problems
 

@@ -105,6 +105,32 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         return self._client.device
 
+    async def async_read_raw_registers(self) -> dict[str, dict[str, dict[int, int | bool]]]:
+        """Read every declared register block again and return it undecoded.
+
+        For a diagnostics dump only - one extra Modbus read of the same
+        blocks the poll reads, on the same connection, serialized against
+        the poll via self._io_lock like a write is. Each entry is what
+        modbus_connection's own Component.async_read_raw() returns,
+        {address space: {address: word}}, i.e. what the device put on the
+        wire before any decode - the one thing that settles "decode bug or
+        device bug" (width, sign, word order) when a decoded value looks
+        wrong, which the decoded snapshot in coordinator.data can't.
+
+        "device" is the main device at its own unit id; "aggregate_pack_summary"
+        is the Balco260-only Pack Summary block at unit 250 (see
+        aggregate_pack_summary()'s docstring), present once the poll has
+        built that component. Raises the same ModbusError subclasses as a
+        poll - the caller decides how to present a failed read.
+        """
+        async with self._io_lock:
+            raw = {"device": await self.device.async_read_raw(notify=False)}
+            if self._aggregate_summary is not None:
+                raw["aggregate_pack_summary"] = await self._aggregate_summary.async_read_raw(
+                    notify=False
+                )
+        return raw
+
     async def async_write(self, field_name: str, value: int) -> None:
         """Write a single field, serialized against the periodic poll."""
         async with self._io_lock:
