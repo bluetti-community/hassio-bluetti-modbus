@@ -515,6 +515,36 @@ class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
 
         balco260_step.assert_awaited_once()
 
+    async def test_routes_a_future_balco260_bluetti_tcp_name_to_the_balco260_flow(self):
+        # BLUETTI support's stated plan (2026-09-14): the Balco260 will move
+        # to "_bluetti._tcp" with an S Meter-style "Balco260 + SN" instance
+        # name. Unconfirmed on hardware, so the exact separator is unknown -
+        # only the prefix is relied on, and a name that reaches this flow
+        # under "_bluetti._tcp" must not fall through to the S Meter flow.
+        for name in (
+            "Balco2601234567890123._bluetti._tcp.local.",
+            "Balco260-1234567890123._bluetti._tcp.local.",
+            "BALCO260_1234567890123._bluetti._tcp.local.",
+        ):
+            with self.subTest(name=name):
+                flow = _flow()
+                with (
+                    patch.object(
+                        flow,
+                        "_async_step_zeroconf_balco260",
+                        new=AsyncMock(return_value="balco260"),
+                    ) as balco260_step,
+                    patch.object(
+                        flow, "_async_step_zeroconf_smeter", new=AsyncMock()
+                    ) as smeter_step,
+                ):
+                    await flow.async_step_zeroconf(
+                        _discovery_info(host="10.2.1.128", name=name)
+                    )
+
+                balco260_step.assert_awaited_once()
+                smeter_step.assert_not_awaited()
+
     async def test_routes_a_smeter_name_to_the_smeter_flow(self):
         flow = _flow()
         with patch.object(

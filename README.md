@@ -113,6 +113,11 @@ If it doesn't show up (a different subnet/VLAN than Home Assistant, for example,
 mDNS/multicast blocked on your network), use manual setup below instead - both reach the
 same integration either way.
 
+BLUETTI has told us a future Balco 260 firmware will advertise the same way the S Meter
+does (a `_bluetti._tcp` service named after the model and serial number, instead of
+today's generic `_http._tcp` "Bluetti HEMS"). Both forms are recognised, so discovery
+keeps working across that update without any change on your side.
+
 ### Manual setup (everything else, or if discovery doesn't find your device)
 
 1. Go to **Settings** → **Devices & services** → **+ Add integration**.
