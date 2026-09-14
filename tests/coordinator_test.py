@@ -224,6 +224,88 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         client_cls.return_value.aclose.assert_awaited_once()
 
 
+class TestReadRawRegisters(unittest.IsolatedAsyncioTestCase):
+    """The undecoded register words behind a diagnostics dump - see
+    PollingCoordinator.async_read_raw_registers()."""
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_returns_the_devices_raw_map(self, client_cls):
+        raw = {"holding": {50001: 1, 50002: 432}}
+        client_cls.return_value.device.async_read_raw = AsyncMock(return_value=raw)
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        result = await coordinator.async_read_raw_registers()
+
+        self.assertEqual(result, {"device": raw})
+        # notify=False: a diagnostics read must not fire update listeners
+        # as if it were a poll.
+        client_cls.return_value.device.async_read_raw.assert_awaited_once_with(notify=False)
+
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_includes_the_aggregate_summary_once_a_poll_has_built_it(
+        self, client_cls, aggregate_fn
+    ):
+        client_cls.return_value.device = MagicMock(spec=Balco260)
+        client_cls.return_value.device.async_read_raw = AsyncMock(
+            return_value={"holding": {50001: 1}}
+        )
+        client_cls.return_value.read = AsyncMock(return_value=[])
+        aggregate = aggregate_fn.return_value
+        aggregate.async_update_with_retry = AsyncMock()
+        aggregate.values = {}
+        aggregate.async_read_raw = AsyncMock(return_value={"holding": {51001: 4}})
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        # Before any poll the aggregate component doesn't exist yet - the
+        # raw dump only covers the main device.
+        self.assertEqual(
+            await coordinator.async_read_raw_registers(),
+            {"device": {"holding": {50001: 1}}},
+        )
+
+        await coordinator._async_update_data()
+
+        self.assertEqual(
+            await coordinator.async_read_raw_registers(),
+            {
+                "device": {"holding": {50001: 1}},
+                "aggregate_pack_summary": {"holding": {51001: 4}},
+            },
+        )
+        aggregate.async_read_raw.assert_awaited_once_with(notify=False)
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_waits_for_an_in_flight_poll_to_finish(self, client_cls):
+        # Same reason as async_write: this device's Modbus TCP stack is
+        # fragile under overlapping requests on one connection, so a
+        # diagnostics read must queue behind the poll, not race it.
+        read_started = asyncio.Event()
+        release_read = asyncio.Event()
+
+        async def slow_read():
+            read_started.set()
+            await release_read.wait()
+            return []
+
+        client_cls.return_value.read = slow_read
+        client_cls.return_value.device.async_read_raw = AsyncMock(return_value={})
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        update_task = asyncio.ensure_future(coordinator._async_update_data())
+        await read_started.wait()
+
+        raw_task = asyncio.ensure_future(coordinator.async_read_raw_registers())
+        await asyncio.sleep(0)
+        self.assertFalse(client_cls.return_value.device.async_read_raw.called)
+
+        release_read.set()
+        await update_task
+        await raw_task
+
+        client_cls.return_value.device.async_read_raw.assert_awaited_once()
+
+
 class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
     """The "Pack Summary" block (51001-51008) - only reports correctly at a
     different Modbus slave address (250) than the main device's own, see

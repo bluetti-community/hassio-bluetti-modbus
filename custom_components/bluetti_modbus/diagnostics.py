@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.diagnostics import async_redact_data
+from homeassistant.components.diagnostics import REDACTED, async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from modbus_connection.exceptions import ModbusError
 
 from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import PollingCoordinator
@@ -28,6 +29,52 @@ def _is_serial_field(field_name: str) -> bool:
     return field_name in ("d_serial", "d_iot_serial", "b_serial") or field_name.endswith(
         "_b_serial"
     )
+
+
+def _serial_addresses(coordinator: PollingCoordinator) -> set[int]:
+    """Every holding-register address a serial field occupies on this device.
+
+    Derived from the device's own field declarations rather than listed by
+    hand, so a raw dump redacts exactly the words the decoded snapshot
+    redacts (see _is_serial_field) - whatever address/width a model
+    declares its serials at. Only fields with a fixed address and count
+    (the RegisterField family) can be mapped to addresses; any other kind
+    of field is not a serial anyway.
+    """
+    addresses: set[int] = set()
+    for name in coordinator.device.field_names():
+        if not _is_serial_field(name):
+            continue
+        field = coordinator.device.get_field(name)
+        address = getattr(field, "address", None)
+        count = getattr(field, "count", None)
+        if isinstance(address, int) and isinstance(count, int):
+            addresses.update(range(address, address + count))
+    return addresses
+
+
+async def _raw_registers(coordinator: PollingCoordinator) -> dict[str, Any]:
+    """The undecoded register words behind coordinator.data, serials redacted.
+
+    A failed read must not fail the whole diagnostics download - the
+    decoded snapshot above is still worth having, and the error itself is
+    part of what a dump is for. So it lands under "error" instead.
+    """
+    try:
+        raw = await coordinator.async_read_raw_registers()
+    except (ModbusError, TimeoutError) as err:
+        return {"error": f"{type(err).__name__}: {err}"}
+    serials = _serial_addresses(coordinator)
+    return {
+        component: {
+            space: {
+                address: (REDACTED if address in serials else word)
+                for address, word in words.items()
+            }
+            for space, words in spaces.items()
+        }
+        for component, spaces in raw.items()
+    }
 
 
 async def async_get_config_entry_diagnostics(
@@ -63,4 +110,11 @@ async def async_get_config_entry_diagnostics(
                 data, {name for name in data if _is_serial_field(name)}
             ),
         },
+        # The same registers undecoded - see async_read_raw_registers(). A
+        # width/sign/word-order question about any value in "data" above
+        # is answered here without another round trip to the reporter;
+        # and modbus_connection's mock can load this map back as a fixture
+        # (load_raw() accepts JSON's string keys since 4.12.0), so a real
+        # device's dump can become a regression test verbatim.
+        "raw_registers": await _raw_registers(coordinator),
     }
