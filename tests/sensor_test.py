@@ -674,6 +674,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             "b_soc_total",
             "pv_1_i_type",
             "pv_2_i_type",
+            "pv_i_e_local",
             "d_num_inverters",
         ]
         bluetti_device.get_field.side_effect = _field
@@ -705,6 +706,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # strings connected) - disabled by default until confirmed.
         self.assertFalse(by_key["pv_1_i_type"]._attr_entity_registry_enabled_default)
         self.assertFalse(by_key["pv_2_i_type"]._attr_entity_registry_enabled_default)
+        # A flat 0 on Balco260 (disabled by default there), but AC500's only
+        # cumulative PV energy reading - stays on.
+        self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
 
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")

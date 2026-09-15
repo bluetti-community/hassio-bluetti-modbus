@@ -73,6 +73,28 @@ _DIAGNOSTIC_DISABLED = FieldMetadata(category=EntityCategory.DIAGNOSTIC, enabled
 _DIAGNOSTIC_MEASUREMENT = FieldMetadata(
     state_class=SensorStateClass.MEASUREMENT, category=EntityCategory.DIAGNOSTIC
 )
+# Six more Balco260 registers that never carry a value - 11 days of
+# continuous data on a real unit (2026-09-05 to 2026-09-15, one inverter,
+# one pack, firmware ARM 50011.01.12 / DSP 50014.01.10 / BMS 50008.01.10),
+# every one a flat 0 by day and by night while the reading it stands for
+# was demonstrably available elsewhere: b_t_avg (51224) with the raw
+# register itself reading 0; b_time_to_full/b_time_to_empty (51248/51249)
+# while their _total counterparts at unit 250 moved between 0 and 56000
+# min; d_self_consumption (50233) on a unit visibly self-consuming its PV;
+# and pv_ac_p_local/pv_ac_e_local/pv_i_e_local (50221/50231/50229), the
+# rest of the "(Single)" block already disabled above - pv_ac_e_local did
+# carry its _total's value for two hours on 2026-09-06, alternating with 0
+# every few minutes, then went back to 0 for good. Reported to BLUETTI
+# 2026-09-15. Disabled rather than removed, same reasoning as
+# _POWER_DISABLED.
+_TEMPERATURE_DISABLED = FieldMetadata(
+    device_class=SensorDeviceClass.TEMPERATURE,
+    state_class=SensorStateClass.MEASUREMENT,
+    enabled_by_default=False,
+)
+_MEASUREMENT_DISABLED = FieldMetadata(
+    state_class=SensorStateClass.MEASUREMENT, enabled_by_default=False
+)
 _CONFIG = FieldMetadata(category=EntityCategory.CONFIG)
 _REACTIVE_POWER = FieldMetadata(
     device_class=SensorDeviceClass.REACTIVE_POWER, state_class=SensorStateClass.MEASUREMENT
@@ -85,6 +107,11 @@ _POWER_FACTOR = FieldMetadata(
 )
 _MEASUREMENT = FieldMetadata(state_class=SensorStateClass.MEASUREMENT)
 _DURATION = FieldMetadata(device_class=SensorDeviceClass.DURATION, state_class=SensorStateClass.MEASUREMENT)
+_DURATION_DISABLED = FieldMetadata(
+    device_class=SensorDeviceClass.DURATION,
+    state_class=SensorStateClass.MEASUREMENT,
+    enabled_by_default=False,
+)
 
 FIELD_METADATA: dict[str, FieldMetadata] = {
     "d_num_inverters": _DIAGNOSTIC,
@@ -132,7 +159,7 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "b_soc": FieldMetadata(device_class=SensorDeviceClass.BATTERY, state_class=SensorStateClass.MEASUREMENT),
     "b_soh": _DIAGNOSTIC_MEASUREMENT,
     "b_cycle_count": _DIAGNOSTIC_MEASUREMENT,
-    "b_t_avg": FieldMetadata(device_class=SensorDeviceClass.TEMPERATURE, state_class=SensorStateClass.MEASUREMENT),
+    "b_t_avg": _TEMPERATURE_DISABLED,
     "b_cell_count": _DIAGNOSTIC,
     "b_ntc_count": _DIAGNOSTIC,
     "b_i_e": _ENERGY_DIAGNOSTIC,
@@ -202,9 +229,9 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     # discharging (confirmed against real hardware: 0 while b_status is
     # "Idle") - that's the device correctly reporting "no ETA to estimate
     # right now", not a decode bug.
-    "b_time_to_empty": _DURATION,
+    "b_time_to_empty": _DURATION_DISABLED,
     "b_time_to_empty_total": _DURATION,
-    "b_time_to_full": _DURATION,
+    "b_time_to_full": _DURATION_DISABLED,
     "b_time_to_full_total": _DURATION,
     "b_ver_count": _DIAGNOSTIC,
     # b_ver_1 isn't here - it feeds DeviceInfo.sw_version instead (see
@@ -235,7 +262,7 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     # ARM/DSP in DeviceInfo.sw_version, same set as d_serial below.
     "d_iot_serial": _DIAGNOSTIC,
     "d_phase_count": _DIAGNOSTIC,
-    "d_self_consumption": _MEASUREMENT,
+    "d_self_consumption": _MEASUREMENT_DISABLED,
     # d_serial isn't here - it's the main DeviceInfo.serial_number instead
     # (see const.py's FIELDS_SHOWN_VIA_DEVICE_INFO) - BLUETTI support
     # confirmed by email it's "the complete device serial number", the
@@ -262,15 +289,14 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "pv_3_i_type": _DIAGNOSTIC,
     "pv_4_i_type": _DIAGNOSTIC,
     "pv_ac_count": _DIAGNOSTIC,
-    "pv_ac_e_local": _ENERGY_DIAGNOSTIC,
-    "pv_ac_p_local": _POWER,
+    "pv_ac_e_local": _ENERGY_DIAGNOSTIC_DISABLED,
+    "pv_ac_p_local": _POWER_DISABLED,
     "pv_dc_count": _DIAGNOSTIC,
-    # pv_i_e_local (50229) stays enabled despite being from the same
-    # "Each Inverter Information" block as the disabled fields above: AC500
-    # declares no pv_i_e_total, so this is its only cumulative PV energy
-    # reading and disabling it would leave an Energy dashboard with nothing
-    # to draw on.
-    "pv_i_e_local": _ENERGY_DIAGNOSTIC,
+    # pv_i_e_local (50229): a flat 0 on Balco260 like the rest of the
+    # "(Single)" block (see _TEMPERATURE_DISABLED's comment) - but AC500
+    # declares no pv_i_e_total, so there it is the only cumulative PV
+    # energy reading and sensor.py re-enables it for that model.
+    "pv_i_e_local": _ENERGY_DIAGNOSTIC_DISABLED,
     # pv_i_p_local (50219, "PV Charging Power (Single)") is disabled for a
     # different reason than the permanent zero documented on
     # _POWER_DISABLED: it carries real values on a live AC500, but measures

@@ -226,7 +226,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         # A version-1 entry cascades all the way to the current version in
         # one call - see async_migrate_entry's own docstring for why.
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_does_not_touch_an_already_disabled_d_timestamp_entity(self, er_module):
@@ -240,7 +240,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_d_timestamp_not_yet_registered_is_a_no_op(self, er_module):
@@ -255,7 +255,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         registry.async_get.assert_not_called()
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_non_smeter_device_skips_d_timestamp_handling(self, er_module):
@@ -269,7 +269,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_still_bumps_the_version(self, er_module):
@@ -283,7 +283,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         registry.async_get_entity_id.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_removes_retired_sensors_for_balco260(self, er_module):
@@ -327,7 +327,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_sensor_that_was_never_registered(self, er_module):
@@ -394,7 +394,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_switch_sensor_that_was_never_registered(
@@ -454,7 +454,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_b_ver_1_sensor_that_was_never_registered(
@@ -513,7 +513,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_d_iot_ver_sensor_that_was_never_registered(
@@ -571,7 +571,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 ),
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_a_retired_battery_sensor_that_was_never_registered(
@@ -630,7 +630,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             "sensor.my_device_d_num_inverters",
             new_unique_id="entry1_my_device_d_num_inverters",
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_skips_an_entity_unique_id_already_prefixed_with_the_entry_id(
@@ -696,7 +696,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 "switch.my_device_ac_o_switch",
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_removes_fault_and_warning_entities(self, er_module):
@@ -735,7 +735,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 "sensor.my_device_inverter_warning",
             },
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_smeter_skips_fault_and_warning_removal(self, er_module):
@@ -749,7 +749,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result)
         er_module.async_entries_for_config_entry.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_disables_already_enabled_pv_type_entities_for_ac500(self, er_module):
@@ -793,7 +793,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             any_order=True,
         )
         self.assertEqual(registry.async_update_entity.call_count, 2)
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_does_not_touch_an_already_disabled_pv_type_entity_for_ac500(self, er_module):
@@ -826,10 +826,11 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         # pv_1_i_type/pv_2_i_type are plain, always-enabled sensors on
         # Balco260 (only unconfirmed - and disabled - on AC500) - this step
-        # must not even look up this entry's entities for any other
-        # dev_type.
-        er_module.async_entries_for_config_entry.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        # must not disable anything for any other dev_type. (The 16 -> 17
+        # step further down the cascade does look the entities up for a
+        # Balco260, and finds nothing to disable here.)
+        registry.async_update_entity.assert_not_called()
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_disables_an_already_enabled_pv_local_power_entity_for_ac500(self, er_module):
@@ -865,7 +866,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             "sensor.my_device_pv_input_power",
             disabled_by=er_module.RegistryEntryDisabler.INTEGRATION,
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_does_not_touch_an_already_disabled_pv_local_entity_for_ac500(self, er_module):
@@ -899,8 +900,8 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # Only AC500 reported the duplication, and only AC500 shipped this
         # enabled off the beta track - a Balco260 install may have readings
         # built on it already.
-        er_module.async_entries_for_config_entry.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        registry.async_update_entity.assert_not_called()
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_disables_already_enabled_grid_and_ac_local_entities_for_ac500(self, er_module):
@@ -945,7 +946,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         # The _total counterpart is the one that stays.
         self.assertEqual(registry.async_update_entity.call_count, 2)
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_does_not_touch_an_already_disabled_grid_local_entity_for_ac500(self, er_module):
@@ -979,8 +980,102 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # On a Balco260 these read a permanent 0 rather than a duplicate, and
         # a multi-inverter one might be where they carry the real breakdown -
         # don't disable an entity its owner may have deliberately kept.
+        registry.async_update_entity.assert_not_called()
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_disables_the_never_populated_balco260_entities(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        entities = [
+            # Battery sub-device entities keep the field name as the
+            # trailing unique_id component too.
+            MagicMock(
+                entity_id="sensor.balco_260_battery_average_battery_temperature",
+                unique_id="1234_balco_260_battery_b_t_avg",
+                disabled_by=None,
+            ),
+            MagicMock(
+                entity_id="sensor.balco_260_self_consumption",
+                unique_id="1234_balco_260_d_self_consumption",
+                disabled_by=None,
+            ),
+            MagicMock(
+                entity_id="sensor.balco_260_pv_input_energy",
+                unique_id="1234_balco_260_pv_i_e_local",
+                disabled_by=None,
+            ),
+            # The _total counterparts carry the real readings and must stay.
+            MagicMock(
+                entity_id="sensor.balco_260_total_time_to_full_charge",
+                unique_id="1234_balco_260_b_time_to_full_total",
+                disabled_by=None,
+            ),
+            MagicMock(
+                entity_id="sensor.balco_260_total_pv_input_energy",
+                unique_id="1234_balco_260_pv_i_e_total",
+                disabled_by=None,
+            ),
+        ]
+        er_module.async_entries_for_config_entry.return_value = entities
+        hass = MagicMock()
+        entry = self._entry(version=16, dev_type="balco260")
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        registry.async_update_entity.assert_has_calls(
+            [
+                call(
+                    "sensor.balco_260_battery_average_battery_temperature",
+                    disabled_by=er_module.RegistryEntryDisabler.INTEGRATION,
+                ),
+                call(
+                    "sensor.balco_260_self_consumption",
+                    disabled_by=er_module.RegistryEntryDisabler.INTEGRATION,
+                ),
+                call(
+                    "sensor.balco_260_pv_input_energy",
+                    disabled_by=er_module.RegistryEntryDisabler.INTEGRATION,
+                ),
+            ],
+            any_order=True,
+        )
+        self.assertEqual(registry.async_update_entity.call_count, 3)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_does_not_touch_an_already_disabled_never_populated_entity(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        er_module.async_entries_for_config_entry.return_value = [
+            MagicMock(
+                entity_id="sensor.balco_260_battery_average_battery_temperature",
+                unique_id="1234_balco_260_battery_b_t_avg",
+                disabled_by="user",
+            ),
+        ]
+        hass = MagicMock()
+        entry = self._entry(version=16, dev_type="balco260")
+
+        await async_migrate_entry(hass, entry)
+
+        registry.async_update_entity.assert_not_called()
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_non_balco260_keeps_its_never_populated_entities(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        hass = MagicMock()
+        entry = self._entry(version=16, dev_type="ac500")
+
+        result = await async_migrate_entry(hass, entry)
+
+        self.assertTrue(result)
+        # Only observed on a Balco260 - and on AC500 pv_i_e_local is the
+        # only cumulative PV energy reading there is.
         er_module.async_entries_for_config_entry.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_skips_fault_and_warning_removal(self, er_module):
@@ -1061,7 +1156,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # title the 3 -> 4 step just produced down to the plain product
         # name - see its own docstring.
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=16
+            entry, title="Balco 260", version=17
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1074,7 +1169,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_skips_the_title_rename(self, er_module):
@@ -1087,7 +1182,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_adds_the_missing_space_for_an_entry_already_on_version_4(
@@ -1106,7 +1201,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # The 5 -> 6 step (same cascading call) strips the serial number the
         # 4 -> 5 step just re-spaced down to the plain product name.
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=16
+            entry, title="Balco 260", version=17
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1124,7 +1219,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=16
+            entry, title="Balco 260", version=17
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1140,7 +1235,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="S Meter", version=16
+            entry, title="S Meter", version=17
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1158,7 +1253,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_invalid_entry_data_skips_the_serial_suffix_drop(self, er_module):
@@ -1171,12 +1266,12 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_migrate_entry(hass, entry)
 
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=16)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=17)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_already_current_version_is_a_no_op(self, er_module):
         hass = MagicMock()
-        entry = self._entry(version=16)
+        entry = self._entry(version=17)
 
         result = await async_migrate_entry(hass, entry)
 

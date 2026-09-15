@@ -120,7 +120,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 16
+_CURRENT_VERSION = 17
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -289,6 +289,15 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     multi-inverter one might still be the case where they carry the real
     breakdown, so leave those entries alone rather than disabling an entity
     their owner may have deliberately kept.
+
+    16 -> 17: b_t_avg, b_time_to_full, b_time_to_empty, d_self_consumption,
+    pv_ac_p_local, pv_ac_e_local and pv_i_e_local switched to disabled by
+    default (field_metadata.py) - a flat 0 on a real Balco260 over 11 days
+    while the reading each stands for was available elsewhere. Same
+    first-registration-only caveat as every step above, so disable them
+    explicitly here. Guarded to dev_type == "balco260": that is the only
+    device this was observed on, and on AC500 pv_i_e_local is the only
+    cumulative PV energy reading (sensor.py keeps it enabled there).
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -509,6 +518,33 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         disabled_by=er.RegistryEntryDisabler.INTEGRATION,
                     )
         version = 16
+
+    if version == 16:
+        # Matched by unique_id suffix for the same reason as the 12 -> 13
+        # through 15 -> 16 steps above. b_t_avg and the two pack times sit
+        # on the battery sub-device, whose unique_ids still end in the
+        # field name.
+        if config is not None and config.dev_type == "balco260":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if (
+                    entity_entry.unique_id.endswith(
+                        (
+                            "_b_t_avg",
+                            "_b_time_to_full",
+                            "_b_time_to_empty",
+                            "_d_self_consumption",
+                            "_pv_ac_p_local",
+                            "_pv_ac_e_local",
+                            "_pv_i_e_local",
+                        )
+                    )
+                    and entity_entry.disabled_by is None
+                ):
+                    registry.async_update_entity(
+                        entity_entry.entity_id,
+                        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+                    )
+        version = 17
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)
