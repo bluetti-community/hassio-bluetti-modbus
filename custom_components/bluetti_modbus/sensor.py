@@ -199,6 +199,13 @@ async def async_setup_entry(
         # default would be worse than not showing it at all.
         if config.dev_type == "ac500" and field.name in ("pv_1_i_type", "pv_2_i_type"):
             metadata = dataclasses.replace(metadata, enabled_by_default=False)
+        # pv_i_e_local is disabled by default as a flat-0 register on
+        # Balco260 (field_metadata.py), but AC500 declares no pv_i_e_total
+        # (confirmed: absent from its own register map), so there it is the
+        # only cumulative PV energy reading - the one an Energy dashboard
+        # would use - and must stay on.
+        if config.dev_type == "ac500" and field.name == "pv_i_e_local":
+            metadata = dataclasses.replace(metadata, enabled_by_default=True)
         field_phase = _PHASE_FOR_FIELD.get(field.name)
         field_device_info = phase_device_infos[field_phase] if field_phase else device_info
         sensors_to_add.append(

@@ -63,6 +63,31 @@ class TestMetadataFor(unittest.TestCase):
             metadata = metadata_for(field)
             self.assertFalse(metadata.enabled_by_default, field)
 
+    def test_never_populated_balco260_fields_are_disabled_by_default(self):
+        # 11 days of continuous data on a real Balco260 (2026-09-05 to
+        # 2026-09-15): a flat 0 day and night while the reading each stands
+        # for was available elsewhere (_total counterparts, raw register
+        # dump). Reported to BLUETTI; disabled rather than removed.
+        for field, device_class in (
+            ("b_t_avg", SensorDeviceClass.TEMPERATURE),
+            ("b_time_to_full", SensorDeviceClass.DURATION),
+            ("b_time_to_empty", SensorDeviceClass.DURATION),
+            ("d_self_consumption", None),
+            ("pv_ac_p_local", SensorDeviceClass.POWER),
+            ("pv_ac_e_local", SensorDeviceClass.ENERGY),
+            ("pv_i_e_local", SensorDeviceClass.ENERGY),
+        ):
+            metadata = metadata_for(field)
+            self.assertFalse(metadata.enabled_by_default, field)
+            # Disabled, not stripped: the classification survives for
+            # whoever re-enables one.
+            self.assertEqual(metadata.device_class, device_class, field)
+            self.assertIsNotNone(metadata.state_class, field)
+
+    def test_the_working_totals_behind_those_fields_stay_enabled(self):
+        for field in ("b_time_to_full_total", "b_time_to_empty_total", "pv_i_e_total", "pv_ac_e", "pv_ac_p"):
+            self.assertTrue(metadata_for(field).enabled_by_default, field)
+
     def test_switch_field_has_no_metadata(self):
         metadata = metadata_for("ac_o_switch")
         self.assertIsNone(metadata.device_class)

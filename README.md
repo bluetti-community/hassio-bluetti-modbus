@@ -180,6 +180,14 @@ integration - documented here so you don't have to rediscover them.
   real Balco 260 while their `_total` counterparts change normally at the same
   moment. They are **disabled by default**; the `_total`/phase-1 sensors are the
   ones to use. Reported to BLUETTI.
+* **Six more registers never carry a value on a Balco 260.** Over 11 days of continuous
+  data on a real unit, `b_t_avg` (average battery temperature - the raw register itself
+  reads 0), `b_time_to_full`/`b_time_to_empty` (the pack-level estimates; the `_total`
+  ones work), `d_self_consumption`, and the last three per-inverter "(Single)" fields
+  (`pv_ac_p_local`, `pv_ac_e_local`, `pv_i_e_local`) stayed at a flat 0 day and night
+  while the `_total` counterparts moved. **Disabled by default**; reported to BLUETTI.
+  (`pv_i_e_local` stays enabled on an AC500, where it is the only cumulative PV energy
+  reading.)
 * **`pv_i_p_local` repeats the PV total.** Unlike the fields above it carries
   real values, but it measures this one inverter - which on a single-inverter
   system is the whole system, so it repeats `pv_i_p_total` and, with only one PV
