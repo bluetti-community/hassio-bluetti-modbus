@@ -272,6 +272,14 @@ This integration bundles its own copy of `bluetti-modbus`
 (`custom_components/bluetti_modbus/vendor/`) rather than depending on it via PyPI.
 Run `scripts/vendor_bluetti_modbus_lib.sh` to pick up a newer version.
 
+`scripts/probe_unexplored_registers.py` is a standalone, read-only probe for
+registers a Balco 260 is *not* documented to have - the EP2000-only blocks, and the
+device's internal register space the BLUETTI app speaks. It reads one register per
+request and backs off on any timeout, so it can be run against a live unit; stop
+Home Assistant's polling first (disable the integration entry), then
+`python3 scripts/probe_unexplored_registers.py --host <ip>`. Worth re-running after a
+firmware update - the docstring records what each block answered so far.
+
 ## Related projects 📦
 
 * [bluetti-community/bluetti-modbus](https://github.com/bluetti-community/bluetti-modbus) -
