@@ -27,8 +27,27 @@ from .vendor.bluetti_modbus_lib import (
 )
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
-# Modbus function code 0x06, "Write Single Register" - see _write_actually_succeeded.
+# Modbus function code 0x06, "Write Single Register" - see _write_confirmation_address.
 _WRITE_SINGLE_REGISTER_FUNCTION_CODE = 6
+
+# The address the device echoes in a Write Single Register confirmation is
+# not the Modbus address written to but the same setting's address in the
+# device's own internal register space - the one the BLUETTI app speaks
+# ("ProtocolAddrV2" in the app's code, tabulated by
+# https://github.com/mikemccllstr/voltkeeper/blob/main/docs/source/protocol/modbus-registers.md
+# from app v3.0.9). The Modbus TCP slave evidently translates the write to an
+# internal one and builds the confirmation from that. Two entries were
+# captured on a real Balco260; the others are the table's entries for the
+# same settings, adjacent in both address spaces just like the captured
+# pairs are - predicted, and logged against on every write until seen.
+_INTERNAL_ADDRESS_FOR_FIELD: dict[str, int] = {
+    "ac_o_switch": 2011,  # AC_SWITCH - predicted
+    "dc_o_switch": 2012,  # DC_SWITCH - predicted (AC500)
+    "g_i_switch": 2207,  # CTRL_GRID - captured on a real Balco260
+    "g_o_switch": 2208,  # CTRL_FEED - predicted
+    "b_soc_low": 2022,  # SYS_LOW_POWER - captured on a real Balco260
+    "b_soc_high": 2023,  # SYS_HIGH_POWER - predicted
+}
 
 
 class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -137,44 +156,50 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             try:
                 await self.device.write(field_name, value)
             except ModbusProtocolError as err:
-                if not self._write_actually_succeeded(err, value):
+                echoed = self._write_confirmation_address(err, value)
+                if echoed is None:
                     raise
-                # Confirmed real-hardware BLUETTI firmware bug, reported
-                # upstream: a Write Single Register confirmation with the
-                # right function code and value, but a corrupted address (a
-                # value with no relation to any real Balco260 register,
-                # different on every write - looks like an unrelated
-                # internal value leaking into that field). The official
-                # BLUETTI app independently confirmed the write actually
-                # applies correctly both times this was captured - only the
-                # confirmation itself is wrong. Log it rather than silently
-                # dropping it, so this stays visible if it ever turns out to
-                # be broader than currently understood.
+                # The write applied (the official app confirms it every
+                # time this was captured); only the confirmation names the
+                # device's internal address instead of the Modbus one - see
+                # _INTERNAL_ADDRESS_FOR_FIELD. Still a warning, not debug:
+                # the table is part prediction, and every logged echo either
+                # confirms or corrects it.
+                expected = _INTERNAL_ADDRESS_FOR_FIELD.get(field_name)
                 self.logger.warning(
-                    "Write to %s: device confirmation had a mismatched "
-                    "address (known BLUETTI firmware bug, function code and "
-                    "value both came back correct) - treating as successful. %s",
+                    "Write to %s applied; the device confirmed it at its internal "
+                    "register %d instead of the Modbus address (%s) - known BLUETTI "
+                    "firmware behaviour, treating as successful. %s",
                     field_name,
+                    echoed,
+                    "as expected"
+                    if echoed == expected
+                    else f"expected {expected}"
+                    if expected is not None
+                    else "no expectation on file for this field",
                     err,
                 )
 
     @staticmethod
-    def _write_actually_succeeded(err: ModbusProtocolError, value: int) -> bool:
-        """True if err is the confirmed BLUETTI firmware bug: a Write Single
-        Register confirmation with the right function code and value, but a
-        corrupted address - not a real failure, see async_write's own
-        comment. Anything else (a genuinely different value or function
-        code, or a response shaped unlike this specific bug) is a real
-        failure and must still raise.
+    def _write_confirmation_address(err: ModbusProtocolError, value: int) -> int | None:
+        """The address a mismatched Write Single Register confirmation carries,
+        when the confirmation is otherwise correct - function code 0x06 and
+        the value that was written. That is the known BLUETTI behaviour
+        described on _INTERNAL_ADDRESS_FOR_FIELD, not a failure. None for
+        anything else (a different value or function code, or a response
+        shaped unlike this), which is a real failure the caller must raise.
         """
         cause = err.__cause__
         response = getattr(cause, "response_bytes", None)
         if not isinstance(response, bytes) or len(response) != 5:
-            return False
+            return None
         function_code: int
+        address: int
         echoed_value: int
-        function_code, _address, echoed_value = struct.unpack(">BHH", response)
-        return function_code == _WRITE_SINGLE_REGISTER_FUNCTION_CODE and echoed_value == value
+        function_code, address, echoed_value = struct.unpack(">BHH", response)
+        if function_code != _WRITE_SINGLE_REGISTER_FUNCTION_CODE or echoed_value != value:
+            return None
+        return address
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
