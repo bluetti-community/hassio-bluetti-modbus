@@ -19,7 +19,10 @@ the device rejects. Strictly read-only (FC 0x03 only). Two families:
   through documented registers (2022 <-> 57016 and so on), so the script
   reads both and prints them side by side: matching values would mean the
   internal space is reachable, and every other entry becomes worth reading;
-  "illegal data address" on all of them closes the question. Only readable
+  "illegal data address" on all of them closes the question. Probed on a
+  real Balco 260 on 2026-09-16: all 54 came back "illegal data address" -
+  the slave translates documented writes into that space but does not
+  serve it. Kept for the same reason as the EP2000 blocks. Only readable
   registers are listed - the app's write-only ones (control events, power
   off, factory reset, OTA start) are left out even though FC 0x03 could not
   trigger them.
