@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import struct
 from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from modbus_connection.exceptions import ModbusError, ModbusProtocolError
+from modbus_connection.exceptions import ModbusError
 
 from .const import INDIVIDUAL_BC260_PACKS_CONFIRMED
 from .types import FullDeviceConfig
@@ -26,28 +25,6 @@ from .vendor.bluetti_modbus_lib import (
     battery_pack,
 )
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
-
-# Modbus function code 0x06, "Write Single Register" - see _write_confirmation_address.
-_WRITE_SINGLE_REGISTER_FUNCTION_CODE = 6
-
-# The address the device echoes in a Write Single Register confirmation is
-# not the Modbus address written to but the same setting's address in the
-# device's own internal register space - the one the BLUETTI app speaks
-# ("ProtocolAddrV2" in the app's code, tabulated by
-# https://github.com/mikemccllstr/voltkeeper/blob/main/docs/source/protocol/modbus-registers.md
-# from app v3.0.9). The Modbus TCP slave evidently translates the write to an
-# internal one and builds the confirmation from that. Two entries were
-# captured on a real Balco260; the others are the table's entries for the
-# same settings, adjacent in both address spaces just like the captured
-# pairs are - predicted, and logged against on every write until seen.
-_INTERNAL_ADDRESS_FOR_FIELD: dict[str, int] = {
-    "ac_o_switch": 2011,  # AC_SWITCH - predicted
-    "dc_o_switch": 2012,  # DC_SWITCH - predicted (AC500)
-    "g_i_switch": 2207,  # CTRL_GRID - captured on a real Balco260
-    "g_o_switch": 2208,  # CTRL_FEED - predicted
-    "b_soc_low": 2022,  # SYS_LOW_POWER - captured on a real Balco260
-    "b_soc_high": 2023,  # SYS_HIGH_POWER - predicted
-}
 
 
 class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -151,55 +128,16 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return raw
 
     async def async_write(self, field_name: str, value: int) -> None:
-        """Write a single field, serialized against the periodic poll."""
-        async with self._io_lock:
-            try:
-                await self.device.write(field_name, value)
-            except ModbusProtocolError as err:
-                echoed = self._write_confirmation_address(err, value)
-                if echoed is None:
-                    raise
-                # The write applied (the official app confirms it every
-                # time this was captured); only the confirmation names the
-                # device's internal address instead of the Modbus one - see
-                # _INTERNAL_ADDRESS_FOR_FIELD. Still a warning, not debug:
-                # the table is part prediction, and every logged echo either
-                # confirms or corrects it.
-                expected = _INTERNAL_ADDRESS_FOR_FIELD.get(field_name)
-                self.logger.warning(
-                    "Write to %s applied; the device confirmed it at its internal "
-                    "register %d instead of the Modbus address (%s) - known BLUETTI "
-                    "firmware behaviour, treating as successful. %s",
-                    field_name,
-                    echoed,
-                    "as expected"
-                    if echoed == expected
-                    else f"expected {expected}"
-                    if expected is not None
-                    else "no expectation on file for this field",
-                    err,
-                )
+        """Write a single field, serialized against the periodic poll.
 
-    @staticmethod
-    def _write_confirmation_address(err: ModbusProtocolError, value: int) -> int | None:
-        """The address a mismatched Write Single Register confirmation carries,
-        when the confirmation is otherwise correct - function code 0x06 and
-        the value that was written. That is the known BLUETTI behaviour
-        described on _INTERNAL_ADDRESS_FOR_FIELD, not a failure. None for
-        anything else (a different value or function code, or a response
-        shaped unlike this), which is a real failure the caller must raise.
+        The device's own way of confirming a write - at its internal
+        register address rather than the Modbus one - is recognised by the
+        library's BluettiDevice.write(), which logs the echoed address
+        (debug when it is the one on file, warning when it isn't); nothing
+        to handle here beyond the serialization.
         """
-        cause = err.__cause__
-        response = getattr(cause, "response_bytes", None)
-        if not isinstance(response, bytes) or len(response) != 5:
-            return None
-        function_code: int
-        address: int
-        echoed_value: int
-        function_code, address, echoed_value = struct.unpack(">BHH", response)
-        if function_code != _WRITE_SINGLE_REGISTER_FUNCTION_CODE or echoed_value != value:
-            return None
-        return address
+        async with self._io_lock:
+            await self.device.write(field_name, value)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
