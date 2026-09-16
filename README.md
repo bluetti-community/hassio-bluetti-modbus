@@ -213,8 +213,7 @@ integration - documented here so you don't have to rediscover them.
   bundled [bluetti-modbus](https://github.com/bluetti-community/bluetti-modbus)
   library recognises this and treats the write as successful - silently when the
   echoed address is the one on file for that register, with a warning naming it
-  otherwise. Reported to BLUETTI, who confirmed the bug and plan the fix for their
-  next firmware release (expected October 2026).
+  otherwise. Reported to BLUETTI.
 * **One connection at a time.** The device accepts very few simultaneous Modbus TCP
   connections. If something else on your network already polls it, Home Assistant
   may not get through.
