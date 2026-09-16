@@ -207,10 +207,13 @@ integration - documented here so you don't have to rediscover them.
 * **Write confirmations name the device's internal register, not the Modbus one.**
   Writing a switch or a SoC threshold applies correctly on the device, but the Modbus
   confirmation echoes the same setting's address in the device's own internal register
-  space (the one the BLUETTI app uses - e.g. 2022 for the min-discharge threshold
-  written at 57016, 2207 for grid charging written at 57009) instead of the Modbus
-  address. The integration recognises this and treats the write as successful,
-  logging which internal address came back. Reported to BLUETTI.
+  space (the one the BLUETTI app uses - 2022 for the min-discharge threshold written
+  at 57016, 2207 for grid charging written at 57009, and so on; confirmed on real
+  hardware for all five writable registers) instead of the Modbus address. The
+  bundled [bluetti-modbus](https://github.com/bluetti-community/bluetti-modbus)
+  library recognises this and treats the write as successful - silently when the
+  echoed address is the one on file for that register, with a warning naming it
+  otherwise. Reported to BLUETTI.
 * **One connection at a time.** The device accepts very few simultaneous Modbus TCP
   connections. If something else on your network already polls it, Home Assistant
   may not get through.

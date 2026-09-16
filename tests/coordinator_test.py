@@ -1,11 +1,9 @@
 import asyncio
-import struct
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.helpers.update_coordinator import UpdateFailed
-from modbus_connection.exceptions import ModbusConnectionError, ModbusProtocolError
-from tmodbus.exceptions import InvalidResponseError
+from modbus_connection.exceptions import ModbusConnectionError
 
 from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
@@ -29,19 +27,6 @@ def _config():
     config.dev_type = "balco260"
     config.name = "Test Device"
     return config
-
-
-def _mismatched_response_error(function_code: int, address: int, value: int) -> ModbusProtocolError:
-    """Build a ModbusProtocolError chained from an InvalidResponseError, the
-    same shape modbus_connection's _map_errors wrapper actually raises -
-    see coordinator.py's own _write_confirmation_address.
-    """
-    response = struct.pack(">BHH", function_code, address, value)
-    cause = InvalidResponseError("Expected response to match request", response_bytes=response)
-    try:
-        raise ModbusProtocolError("write_register(...): Expected response to match request") from cause
-    except ModbusProtocolError as err:
-        return err
 
 
 class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
@@ -114,106 +99,6 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         await coordinator.async_write("b_soc_low", 42)
 
         client_cls.return_value.device.write.assert_awaited_once_with("b_soc_low", 42)
-
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_write_swallows_a_mismatched_address_when_value_matches(self, client_cls):
-        # Real Balco260 behaviour: a Write Single Register confirmation with
-        # the right function code and value, but the setting's address in
-        # the device's own internal register space (2022, SYS_LOW_POWER for
-        # b_soc_low) instead of the Modbus one. The official BLUETTI app
-        # confirmed the write applied - so this must not surface as a
-        # failure, and the log names the echoed address and that it is the
-        # one on file for this field.
-        client_cls.return_value.device.write = AsyncMock(
-            side_effect=_mismatched_response_error(function_code=6, address=2022, value=20)
-        )
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
-
-        with self.assertLogs("custom_components.bluetti_modbus.coordinator", level="WARNING") as logs:
-            await coordinator.async_write("b_soc_low", 20)  # must not raise
-
-        self.assertIn("internal register 2022", logs.output[0])
-        self.assertIn("as expected", logs.output[0])
-
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_write_still_succeeds_but_says_so_when_the_echo_is_not_the_one_on_file(
-        self, client_cls
-    ):
-        # The table is part prediction: an echo that differs from it is
-        # information, not a failure - the function code and value still
-        # prove the write, so it is accepted and the discrepancy is logged
-        # for the next person to correct the table with.
-        client_cls.return_value.device.write = AsyncMock(
-            side_effect=_mismatched_response_error(function_code=6, address=2999, value=1)
-        )
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
-
-        with self.assertLogs("custom_components.bluetti_modbus.coordinator", level="WARNING") as logs:
-            await coordinator.async_write("g_o_switch", 1)
-
-        self.assertIn("internal register 2999", logs.output[0])
-        self.assertIn("expected 2208", logs.output[0])
-
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_write_to_a_field_without_an_expectation_on_file_is_still_accepted(
-        self, client_cls
-    ):
-        client_cls.return_value.device.write = AsyncMock(
-            side_effect=_mismatched_response_error(function_code=6, address=1234, value=5)
-        )
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
-
-        with self.assertLogs("custom_components.bluetti_modbus.coordinator", level="WARNING") as logs:
-            await coordinator.async_write("some_new_writable_field", 5)
-
-        self.assertIn("no expectation on file", logs.output[0])
-
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_write_reraises_when_the_echoed_value_does_not_match(self, client_cls):
-        # A genuinely different value coming back is a real failure, not
-        # this specific firmware quirk - must still raise.
-        client_cls.return_value.device.write = AsyncMock(
-            side_effect=_mismatched_response_error(function_code=6, address=2022, value=99)
-        )
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
-
-        with self.assertRaises(ModbusProtocolError):
-            await coordinator.async_write("b_soc_low", 20)
-
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_write_reraises_when_the_function_code_does_not_match(self, client_cls):
-        client_cls.return_value.device.write = AsyncMock(
-            side_effect=_mismatched_response_error(function_code=3, address=2022, value=20)
-        )
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
-
-        with self.assertRaises(ModbusProtocolError):
-            await coordinator.async_write("b_soc_low", 20)
-
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_write_reraises_when_there_is_no_underlying_response(self, client_cls):
-        # A ModbusProtocolError not chained from an InvalidResponseError at
-        # all (no response_bytes to inspect) - the safe fallback is to
-        # treat it as a real failure rather than silently succeed.
-        client_cls.return_value.device.write = AsyncMock(
-            side_effect=ModbusProtocolError("some other protocol error")
-        )
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
-
-        with self.assertRaises(ModbusProtocolError):
-            await coordinator.async_write("b_soc_low", 20)
-
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_write_reraises_when_response_is_the_wrong_length(self, client_cls):
-        cause = InvalidResponseError("bad", response_bytes=b"\x06\x00")
-        try:
-            raise ModbusProtocolError("bad") from cause
-        except ModbusProtocolError as chained:
-            client_cls.return_value.device.write = AsyncMock(side_effect=chained)
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
-
-        with self.assertRaises(ModbusProtocolError):
-            await coordinator.async_write("b_soc_low", 20)
 
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_write_waits_for_an_in_flight_poll_to_finish(self, client_cls):
