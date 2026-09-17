@@ -202,7 +202,7 @@ integration - documented here so you don't have to rediscover them.
   block, empty). The integration is ready for it, but per-pack sensors stay off until a
   real second pack has been read there. The aggregate totals are correct and are shown.
   Tracked in [bluetti-modbus#55](https://github.com/bluetti-community/bluetti-modbus/issues/55) -
-  **one run of the register probe's `--sweep-units` by a multi-pack owner settles it.**
+  **one run of the library's register probe (`--sweep-units`) by a multi-pack owner settles it.**
 * **Write confirmations name the device's internal register, not the Modbus one.**
   Writing a switch or a SoC threshold applies correctly on the device, but the Modbus
   confirmation echoes the same setting's address in the device's own internal register
@@ -271,13 +271,12 @@ This integration bundles its own copy of `bluetti-modbus`
 (`custom_components/bluetti_modbus/vendor/`) rather than depending on it via PyPI.
 Run `scripts/vendor_bluetti_modbus_lib.sh` to pick up a newer version.
 
-`scripts/probe_unexplored_registers.py` is a standalone, read-only probe for
-registers a Balco 260 is *not* documented to have - the EP2000-only blocks, and the
-device's internal register space the BLUETTI app speaks. It reads one register per
-request and backs off on any timeout, so it can be run against a live unit; stop
-Home Assistant's polling first (disable the integration entry), then
-`python3 scripts/probe_unexplored_registers.py --host <ip>`. Worth re-running after a
-firmware update - the docstring records what each block answered so far.
+The read-only register probe (registers a Balco 260 is *not* documented to have, and
+which Modbus slave ids answer with which pack) lives in the library, next to its
+hardware-testing guide:
+[bluetti-modbus/script/probe_unexplored_registers.py](https://github.com/bluetti-community/bluetti-modbus/blob/main/script/probe_unexplored_registers.py).
+Stop Home Assistant's polling first (disable the integration entry) before running it
+against a live unit.
 
 ## Related projects 📦
 
