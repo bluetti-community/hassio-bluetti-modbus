@@ -50,6 +50,21 @@ the device rejects. Strictly read-only (FC 0x03 only). Two families:
   documented registers per unit" from "it serves the internal pack space
   there": on a Balco 260 whose packs 2 and up read as zero at the documented
   slave ids (bluetti-modbus#55), a pack answering at 91 would be the lead.
+  Run on a one-pack Balco 260 on 2026-09-17: slave 91 and slave 92 both
+  answered 51219/51221 with the pack's own voltage and SOC (26.9 V, 69 %),
+  slave 31 answered 50002 and 1100 with "illegal data address", and 6000
+  was illegal at 91 and 92 - the slave id is honoured, documented pack
+  registers are served at 91+, the internal space is not. Whether 92 is
+  "pack 2, falling back to pack 1" or "any id from 91 up is the pack block"
+  is what the sweep below is for.
+- The sweep (--sweep-units, optionally with an explicit list of ids): one
+  register from each documented block (50001, 50219, 51001, 51219, 51221,
+  53011) at every slave id in the list, so a run shows which blocks each id
+  serves and, on a system with two packs or more, whether 91, 92, 93 return
+  different packs. The default list covers the documented ids (1, 2, 3, 250),
+  the app's home-system ids (41) and balcony-system ids (31, 91-94), and
+  a neighbour of each (90). --sweep-units alone probes only the sweep;
+  add --blocks to probe other blocks in the same run.
 
 Requires only the library the integration already uses:
 
@@ -58,6 +73,7 @@ Requires only the library the integration already uses:
 Run it from a machine on the same LAN as the device:
 
     python3 probe_unexplored_registers.py --host 192.168.1.50
+    python3 probe_unexplored_registers.py --host 192.168.1.50 --sweep-units --max-timeouts 0
 
 Before running, disable the Bluetti Modbus integration entry in Home
 Assistant (or stop anything else polling the device): the Balco 260 accepts
@@ -308,6 +324,36 @@ CROSS_CHECK: dict[int, tuple[int, str]] = {
 BLOCK_UNIT: dict[str, int] = {"pack-41": 41, "inv-31": 31, "pack-91": 91, "pack-92": 92}
 # Blocks only probed when named explicitly in --blocks - see the docstring.
 OPT_IN_BLOCKS = frozenset({"balco-set", *BLOCK_UNIT})
+
+# Read at every slave id of a --sweep-units run: one register from each
+# documented block, so an id that answers shows which blocks it serves.
+SWEEP_FIELDS: list[tuple[str, int, str, str]] = [
+    ("d_num_inverters", 50001, "Number of Inverters", ""),
+    ("d_inverter_status", 50219, "Inverter Status", ""),
+    ("d_num_battery_packs", 51001, "Number of Packs", ""),
+    ("b_v", 51219, "Pack Voltage", "V"),
+    ("b_soc", 51221, "Pack SOC", "%"),
+    ("d_iot_ver", 53011, "IOT Version", ""),
+]
+DEFAULT_SWEEP_UNITS = "1,2,3,31,41,90,91,92,93,94,250"
+
+
+def sweep_candidates(spec: str) -> list[tuple[str, int, int, str, str, str]]:
+    """SWEEP_FIELDS at each slave id in spec, as blocks named sweep-<id>."""
+    out: list[tuple[str, int, int, str, str, str]] = []
+    for text in spec.split(","):
+        if not text.strip():
+            continue
+        slave = int(text)
+        block = f"sweep-{slave}"
+        BLOCK_UNIT[block] = slave
+        out += [
+            (f"u{slave}_{name}", address, 1, declared, unit, block)
+            for name, address, declared, unit in SWEEP_FIELDS
+        ]
+    CANDIDATES.extend(out)
+    return out
+
 
 CONTROL_MODE_NAMES = {
     0: "AppControl",
@@ -583,6 +629,36 @@ class Prober:
                     print(
                         f"  {r['name']:32s} {r['address']:<6} {r['status']:8s} [{r['words_hex']}]"
                     )
+        sweep = [r for r in self.results if str(r["block"]).startswith("sweep-")]
+        if sweep:
+            print(
+                "\n=== sweep: value per slave id (- illegal address, T timeout, ? other) ==="
+            )
+            print(
+                f"  {'slave':>5} " + " ".join(f"{a:>7}" for _, a, _, _ in SWEEP_FIELDS)
+            )
+            for block in dict.fromkeys(str(r["block"]) for r in sweep):
+                cells = []
+                for _, address, _, _ in SWEEP_FIELDS:
+                    hit = next(
+                        (
+                            r
+                            for r in sweep
+                            if r["block"] == block and r["address"] == address
+                        ),
+                        None,
+                    )
+                    if hit is None:
+                        cells.append("")
+                    elif hit["status"] in ("data", "zero"):
+                        cells.append(str(int(str(hit["words_hex"]), 16)))
+                    elif hit["status"] == "illegal-address":
+                        cells.append("-")
+                    elif hit["status"] == "timeout":
+                        cells.append("T")
+                    else:
+                        cells.append("?")
+                print(f"  {BLOCK_UNIT[block]:>5} " + " ".join(f"{c:>7}" for c in cells))
         payload = {
             "device": "balco260",
             "host": self.args.host,
@@ -623,6 +699,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="comma-separated subset of blocks to probe: "
         + ",".join(sorted({c[5] for c in CANDIDATES}))
         + f" ({','.join(sorted(OPT_IN_BLOCKS))} only when named here)",
+    )
+    p.add_argument(
+        "--sweep-units",
+        nargs="?",
+        const=DEFAULT_SWEEP_UNITS,
+        metavar="IDS",
+        help="read one register from each documented block at every one of these "
+        f"comma-separated slave ids (default list: {DEFAULT_SWEEP_UNITS}); alone, "
+        "probes only the sweep - see the module docstring",
     )
     p.add_argument(
         "--only",
@@ -675,9 +760,11 @@ def select_candidates(
 ) -> list[tuple[str, int, int, str, str, str]]:
     """Apply --blocks, then --only, then --skip, in that order."""
     candidates = [c for c in CANDIDATES if c[5] not in OPT_IN_BLOCKS]
-    if args.blocks:
-        wanted = _selector(args.blocks)
+    if args.blocks or args.sweep_units:
+        wanted = _selector(args.blocks) if args.blocks else set()
         candidates = [c for c in CANDIDATES if c[5] in wanted]
+    if args.sweep_units:
+        candidates += sweep_candidates(args.sweep_units)
     if args.only:
         only = _selector(args.only)
         candidates = [c for c in candidates if _matches(c, only)]
