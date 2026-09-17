@@ -59,9 +59,11 @@ the device rejects. Strictly read-only (FC 0x03 only). Two families:
   is what the sweep below is for.
 - The sweep (--sweep-units, optionally with an explicit list of ids): one
   register from each documented block (50001, 50219, 51001, 51219, 51221,
-  53011) at every slave id in the list, so a run shows which blocks each id
-  serves and, on a system with two packs or more, whether 91, 92, 93 return
-  different packs. The default list covers the documented ids (1, 2, 3, 250),
+  53011) plus the pack's type and serial number (51200, 51206) at every
+  slave id in the list, so a run shows which blocks each id serves and, on
+  a system with two packs or more, which ids return *different* packs - a
+  BC260 at its own id should read "BC260" and its own serial number, where
+  an alias of the aggregate view repeats the built-in pack's "Balco260". The default list covers the documented ids (1, 2, 3, 250),
   the ids BLUETTI names for expansion packs (41 and up: 41-44), the app's
   balcony-system ids (31, 91-94), and a neighbour (90). --sweep-units alone
   probes only the sweep;
@@ -337,14 +339,22 @@ BLOCK_UNIT: dict[str, int] = {"pack-41": 41, "inv-31": 31, "pack-91": 91, "pack-
 OPT_IN_BLOCKS = frozenset({"balco-set", *BLOCK_UNIT})
 
 # Read at every slave id of a --sweep-units run: one register from each
-# documented block, so an id that answers shows which blocks it serves.
-SWEEP_FIELDS: list[tuple[str, int, str, str]] = [
-    ("d_num_inverters", 50001, "Number of Inverters", ""),
-    ("pv_i_p_local", 50219, "PV Charging Power (Single)", "W"),
-    ("d_num_battery_packs", 51001, "Number of Packs", ""),
-    ("b_v", 51219, "Pack Voltage", "V"),
-    ("b_soc", 51221, "Pack SOC", "%"),
-    ("d_iot_ver", 53011, "IOT Version", ""),
+# documented block, so an id that answers shows which blocks it serves -
+# plus the pack's type and serial number, which say *which* pack an id
+# serves: the built-in pack reads "Balco260" for b_type at the device's own
+# slave id, so an expansion pack at its own id should read "BC260" and a
+# serial number of its own, where a mere alias of the aggregate view repeats
+# the built-in pack's.
+# (name, address, register count, what declares it, unit)
+SWEEP_FIELDS: list[tuple[str, int, int, str, str]] = [
+    ("d_num_inverters", 50001, 1, "Number of Inverters", ""),
+    ("pv_i_p_local", 50219, 1, "PV Charging Power (Single)", "W"),
+    ("d_num_battery_packs", 51001, 1, "Number of Packs", ""),
+    ("b_type", 51200, 6, "Pack Type", ""),
+    ("b_serial", 51206, 4, "Pack Serial Number", ""),
+    ("b_v", 51219, 1, "Pack Voltage", "V"),
+    ("b_soc", 51221, 1, "Pack SOC", "%"),
+    ("d_iot_ver", 53011, 1, "IOT Version", ""),
 ]
 DEFAULT_SWEEP_UNITS = "1,2,3,31,41,42,43,44,90,91,92,93,94,250"
 
@@ -359,8 +369,8 @@ def sweep_candidates(spec: str) -> list[tuple[str, int, int, str, str, str]]:
         block = f"sweep-{slave}"
         BLOCK_UNIT[block] = slave
         out += [
-            (f"u{slave}_{name}", address, 1, declared, unit, block)
-            for name, address, declared, unit in SWEEP_FIELDS
+            (f"u{slave}_{name}", address, count, declared, unit, block)
+            for name, address, count, declared, unit in SWEEP_FIELDS
         ]
     CANDIDATES.extend(out)
     return out
@@ -645,12 +655,12 @@ class Prober:
             print(
                 "\n=== sweep: value per slave id (- illegal address, T timeout, ? other) ==="
             )
-            print(
-                f"  {'slave':>5} " + " ".join(f"{a:>7}" for _, a, _, _ in SWEEP_FIELDS)
-            )
+            rows: list[list[str]] = [
+                ["slave"] + [str(a) for _, a, _, _, _ in SWEEP_FIELDS]
+            ]
             for block in dict.fromkeys(str(r["block"]) for r in sweep):
-                cells = []
-                for _, address, _, _ in SWEEP_FIELDS:
+                cells = [str(BLOCK_UNIT[block])]
+                for name, address, count, _, _ in SWEEP_FIELDS:
                     hit = next(
                         (
                             r
@@ -661,15 +671,30 @@ class Prober:
                     )
                     if hit is None:
                         cells.append("")
+                    elif hit["status"] == "data" and name == "b_type":
+                        decoded = hit["decoded"]
+                        assert isinstance(decoded, dict)
+                        cells.append(repr(decoded["ascii"]))
                     elif hit["status"] in ("data", "zero"):
-                        cells.append(str(int(str(hit["words_hex"]), 16)))
+                        # Little-endian word order for the multi-register
+                        # serial number, as bluetti_modbus_lib decodes it.
+                        words = [
+                            int(str(hit["words_hex"])[i : i + 4], 16)
+                            for i in range(0, 4 * count, 4)
+                        ]
+                        cells.append(str(sum(w << (16 * i) for i, w in enumerate(words))))
+                    elif hit["status"] == "partial":
+                        cells.append("part")
                     elif hit["status"] == "illegal-address":
                         cells.append("-")
                     elif hit["status"] == "timeout":
                         cells.append("T")
                     else:
                         cells.append("?")
-                print(f"  {BLOCK_UNIT[block]:>5} " + " ".join(f"{c:>7}" for c in cells))
+                rows.append(cells)
+            widths = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
+            for row in rows:
+                print("  " + " ".join(c.rjust(w) for c, w in zip(row, widths, strict=True)))
         payload = {
             "device": "balco260",
             "host": self.args.host,
