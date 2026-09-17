@@ -175,19 +175,17 @@ set depends on your model.
 These are device or firmware limitations found on real hardware, not bugs in the
 integration - documented here so you don't have to rediscover them.
 
-* **Per-inverter "(Single)" fields read 0.** `ac_o_p_local`, `g_i_p_local`,
-  `g_i_e_local`, `g_o_e_local` and `ac_o_e_local` return a clean, error-free 0 on a
-  real Balco 260 while their `_total` counterparts change normally at the same
-  moment. They are **disabled by default**; the `_total`/phase-1 sensors are the
-  ones to use. Reported to BLUETTI.
-* **Six more registers never carry a value on a Balco 260.** Over 11 days of continuous
-  data on a real unit, `b_t_avg` (average battery temperature - the raw register itself
-  reads 0), `b_time_to_full`/`b_time_to_empty` (the pack-level estimates; the `_total`
-  ones work), `d_self_consumption`, and the last three per-inverter "(Single)" fields
-  (`pv_ac_p_local`, `pv_ac_e_local`, `pv_i_e_local`) stayed at a flat 0 day and night
-  while the `_total` counterparts moved. **Disabled by default**; reported to BLUETTI.
-  (`pv_i_e_local` stays enabled on an AC500, where it is the only cumulative PV energy
-  reading.)
+* **Twelve registers of the official list are not supported on a Balco 260** and no
+  longer have a sensor: `b_t_avg` (average battery temperature), `b_time_to_full`/
+  `b_time_to_empty` (the pack-level estimates - the `_total` ones, system-wide, work),
+  `d_self_consumption`, and the per-inverter "(Single)" block except `pv_i_p_local`
+  (`ac_o_p_local`, `g_i_p_local`, `pv_ac_p_local`, `g_i_e_local`, `g_o_e_local`,
+  `ac_o_e_local`, `pv_i_e_local`, `pv_ac_e_local`). They read a flat 0 on a real unit
+  over 11 days while their `_total`/phase-1 counterparts moved, and BLUETTI confirmed
+  they are not supported on this device - the summary fields are the ones to use.
+  Existing sensors for them are removed on upgrade. (Other models keep them, disabled
+  by default; `pv_i_e_local` stays enabled on an AC500, where it is the only cumulative
+  PV energy reading.)
 * **`pv_i_p_local` repeats the PV total.** Unlike the fields above it carries
   real values, but it measures this one inverter - which on a single-inverter
   system is the whole system, so it repeats `pv_i_p_total` and, with only one PV
@@ -198,12 +196,13 @@ integration - documented here so you don't have to rediscover them.
   only decode their "no fault"/"no warning" value, so those sensors would go blank
   exactly when something went wrong. They will return once real codes can be
   decoded.
-* **Battery packs beyond the first are not shown.** On a Balco 260 with several
-  BC260 packs, every pack past the first reads 0 for every field over its own Modbus
-  slave address - indistinguishable from no pack at all. The aggregate totals are
-  correct and are shown. Tracked in
-  [bluetti-modbus#55](https://github.com/bluetti-community/bluetti-modbus/issues/55) -
-  **data from multi-pack owners is wanted there.**
+* **Battery packs beyond the first are not shown yet.** BLUETTI's answer is that BC260
+  expansion packs answer at Modbus slave 41 and up (not 2 and up, where a three-pack
+  unit read zeros); a one-pack Balco 260 agrees as far as it can (41 serves the pack
+  block, empty). The integration is ready for it, but per-pack sensors stay off until a
+  real second pack has been read there. The aggregate totals are correct and are shown.
+  Tracked in [bluetti-modbus#55](https://github.com/bluetti-community/bluetti-modbus/issues/55) -
+  **one run of the register probe's `--sweep-units` by a multi-pack owner settles it.**
 * **Write confirmations name the device's internal register, not the Modbus one.**
   Writing a switch or a SoC threshold applies correctly on the device, but the Modbus
   confirmation echoes the same setting's address in the device's own internal register

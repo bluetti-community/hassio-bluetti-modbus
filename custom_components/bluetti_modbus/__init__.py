@@ -120,7 +120,26 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 17
+_CURRENT_VERSION = 18
+
+# The twelve Balco260 registers bluetti-registers 0.0.42 dropped from its
+# profile (bluetti-modbus 0.21.0 no longer declares them): matched as
+# unique_id suffixes by the 17 -> 18 migration step. The _total counterparts
+# (b_time_to_full_total, pv_i_e_total, ...) end differently and do not match.
+_BALCO260_DROPPED_FIELD_SUFFIXES = (
+    "_b_t_avg",
+    "_b_time_to_full",
+    "_b_time_to_empty",
+    "_d_self_consumption",
+    "_g_i_p_local",
+    "_ac_o_p_local",
+    "_pv_ac_p_local",
+    "_g_i_e_local",
+    "_g_o_e_local",
+    "_ac_o_e_local",
+    "_pv_i_e_local",
+    "_pv_ac_e_local",
+)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -298,6 +317,16 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     explicitly here. Guarded to dev_type == "balco260": that is the only
     device this was observed on, and on AC500 pv_i_e_local is the only
     cumulative PV energy reading (sensor.py keeps it enabled there).
+
+    17 -> 18: those seven plus the five "(Single)" fields the 15 -> 16 step
+    left alone (g_i_p_local, ac_o_p_local, g_i_e_local, g_o_e_local,
+    ac_o_e_local) are gone from the Balco260 profile altogether -
+    bluetti-registers 0.0.42, after BLUETTI confirmed none of them is
+    supported on this device - so the vendored library no longer declares
+    them and no entity is created for them. Remove their registry entries
+    (_BALCO260_DROPPED_FIELD_SUFFIXES), or they would linger as
+    permanently unavailable. Balco260 only: the other models still declare
+    the fields.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -545,6 +574,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         disabled_by=er.RegistryEntryDisabler.INTEGRATION,
                     )
         version = 17
+
+    if version == 17:
+        if config is not None and config.dev_type == "balco260":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.unique_id.endswith(_BALCO260_DROPPED_FIELD_SUFFIXES):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 18
 
     if new_title is not None:
         hass.config_entries.async_update_entry(entry, title=new_title, version=version)

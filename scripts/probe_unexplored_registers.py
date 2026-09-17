@@ -62,17 +62,20 @@ the device rejects. Strictly read-only (FC 0x03 only). Two families:
   53011) at every slave id in the list, so a run shows which blocks each id
   serves and, on a system with two packs or more, whether 91, 92, 93 return
   different packs. The default list covers the documented ids (1, 2, 3, 250),
-  the app's home-system ids (41) and balcony-system ids (31, 91-94), and
-  a neighbour of each (90). --sweep-units alone probes only the sweep;
+  the ids BLUETTI names for expansion packs (41 and up: 41-44), the app's
+  balcony-system ids (31, 91-94), and a neighbour (90). --sweep-units alone
+  probes only the sweep;
   add --blocks to probe other blocks in the same run. Run on the same
   one-pack Balco 260 on 2026-09-17: slave 1 serves all six (51001 as 0,
-  the known "count only at 250" rule); 2 and 3 serve 50219 and the pack
-  block as zeros and reject 50001/53011; 31 and 41 serve the pack block as
-  zeros and reject the rest; 90-94 and 250 all answer 51001 = 1 and the
-  pack's own 51219/51221 (250 alone also serves 50001, as 0) and reject the
-  rest. With one pack, 91-94 cannot be told from the aggregate view at 250;
-  only a system with two packs or more can say whether 92 is pack 2 - that
-  run is what bluetti-modbus#55 is waiting for.
+  the known "count only at 250" rule); 2 and 3 serve 50219 (the per-inverter
+  PV charging power) and the pack block as zeros and reject 50001/53011 -
+  they look like inverter slots; 31 and 41 serve the pack block as zeros and
+  reject the rest - 41 being an empty expansion slot, per BLUETTI's answer
+  that expansion packs answer at 41 and up; 90-94 and 250 all answer
+  51001 = 1 and the pack's own 51219/51221 (250 alone also serves 50001, as
+  0) and reject the rest, i.e. 90-94 look like aliases of the aggregate
+  view. Only a system with two packs or more can show pack 2 at 42 (or
+  anywhere else) - that run is what bluetti-modbus#55 is waiting for.
 
 Requires only the library the integration already uses:
 
@@ -291,7 +294,7 @@ CANDIDATES: list[tuple[str, int, int, str, str, str]] = [
     ("d_num_inverters", 50001, 1, "Number of Inverters", "", "balco-set"),
     ("ac_o_p_total", 50002, 1, "Total AC Output Power", "W", "balco-set"),
     ("d_serial", 50206, 1, "Inverter Serial Number (1st word)", "", "balco-set"),
-    ("d_inverter_status", 50219, 1, "Inverter Status", "", "balco-set"),
+    ("pv_i_p_local", 50219, 1, "PV Charging Power (Single)", "W", "balco-set"),
     ("d_num_battery_packs", 51001, 1, "Number of Packs", "", "balco-set"),
     ("b_soc_total", 51004, 1, "Total SOC", "%", "balco-set"),
     ("b_v", 51219, 1, "Pack Voltage", "V", "balco-set"),
@@ -337,13 +340,13 @@ OPT_IN_BLOCKS = frozenset({"balco-set", *BLOCK_UNIT})
 # documented block, so an id that answers shows which blocks it serves.
 SWEEP_FIELDS: list[tuple[str, int, str, str]] = [
     ("d_num_inverters", 50001, "Number of Inverters", ""),
-    ("d_inverter_status", 50219, "Inverter Status", ""),
+    ("pv_i_p_local", 50219, "PV Charging Power (Single)", "W"),
     ("d_num_battery_packs", 51001, "Number of Packs", ""),
     ("b_v", 51219, "Pack Voltage", "V"),
     ("b_soc", 51221, "Pack SOC", "%"),
     ("d_iot_ver", 53011, "IOT Version", ""),
 ]
-DEFAULT_SWEEP_UNITS = "1,2,3,31,41,90,91,92,93,94,250"
+DEFAULT_SWEEP_UNITS = "1,2,3,31,41,42,43,44,90,91,92,93,94,250"
 
 
 def sweep_candidates(spec: str) -> list[tuple[str, int, int, str, str, str]]:

@@ -23,6 +23,7 @@ from .vendor.bluetti_modbus_lib import (
     SMeter,
     aggregate_pack_summary,
     battery_pack,
+    pack_slave_id,
 )
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
@@ -81,8 +82,9 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Balco260 only - BC260 packs beyond the first, built lazily once
         # d_num_battery_packs is known from the main device's own read, keyed
         # by pack number (2..MAX_BATTERY_PACKS). Pack 1's data already comes
-        # from the main device's own fields (same Modbus slave address) - see
-        # bluetti_modbus_lib.battery_pack()'s docstring.
+        # from the main device's own fields (same Modbus slave address); the
+        # others answer at slave 41 and up, pack_slave_id() does the
+        # arithmetic - see bluetti_modbus_lib.battery_pack()'s docstring.
         self._packs: dict[int, Balco260] = {}
         # Balco260 only - the aggregate "Pack Summary" block (51001-51008,
         # including d_num_battery_packs itself), which only reports
@@ -195,7 +197,7 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for pack_num in range(2, min(num_packs, MAX_BATTERY_PACKS) + 1):
             pack = self._packs.get(pack_num)
             if pack is None:
-                pack = battery_pack(self._client.conn, pack_num)
+                pack = battery_pack(self._client.conn, pack_slave_id(pack_num))
                 self._packs[pack_num] = pack
             await pack.async_update_with_retry()
             for name, value in pack.values.items():
