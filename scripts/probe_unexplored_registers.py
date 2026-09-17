@@ -26,6 +26,17 @@ the device rejects. Strictly read-only (FC 0x03 only). Two families:
   registers are listed - the app's write-only ones (control events, power
   off, factory reset, OTA start) are left out even though FC 0x03 could not
   trigger them.
+- The balco-set block (opt-in, --blocks balco-set): not unexplored at all -
+  one register from each block of BLUETTI's own BalcoXX register list, plus
+  its five writable registers. For a device that is in the Balco family but
+  is not a Balco 260 (a Balco Transfer Hub, a Balco 500), it maps which of
+  the documented blocks the firmware actually serves, one safe request per
+  block, before anyone points a full Balco 260 profile at it. A Transfer Hub
+  (2026-09-17) answered a single-register read of an unserved address with
+  silence rather than the Balco 260's "illegal data address", so on such a
+  device run this with --max-timeouts 0: every timeout is still followed by
+  a reconnect and a liveness check, which stops the run on its own if the
+  device really has stopped answering.
 - The pack-41 block (opt-in, --blocks pack-41): the app addresses battery
   packs of 2nd-generation IoT home systems at Modbus slave 41 and up. Over
   TCP, packs are documented at slave 2..N and the aggregate summary at 250,
@@ -240,7 +251,25 @@ CANDIDATES: list[tuple[str, int, int, str, str, str]] = [
     ("v2_boot_software_info", 29772, 1, "BOOT_SOFTWARE_INFO", "", "internal-v2"),
     ("v2_active_info", 30001, 1, "ACTIVE_INFO", "", "internal-v2"),
     ("v2_comm_data_other", 40000, 1, "COMM_DATA_OTHER", "", "internal-v2"),
-    # Opt-in - see BLOCK_UNIT and the module docstring.
+    # Opt-in - see OPT_IN_BLOCKS and the module docstring. One register from
+    # each documented BalcoXX block ("what declares it" is the official
+    # register list's own abbreviation), then the writable set.
+    ("d_num_inverters", 50001, 1, "Number of Inverters", "", "balco-set"),
+    ("ac_o_p_total", 50002, 1, "Total AC Output Power", "W", "balco-set"),
+    ("d_serial", 50206, 1, "Inverter Serial Number (1st word)", "", "balco-set"),
+    ("d_inverter_status", 50219, 1, "Inverter Status", "", "balco-set"),
+    ("d_num_battery_packs", 51001, 1, "Number of Packs", "", "balco-set"),
+    ("b_soc_total", 51004, 1, "Total SOC", "%", "balco-set"),
+    ("b_v", 51219, 1, "Pack Voltage", "V", "balco-set"),
+    ("b_soc", 51221, 1, "Pack SOC", "%", "balco-set"),
+    ("d_iot_serial", 53007, 1, "IOT Serial Number (1st word)", "", "balco-set"),
+    ("d_iot_ver", 53011, 1, "IOT Version", "", "balco-set"),
+    ("meter_status", 55111, 1, "AC Meter Status", "", "balco-set"),
+    ("ac_o_switch", 57001, 1, "AC load output switch", "", "balco-set"),
+    ("g_i_switch", 57009, 1, "AC grid charging switch", "", "balco-set"),
+    ("g_o_switch", 57010, 1, "AC grid feed-in switch", "", "balco-set"),
+    ("b_soc_low", 57016, 1, "Battery empty SOC threshold", "%", "balco-set"),
+    ("b_soc_high", 57017, 1, "Battery full SOC threshold", "%", "balco-set"),
     ("pack41_main_info", 6000, 1, "PACK_MAIN_INFO", "", "pack-41"),
     ("pack41_item_info", 6100, 1, "PACK_ITEM_INFO", "", "pack-41"),
     ("pack41_settings_info", 7000, 1, "PACK_SETTINGS_INFO", "", "pack-41"),
@@ -258,10 +287,10 @@ CROSS_CHECK: dict[int, tuple[int, str]] = {
     2208: (57010, "g_o_switch"),
 }
 
-# Blocks read at a slave id other than --unit, and which are only probed when
-# named explicitly in --blocks.
+# Blocks read at a slave id other than --unit.
 BLOCK_UNIT: dict[str, int] = {"pack-41": 41}
-OPT_IN_BLOCKS = frozenset(BLOCK_UNIT)
+# Blocks only probed when named explicitly in --blocks - see the docstring.
+OPT_IN_BLOCKS = frozenset({"balco-set", *BLOCK_UNIT})
 
 CONTROL_MODE_NAMES = {
     0: "AppControl",
@@ -405,11 +434,15 @@ class Prober:
             )
             rec["error"] = str(err)
             self.consecutive_bad += 1
+            limit = f"/{self.args.max_timeouts}" if self.args.max_timeouts else ""
             print(
-                f"{label} -> {rec['status']} ({self.consecutive_bad}/{self.args.max_timeouts} in a row)"
+                f"{label} -> {rec['status']} ({self.consecutive_bad}{limit} in a row)"
             )
             self.results.append(rec)
-            if self.consecutive_bad >= self.args.max_timeouts:
+            if (
+                self.args.max_timeouts
+                and self.consecutive_bad >= self.args.max_timeouts
+            ):
                 print(
                     "  too many timeouts in a row - stopping so the device is left alone."
                 )
@@ -564,7 +597,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--max-timeouts",
         type=int,
         default=3,
-        help="stop after this many timeouts/corrupted replies in a row",
+        help="stop after this many timeouts/corrupted replies in a row; 0 means never "
+        "stop for that reason alone (each timeout is still followed by a reconnect "
+        "and a liveness check, which stops the run if the device no longer answers)",
     )
     p.add_argument(
         "--blocks",
