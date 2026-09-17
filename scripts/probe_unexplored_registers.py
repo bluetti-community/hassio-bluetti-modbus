@@ -64,7 +64,15 @@ the device rejects. Strictly read-only (FC 0x03 only). Two families:
   different packs. The default list covers the documented ids (1, 2, 3, 250),
   the app's home-system ids (41) and balcony-system ids (31, 91-94), and
   a neighbour of each (90). --sweep-units alone probes only the sweep;
-  add --blocks to probe other blocks in the same run.
+  add --blocks to probe other blocks in the same run. Run on the same
+  one-pack Balco 260 on 2026-09-17: slave 1 serves all six (51001 as 0,
+  the known "count only at 250" rule); 2 and 3 serve 50219 and the pack
+  block as zeros and reject 50001/53011; 31 and 41 serve the pack block as
+  zeros and reject the rest; 90-94 and 250 all answer 51001 = 1 and the
+  pack's own 51219/51221 (250 alone also serves 50001, as 0) and reject the
+  rest. With one pack, 91-94 cannot be told from the aggregate view at 250;
+  only a system with two packs or more can say whether 92 is pack 2 - that
+  run is what bluetti-modbus#55 is waiting for.
 
 Requires only the library the integration already uses:
 
