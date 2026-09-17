@@ -42,6 +42,14 @@ the device rejects. Strictly read-only (FC 0x03 only). Two families:
   TCP, packs are documented at slave 2..N and the aggregate summary at 250,
   so this is a long shot; an unknown slave id most likely times out, which
   the recovery below handles.
+- The inv-31, pack-91 and pack-92 blocks (opt-in): the app's own slave ids
+  for a balcony system (app 3.1.4, ConnConstantsV2: DC/DC at 1, inverter at
+  31, packs at 91 and up) - not the home-system ids the pack-41 block tries.
+  Each reads a documented register (50002, 51219, 51221) plus one internal
+  pack address at that slave id, so the answer separates "the slave routes
+  documented registers per unit" from "it serves the internal pack space
+  there": on a Balco 260 whose packs 2 and up read as zero at the documented
+  slave ids (bluetti-modbus#55), a pack answering at 91 would be the lead.
 
 Requires only the library the integration already uses:
 
@@ -117,7 +125,9 @@ SANITY_RANGE = range(1, 11)
 # The internal-v2 and pack-41 blocks: the app's ProtocolAddrV2 constant for
 # that address (see the module docstring); one register each, since the
 # question is only whether the address is served at all - a block that
-# answers can be read wider afterwards.
+# answers can be read wider afterwards. The inv-31/pack-91/pack-92 blocks mix
+# both: the official register list's name for a documented address, the
+# ProtocolAddrV2 constant for an internal one.
 CANDIDATES: list[tuple[str, int, int, str, str, str]] = [
     ("d_manufacturer", 50032, 16, "string", "", "summary-ext"),
     ("d_reactive_p_total", 50048, 2, "int", "", "summary-ext"),
@@ -274,6 +284,13 @@ CANDIDATES: list[tuple[str, int, int, str, str, str]] = [
     ("pack41_item_info", 6100, 1, "PACK_ITEM_INFO", "", "pack-41"),
     ("pack41_settings_info", 7000, 1, "PACK_SETTINGS_INFO", "", "pack-41"),
     ("pack41_bmu_info", 7200, 1, "PACK_BMU_INFO", "", "pack-41"),
+    ("inv31_ac_o_p_total", 50002, 1, "Total AC Output Power", "W", "inv-31"),
+    ("inv31_base_info", 1100, 1, "INV_BASE_INFO", "", "inv-31"),
+    ("pack91_b_v", 51219, 1, "Pack Voltage", "V", "pack-91"),
+    ("pack91_b_soc", 51221, 1, "Pack SOC", "%", "pack-91"),
+    ("pack91_main_info", 6000, 1, "PACK_MAIN_INFO", "", "pack-91"),
+    ("pack92_b_soc", 51221, 1, "Pack SOC", "%", "pack-92"),
+    ("pack92_main_info", 6000, 1, "PACK_MAIN_INFO", "", "pack-92"),
 ]
 
 # internal-v2 address -> the documented register that holds the same setting,
@@ -288,7 +305,7 @@ CROSS_CHECK: dict[int, tuple[int, str]] = {
 }
 
 # Blocks read at a slave id other than --unit.
-BLOCK_UNIT: dict[str, int] = {"pack-41": 41}
+BLOCK_UNIT: dict[str, int] = {"pack-41": 41, "inv-31": 31, "pack-91": 91, "pack-92": 92}
 # Blocks only probed when named explicitly in --blocks - see the docstring.
 OPT_IN_BLOCKS = frozenset({"balco-set", *BLOCK_UNIT})
 
