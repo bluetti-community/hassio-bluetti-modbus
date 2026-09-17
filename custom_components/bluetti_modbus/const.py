@@ -160,9 +160,12 @@ FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}
 # Creating per-pack devices/entities now that d_num_battery_packs is
 # accurate would surface them showing 0% SOC, 0V, no serial, etc. for every
 # real pack beyond the first - worse than not showing them at all, since it
-# reads as a broken sensor rather than an absent feature. Keep this False
-# until BLUETTI clarifies the actual mechanism (a follow-up email is
-# pending) and it's confirmed against real hardware; flip it back on then -
-# this is the only gate needed, both coordinator.py and sensor.py check it
-# before doing anything with packs 2+.
+# reads as a broken sensor rather than an absent feature. BLUETTI has since
+# answered that the packs are at slave 41 and up, not 2 and up
+# (bluetti_modbus_lib.pack_slave_id(), which coordinator.py now uses), and
+# a one-pack Balco260 agrees as far as it can - but nobody has yet read a
+# real second pack there. Keep this False until a multi-pack owner has
+# (bluetti-modbus#55); flip it back on then - this is the only gate needed,
+# both coordinator.py and sensor.py check it before doing anything with
+# packs 2+.
 INDIVIDUAL_BC260_PACKS_CONFIRMED = False

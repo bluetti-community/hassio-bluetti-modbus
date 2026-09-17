@@ -38,11 +38,14 @@ _POWER = FieldMetadata(device_class=SensorDeviceClass.POWER, state_class=SensorS
 # registers of each pair read 0 too, matching what the "2 registers"
 # official spec declares). Looks like these specific registers simply
 # aren't populated by this Balco260's firmware, contradicting the spec -
-# flagged with BLUETTI support, not yet confirmed either way. Disabled by
-# default rather than removed: a single-inverter Balco260 (the only kind
-# tested so far) has an exact substitute in the _total/phase-1 fields, but
-# a genuinely multi-inverter one might need the real per-inverter
-# breakdown if this ever turns out to work there.
+# and BLUETTI confirmed it (2026-09-17: use the summary at 50001-50031
+# instead), so bluetti-registers 0.0.42 dropped the whole "(Single)" block
+# except pv_i_p_local from the Balco260 profile and the vendored library no
+# longer declares these there. Still here for the models that do declare
+# them (AC500, EP2000, Balco500): disabled by default, since a
+# single-inverter system has an exact substitute in the _total/phase-1
+# fields, while a genuinely multi-inverter one might need the real
+# per-inverter breakdown.
 _POWER_DISABLED = FieldMetadata(
     device_class=SensorDeviceClass.POWER,
     state_class=SensorStateClass.MEASUREMENT,
@@ -84,9 +87,13 @@ _DIAGNOSTIC_MEASUREMENT = FieldMetadata(
 # and pv_ac_p_local/pv_ac_e_local/pv_i_e_local (50221/50231/50229), the
 # rest of the "(Single)" block already disabled above - pv_ac_e_local did
 # carry its _total's value for two hours on 2026-09-06, alternating with 0
-# every few minutes, then went back to 0 for good. Reported to BLUETTI
-# 2026-09-15. Disabled rather than removed, same reasoning as
-# _POWER_DISABLED.
+# every few minutes, then went back to 0 for good. BLUETTI confirmed
+# (2026-09-17) that none of them is supported on a Balco260 - remaining
+# time only exists system-wide, at 51007/51008 on unit 250 - so
+# bluetti-registers 0.0.42 dropped them from its profile and the vendored
+# library no longer declares them there. Still here, disabled by default,
+# for the models whose profiles keep them (EP2000, Balco500 - unconfirmed
+# against hardware either way; AC500 for pv_i_e_local).
 _TEMPERATURE_DISABLED = FieldMetadata(
     device_class=SensorDeviceClass.TEMPERATURE,
     state_class=SensorStateClass.MEASUREMENT,

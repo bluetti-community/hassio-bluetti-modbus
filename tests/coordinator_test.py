@@ -353,7 +353,8 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
 
         result = await coordinator._async_update_data()
 
-        battery_pack_fn.assert_called_once_with(client_cls.return_value.conn, 2)
+        # Pack 2 is the first expansion pack, at slave 41 (pack_slave_id()).
+        battery_pack_fn.assert_called_once_with(client_cls.return_value.conn, 41)
         pack2.async_update_with_retry.assert_awaited_once()
         self.assertEqual(result["pack_2_b_soc"], 77)
         self.assertNotIn("pack_1_b_soc", result)  # same slave as the main unit
@@ -378,7 +379,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(
             [c.args[1] for c in battery_pack_fn.call_args_list],
-            [2, 3],
+            [41, 42],
         )
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
@@ -401,7 +402,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(
             [c.args[1] for c in battery_pack_fn.call_args_list],
-            [2, 3, 4, 5],
+            [41, 42, 43, 44],
         )
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
@@ -423,7 +424,8 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         await coordinator._async_update_data()
         await coordinator._async_update_data()
 
-        battery_pack_fn.assert_called_once_with(client_cls.return_value.conn, 2)
+        # Pack 2 is the first expansion pack, at slave 41 (pack_slave_id()).
+        battery_pack_fn.assert_called_once_with(client_cls.return_value.conn, 41)
         self.assertEqual(pack.async_update_with_retry.await_count, 2)
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
