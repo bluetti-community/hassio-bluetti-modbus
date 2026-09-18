@@ -160,23 +160,18 @@ FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_ver_arm", "d_ver_dsp", "d_iot_ver", "d_serial
 # device - see sensor.py.
 FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}
 
-# d_num_battery_packs is now read correctly (bluetti_modbus_lib's
-# aggregate_pack_summary(), slave 250 - see coordinator.py), but real
-# hardware testing on a Balco260 with 3 confirmed, app-active BC260 packs
-# found individual pack data (battery_pack(), slave 2 and up) still reads a
-# clean, error-free 0 for every field - indistinguishable from a Balco260
-# with zero packs attached (see bluetti-community/bluetti-modbus's own
-# README caveat on battery_pack(), added the same day this was found).
-#
-# Creating per-pack devices/entities now that d_num_battery_packs is
-# accurate would surface them showing 0% SOC, 0V, no serial, etc. for every
-# real pack beyond the first - worse than not showing them at all, since it
-# reads as a broken sensor rather than an absent feature. BLUETTI has since
-# answered that the packs are at slave 41 and up, not 2 and up
-# (bluetti_modbus_lib.pack_slave_id(), which coordinator.py now uses), and
-# a one-pack Balco260 agrees as far as it can - but nobody has yet read a
-# real second pack there. Keep this False until a multi-pack owner has
-# (bluetti-modbus#55); flip it back on then - this is the only gate needed,
-# both coordinator.py and sensor.py check it before doing anything with
-# packs 2+.
-INDIVIDUAL_BC260_PACKS_CONFIRMED = False
+# Individual BC260 packs beyond the built-in one: confirmed on a real
+# Balco260 with three packs on 2026-09-18 (bluetti-modbus#55) - each answers
+# the whole pack block at its own Modbus slave address, 41 and up
+# (bluetti_modbus_lib.pack_slave_id()), with its own type, serial, voltage,
+# SOC, cycle count and energies; d_num_battery_packs at the aggregate slave
+# counts them. An earlier reading had them at slave 2 and up, where they read
+# as zeros - wrong addresses, not missing data - which is what this gate
+# waited on. Kept as a constant rather than removed so the mechanism stays
+# in one place: both coordinator.py and sensor.py check it before doing
+# anything with packs 2+. One thing the same hardware showed: a slot the
+# inverter still knows can answer its serial number and zeros for
+# everything else (a pack asleep, off or unplugged since) - coordinator.py
+# publishes nothing for such a pack (bluetti_modbus_lib.pack_is_reporting()),
+# so its entities go unavailable rather than showing 0 %, 0 V.
+INDIVIDUAL_BC260_PACKS_CONFIRMED = True

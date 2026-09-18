@@ -232,11 +232,14 @@ class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
     different Modbus slave address (250) than the main device's own, see
     coordinator.py and bluetti_modbus_lib.aggregate_pack_summary()."""
 
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", False)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_aggregate_summary_is_read_and_merged_into_result(
         self, client_cls, aggregate_fn
     ):
+        # Gate patched off so this stays about the aggregate summary alone
+        # (with 4 packs reported, the per-pack reads would otherwise run).
         client_cls.return_value.device = MagicMock(spec=Balco260)
         # The main read's own (wrong, slave-1) value - overwritten below by
         # the aggregate summary's (correct, slave-250) value.
@@ -307,8 +310,8 @@ class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
 
 class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
     """Individual BC260 packs beyond the first - see coordinator.py and
-    const.INDIVIDUAL_BC260_PACKS_CONFIRMED's own comment for why this stays
-    disabled by default pending confirmation against real hardware."""
+    const.INDIVIDUAL_BC260_PACKS_CONFIRMED's own comment for the hardware
+    this was confirmed on."""
 
     def _mock_aggregate(self, aggregate_fn, num_packs: int) -> None:
         summary = MagicMock()
@@ -316,15 +319,15 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         summary.values = {"d_num_battery_packs": num_packs}
         aggregate_fn.return_value = summary
 
+    @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", False)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
     @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_stays_disabled_by_default_even_with_packs_reported(
+    async def test_the_gate_still_works_when_off(
         self, client_cls, battery_pack_fn, aggregate_fn
     ):
-        # INDIVIDUAL_BC260_PACKS_CONFIRMED is False - real-hardware testing
-        # found individual pack data unreliable even though the aggregate
-        # count (d_num_battery_packs) is now correct.
+        # INDIVIDUAL_BC260_PACKS_CONFIRMED is True by default now (#55) -
+        # proven by patching it back to False.
         client_cls.return_value.device = MagicMock(spec=Balco260)
         client_cls.return_value.read = AsyncMock(return_value=[])
         self._mock_aggregate(aggregate_fn, 4)
@@ -334,6 +337,35 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
 
         battery_pack_fn.assert_not_called()
         self.assertEqual(result["d_num_battery_packs"], 4)
+
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_pack_that_is_not_reporting_publishes_nothing(
+        self, client_cls, battery_pack_fn, aggregate_fn
+    ):
+        # Real hardware (2026-09-18, three packs): slot 41 answered its
+        # serial number and zeros for everything else - a pack asleep or
+        # off. Its values are not published, so its entities go unavailable
+        # instead of showing 0 %, 0 V (and 3000 A for b_c's raw 0).
+        client_cls.return_value.device = MagicMock(spec=Balco260)
+        client_cls.return_value.read = AsyncMock(return_value=[])
+        self._mock_aggregate(aggregate_fn, 3)
+        silent = MagicMock()
+        silent.async_update_with_retry = AsyncMock()
+        silent.values = {"b_type": "", "b_serial": 2615112301352, "b_v": 0.0, "b_c": 3000.0, "b_soc": 0}
+        live = MagicMock()
+        live.async_update_with_retry = AsyncMock()
+        live.values = {"b_type": "BC260", "b_serial": 2610110280905, "b_v": 27.2, "b_soc": 85}
+        battery_pack_fn.side_effect = [silent, live]
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        result = await coordinator._async_update_data()
+
+        self.assertNotIn("pack_2_b_soc", result)
+        self.assertNotIn("pack_2_b_serial", result)
+        self.assertEqual(result["pack_3_b_soc"], 85)
+        self.assertEqual(result["pack_3_b_type"], "BC260")
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
@@ -347,7 +379,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         self._mock_aggregate(aggregate_fn, 2)
         pack2 = MagicMock()
         pack2.async_update_with_retry = AsyncMock()
-        pack2.values = {"b_soc": 77}
+        pack2.values = {"b_type": "BC260", "b_v": 27.2, "b_soc": 77}
         battery_pack_fn.return_value = pack2
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
@@ -371,7 +403,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         self._mock_aggregate(aggregate_fn, 3)
         pack = MagicMock()
         pack.async_update_with_retry = AsyncMock()
-        pack.values = {"b_soc": 50}
+        pack.values = {"b_type": "BC260", "b_v": 27.0, "b_soc": 50}
         battery_pack_fn.return_value = pack
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
@@ -417,7 +449,7 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         self._mock_aggregate(aggregate_fn, 2)
         pack = MagicMock()
         pack.async_update_with_retry = AsyncMock()
-        pack.values = {"b_soc": 50}
+        pack.values = {"b_type": "BC260", "b_v": 27.0, "b_soc": 50}
         battery_pack_fn.return_value = pack
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 

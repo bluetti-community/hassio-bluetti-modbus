@@ -45,7 +45,7 @@ documentation and verified against real hardware.
 
 | Device | Status | Notes |
 | --- | --- | --- |
-| **Balco 260** | ✅ Confirmed | Full support: 119 fields, switches, SoC thresholds, battery sub-device. Verified against real hardware and BLUETTI's official register spec. |
+| **Balco 260** | ✅ Confirmed | Full support: 107 fields, switches, SoC thresholds, battery sub-device, one sub-device per BC260 expansion pack. Verified against real hardware and BLUETTI's official register spec. |
 | **S Meter** | ✅ Confirmed | 31 fields, per-phase sub-devices. Verified against real hardware. |
 | **AC500** | ✅ Confirmed | 30 fields, switches, SoC thresholds. Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. |
 | **AC200L / AC200L2** | ✅ Confirmed | 30 fields, AC/DC output switches, SoC thresholds (read-only). Contributed from and confirmed on a real AC200L2, cross-checked against its BLE readings ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); energy and PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the device calls itself "AC200L" - whether an original AC200L exposes Modbus TCP at all is unknown. No mDNS: manual setup. |
@@ -149,8 +149,9 @@ set depends on your model.
 
 ### Sensors
 
-* **Battery** - voltage, current, SoC, SoH, temperature, cycle count, lifetime
-  charged/discharged energy, time to full/empty. On its own **Battery** sub-device.
+* **Battery** - voltage, current, SoC, SoH, cycle count, lifetime charged/discharged
+  energy. On its own **Battery** sub-device; each BC260 expansion pack on its own
+  **Pack N** sub-device with the same sensors.
 * **Solar** - per-string (MPPT 1-4) voltage, current and power, plus combined PV
   input power and lifetime energy.
 * **Grid** - frequency, import/export power, per-phase voltage/current/power, and
@@ -204,13 +205,13 @@ integration - documented here so you don't have to rediscover them.
   only decode their "no fault"/"no warning" value, so those sensors would go blank
   exactly when something went wrong. They will return once real codes can be
   decoded.
-* **Battery packs beyond the first are not shown yet.** BLUETTI's answer is that BC260
-  expansion packs answer at Modbus slave 41 and up (not 2 and up, where a three-pack
-  unit read zeros); a one-pack Balco 260 agrees as far as it can (41 serves the pack
-  block, empty). The integration is ready for it, but per-pack sensors stay off until a
-  real second pack has been read there. The aggregate totals are correct and are shown.
-  Tracked in [bluetti-modbus#55](https://github.com/bluetti-community/bluetti-modbus/issues/55) -
-  **one run of the library's register probe (`--sweep-units`) by a multi-pack owner settles it.**
+* **BC260 expansion packs each get their own sub-device** ("Pack 2", "Pack 3", ...),
+  with the same sensors as the built-in battery: type, serial number, voltage, current,
+  SoC, SoH, cycle count, firmware, energies. Confirmed on a Balco 260 with three packs.
+  A pack the inverter knows but that is not reporting (asleep, switched off, or
+  unplugged since) shows its sensors as **unavailable** rather than as 0 % / 0 V - that
+  is the device saying nothing, not a fault. The aggregate totals are shown on the main
+  device as before.
 * **Write confirmations name the device's internal register, not the Modbus one.**
   Writing a switch or a SoC threshold applies correctly on the device, but the Modbus
   confirmation echoes the same setting's address in the device's own internal register

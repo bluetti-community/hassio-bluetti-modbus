@@ -847,12 +847,12 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
-    async def test_no_pack_sensors_by_default_even_with_multiple_packs_reported(
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC260_PACKS_CONFIRMED", False)
+    async def test_no_pack_sensors_when_the_gate_is_off(
         self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn, pack_device_info_fn
     ):
-        # INDIVIDUAL_BC260_PACKS_CONFIRMED is False by default - real-hardware
-        # testing found individual pack data (slave 2+) unreliable even
-        # though d_num_battery_packs (the aggregate count) is now accurate.
+        # INDIVIDUAL_BC260_PACKS_CONFIRMED is True by default now (#55) -
+        # the gate itself still works, proven by patching it back to False.
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
         battery_device_info_fn.return_value = {"name": "Test Device Battery"}
