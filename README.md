@@ -120,6 +120,11 @@ does (a `_bluetti._tcp` service named after the model and serial number, instead
 today's generic `_http._tcp` "Bluetti HEMS"). Both forms are recognised, so discovery
 keeps working across that update without any change on your side.
 
+Adding a model that isn't discovered yet? The library's hardware-testing guide explains how
+to find out what your device announces (an mDNS browse) and what its own web page knows
+(its WebSocket, through your browser's developer tools) - see
+[HARDWARE_TESTING.md, "What the device's own web page knows"](https://github.com/bluetti-community/bluetti-modbus/blob/main/HARDWARE_TESTING.md#5-what-the-devices-own-web-page-knows-mdns-name-modbus-tcp-status-firmware).
+
 ### Manual setup (everything else, or if discovery doesn't find your device)
 
 1. Go to **Settings** → **Devices & services** → **+ Add integration**.
