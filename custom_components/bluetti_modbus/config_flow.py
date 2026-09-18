@@ -23,6 +23,7 @@ from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from modbus_connection.exceptions import ModbusError
 
 from .const import (
+    AC200L_CONFIRMED,
     AC500_CONFIRMED,
     BALCO500_CONFIRMED,
     DEVICE_TYPE_DISPLAY_NAMES,
@@ -161,8 +162,14 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         #
                         # Balco 500 (BALCO500_CONFIRMED) is gated the same
                         # way, but entirely untested - see that constant's
-                        # own comment.
+                        # own comment. AC200L (AC200L_CONFIRMED) too, until
+                        # its owner has run the generated profile.
                         options=[
+                            *(
+                                [SelectOptionDict(value="ac200l", label="AC200L / AC200L2")]
+                                if AC200L_CONFIRMED
+                                else []
+                            ),
                             *(
                                 [SelectOptionDict(value="ac500", label="AC500")]
                                 if AC500_CONFIRMED

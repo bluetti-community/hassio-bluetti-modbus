@@ -26,8 +26,11 @@ _TRANSLATIONS_PATH = (
 # True) is exactly the kind of real bug this coverage check exists to
 # catch - balco500 isn't included: it's still gated behind
 # BALCO500_CONFIRMED, and reuses Balco260's exact field names (no new ones
-# of its own that could go untranslated).
-_DEV_TYPES = ("ac500", "balco260", "smeter")
+# of its own that could go untranslated). ac200l is included even though
+# it is gated (AC200L_CONFIRMED): its field set is AC500's plus Balco260's
+# b_soc_low/b_soc_high, so this proves nothing of it can go untranslated
+# the day the flag flips.
+_DEV_TYPES = ("ac200l", "ac500", "balco260", "smeter")
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):
