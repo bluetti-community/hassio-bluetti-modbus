@@ -48,7 +48,7 @@ documentation and verified against real hardware.
 | **Balco 260** | ✅ Confirmed | Full support: 119 fields, switches, SoC thresholds, battery sub-device. Verified against real hardware and BLUETTI's official register spec. |
 | **S Meter** | ✅ Confirmed | 31 fields, per-phase sub-devices. Verified against real hardware. |
 | **AC500** | ✅ Confirmed | 30 fields, switches, SoC thresholds. Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. |
-| **AC200L / AC200L2** | 🧪 Beta, not yet offered | 30 fields, AC/DC output switches, SoC thresholds (read-only). Profile contributed from a real AC200L2 cross-checked against its BLE readings ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); appears in the device dropdown once its owner has confirmed the generated profile in Home Assistant. Absent from BLUETTI's official register list; whether an original AC200L exposes Modbus TCP at all is unknown. |
+| **AC200L / AC200L2** | ✅ Confirmed | 30 fields, AC/DC output switches, SoC thresholds (read-only). Contributed from and confirmed on a real AC200L2, cross-checked against its BLE readings ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); energy and PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the device calls itself "AC200L" - whether an original AC200L exposes Modbus TCP at all is unknown. No mDNS: manual setup. |
 
 **EP2000 is not supported.** Its Modbus TCP support was withdrawn pending
 confirmation the device exposes Modbus TCP at all - a real-world report found an
@@ -66,8 +66,8 @@ the device's own local web server first.
 1. Make sure your computer is on the same network as the device.
 2. Find the device's IP address on the network configuration page of the BLUETTI app.
 3. Open that IP address in a browser to reach the device's local web page.
-4. Sign in. The username is `admin`; the password is your BLUETTI app password, or
-   blank if you never set one.
+4. Sign in. The username is `admin`; the password is your BLUETTI **app account**
+   password (not a device-local one), or blank if you never set one.
 5. Go to **Settings** → **Modbus TCP**, turn on **Enable**, set **Port** to `502`,
    and select **Settings** to save.
 
@@ -76,7 +76,8 @@ Assistant will stop reaching it.
 
 > [!NOTE]
 > Modbus TCP is only available on some models and firmware versions. If you cannot
-> find these settings, your device does not support it yet.
+> find these settings, your device does not support it yet. The page is the same
+> "Bluetti Manager" on a Balco 260 and on an AC200L2.
 
 ## Installation ⚙️
 
@@ -126,7 +127,8 @@ keeps working across that update without any change on your side.
 3. Fill in:
    * **Address** - the IP address or hostname of your device.
    * **Port** - `502` unless you changed it on the device.
-   * **Type** - Balco 260, S Meter, or AC500.
+   * **Type** - Balco 260, S Meter, AC500, or AC200L / AC200L2 (the AC200L2 does not
+     announce itself on the network, so this is the only way to add one).
 
 The device is contacted straight away, so a wrong address or a device with Modbus TCP
 still disabled fails immediately rather than after setup.

@@ -120,10 +120,11 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         self.assertIn("balco260", values)
         self.assertIn("smeter", values)
 
-    async def test_ac200l_not_offered_by_default(self):
-        # AC200L_CONFIRMED is False by default - see its own comment in
-        # const.py: the generated profile has not been run in Home
-        # Assistant by its owner yet.
+    @patch("custom_components.bluetti_modbus.config_flow.AC200L_CONFIRMED", False)
+    async def test_ac200l_not_offered_if_unconfirmed(self):
+        # The flag mechanism still works even though AC200L_CONFIRMED is
+        # True by default now (#118) - proven by patching it back to False,
+        # as for AC500.
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
@@ -132,8 +133,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertNotIn("ac200l", values)
 
-    @patch("custom_components.bluetti_modbus.config_flow.AC200L_CONFIRMED", True)
-    async def test_ac200l_offered_once_confirmed(self):
+    async def test_ac200l_offered_by_default(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
