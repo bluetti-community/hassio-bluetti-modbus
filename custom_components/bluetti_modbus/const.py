@@ -40,14 +40,15 @@ AC500_CONFIRMED = True
 # Flip to True once someone can actually test it on a real Balco 500.
 BALCO500_CONFIRMED = False
 
-# AC200L / AC200L2 (bluetti-modbus 0.22.0+, bluetti-registers ac200l-beta):
-# a portable power station absent from BLUETTI's official register list,
+# AC200L / AC200L2 (bluetti-modbus 0.22.1+, bluetti-registers 0.0.43): a
+# portable power station absent from BLUETTI's official register list,
 # profile contributed from a real AC200L2 cross-checked against the same
-# unit's BLE readings (bluetti-modbus#76, bluetti-registers#31). The
-# *generated* profile has not yet been run in Home Assistant by its owner
-# - same gate as BALCO500_CONFIRMED until it has. The device names itself
-# "AC200L"; nothing yet says an original AC200L exposes Modbus TCP at all.
-AC200L_CONFIRMED = False
+# unit's BLE readings (bluetti-modbus#76, bluetti-registers#31), and the
+# generated profile confirmed on that unit in Home Assistant by its owner
+# (#118, 2026-09-18: same entities and values, diagnostics posted). Same
+# mechanism as BALCO500_CONFIRMED. The device names itself "AC200L";
+# nothing yet says an original AC200L exposes Modbus TCP at all.
+AC200L_CONFIRMED = True
 
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would
