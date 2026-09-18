@@ -24,6 +24,7 @@ from .vendor.bluetti_modbus_lib import (
     SMeter,
     aggregate_pack_summary,
     battery_pack,
+    pack_is_reporting,
     pack_slave_id,
 )
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
@@ -182,12 +183,8 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._aggregate_summary.async_update_with_retry()
         result.update(self._aggregate_summary.values)
 
-        # Individual pack data (this block) isn't confirmed against real
-        # hardware yet, unlike the aggregate summary above - see
-        # INDIVIDUAL_BC260_PACKS_CONFIRMED's own comment. d_num_battery_packs
-        # is now accurate, but creating pack_2_*/pack_3_*/... entities from
-        # data that reads as a clean 0 regardless of what's actually
-        # attached would be worse than not creating them at all.
+        # Individual packs - see INDIVIDUAL_BC260_PACKS_CONFIRMED's own
+        # comment for the hardware this was confirmed on.
         if not INDIVIDUAL_BC260_PACKS_CONFIRMED:
             return
 
@@ -201,6 +198,13 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 pack = battery_pack(self._client.conn, pack_slave_id(pack_num))
                 self._packs[pack_num] = pack
             await pack.async_update_with_retry()
+            # A slot the inverter knows but whose pack reports nothing
+            # (serial number served, every other field 0 - seen on real
+            # hardware for a pack asleep/off) publishes nothing: its
+            # entities then read "No data" and go unavailable, instead of
+            # showing 0 %, 0 V and the 3000 A that b_c's raw 0 decodes to.
+            if not pack_is_reporting(pack.values):
+                continue
             for name, value in pack.values.items():
                 result[f"pack_{pack_num}_{name}"] = value
 
