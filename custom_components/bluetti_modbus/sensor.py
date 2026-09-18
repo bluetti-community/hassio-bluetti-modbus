@@ -46,6 +46,11 @@ from .field_metadata import metadata_for
 from .vendor.bluetti_modbus_lib import MAX_BATTERY_PACKS, PACK_INFO_FIELDS, get_device
 
 # field name -> phase, the reverse of SMETER_PHASE_FIELDS's phase -> fields.
+# AC500 and AC200L: the same register family (AC200L's profile was derived
+# from AC500's and confirmed on hardware - bluetti-registers#31), so the
+# AC500-specific sensor exceptions below hold for both.
+_AC_FAMILY = ("ac500", "ac200l")
+
 _PHASE_FOR_FIELD = {
     field_name: phase
     for phase, field_names in SMETER_PHASE_FIELDS.items()
@@ -185,7 +190,10 @@ async def async_setup_entry(
         # map), so b_soc_total is the only SoC reading it will ever have,
         # and skipping this override would leave AC500 with no battery-icon
         # sensor whatsoever.
-        if config.dev_type == "ac500" and field.name == "b_soc_total":
+        # AC200L shares AC500's register family: no plain b_soc, no
+        # pv_i_e_total, PV types unverified (read 0 with no panels) - the
+        # three exceptions below apply to it as well.
+        if config.dev_type in _AC_FAMILY and field.name == "b_soc_total":
             metadata = dataclasses.replace(metadata, device_class=SensorDeviceClass.BATTERY)
         # pv_1_i_type/pv_2_i_type share PvType (0=Reserve, 100/101=DcPv/
         # AcPv) with Balco260, where it's confirmed correct - but on a real
@@ -197,14 +205,14 @@ async def async_setup_entry(
         # BLUETTI or further real-hardware testing confirms the mapping;
         # showing a plausible-looking but potentially-wrong type string by
         # default would be worse than not showing it at all.
-        if config.dev_type == "ac500" and field.name in ("pv_1_i_type", "pv_2_i_type"):
+        if config.dev_type in _AC_FAMILY and field.name in ("pv_1_i_type", "pv_2_i_type"):
             metadata = dataclasses.replace(metadata, enabled_by_default=False)
         # pv_i_e_local is disabled by default as a flat-0 register on
         # Balco260 (field_metadata.py), but AC500 declares no pv_i_e_total
         # (confirmed: absent from its own register map), so there it is the
         # only cumulative PV energy reading - the one an Energy dashboard
         # would use - and must stay on.
-        if config.dev_type == "ac500" and field.name == "pv_i_e_local":
+        if config.dev_type in _AC_FAMILY and field.name == "pv_i_e_local":
             metadata = dataclasses.replace(metadata, enabled_by_default=True)
         field_phase = _PHASE_FOR_FIELD.get(field.name)
         field_device_info = phase_device_infos[field_phase] if field_phase else device_info

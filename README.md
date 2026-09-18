@@ -48,6 +48,7 @@ documentation and verified against real hardware.
 | **Balco 260** | ✅ Confirmed | Full support: 119 fields, switches, SoC thresholds, battery sub-device. Verified against real hardware and BLUETTI's official register spec. |
 | **S Meter** | ✅ Confirmed | 31 fields, per-phase sub-devices. Verified against real hardware. |
 | **AC500** | ✅ Confirmed | 30 fields, switches, SoC thresholds. Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. |
+| **AC200L / AC200L2** | 🧪 Beta, not yet offered | 30 fields, AC/DC output switches, SoC thresholds (read-only). Profile contributed from a real AC200L2 cross-checked against its BLE readings ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); appears in the device dropdown once its owner has confirmed the generated profile in Home Assistant. Absent from BLUETTI's official register list; whether an original AC200L exposes Modbus TCP at all is unknown. |
 
 **EP2000 is not supported.** Its Modbus TCP support was withdrawn pending
 confirmation the device exposes Modbus TCP at all - a real-world report found an

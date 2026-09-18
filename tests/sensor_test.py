@@ -710,6 +710,48 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # cumulative PV energy reading - stays on.
         self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
 
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_ac200l_shares_ac500s_field_overrides(self, config_cls, dev_info_fn, get_device_fn):
+        # Same register family as AC500 (bluetti-registers#31): no plain
+        # b_soc, PV types unverified, no pv_i_e_total - the three AC500
+        # exceptions apply.
+        config_cls.from_dict.return_value = MagicMock(dev_type="ac200l", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+
+        def _field(name):
+            f = MagicMock(address=50001, unit=None, writable=False)
+            f.name = name
+            return f
+
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = [
+            "b_soc_total",
+            "pv_1_i_type",
+            "pv_i_e_local",
+            "d_num_inverters",
+        ]
+        bluetti_device.get_field.side_effect = _field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        by_key = {s._response_key: s for s in added}
+        self.assertIn("d_num_inverters", by_key)
+        self.assertEqual(by_key["b_soc_total"]._attr_device_class, SensorDeviceClass.BATTERY)
+        self.assertFalse(by_key["pv_1_i_type"]._attr_entity_registry_enabled_default)
+        self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
+
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
