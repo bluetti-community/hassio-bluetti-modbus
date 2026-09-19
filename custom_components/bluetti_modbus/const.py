@@ -50,15 +50,17 @@ BALCO500_CONFIRMED = False
 # nothing yet says an original AC200L exposes Modbus TCP at all.
 AC200L_CONFIRMED = True
 
-# EP500Pro (bluetti-modbus 0.24.0+, bluetti-registers ep500pro-beta-1): a
-# home backup station on which Modbus TCP appeared with IoT firmware
-# 9041.17, absent from BLUETTI's official register list. Its profile is
-# AC500's register set, read on a real unit with the AC500 class by its
-# owner (bluetti-registers#35: device type EP500P, SOC, AC/PV powers and
-# firmware versions match the app), read-only until a write has been
-# tested. The *generated* profile has not yet been run in Home Assistant
-# by its owner - same gate as BALCO500_CONFIRMED until it has.
-EP500PRO_CONFIRMED = False
+# EP500P - the BLUETTI EP500Pro, named after the type string the device
+# gives at 50200, as AC200L is (bluetti-modbus 0.25.0+, bluetti-registers
+# ep500p-beta-2): a home backup station on which Modbus TCP appeared with
+# IoT firmware 9041.17, absent from BLUETTI's official register list. Its
+# profile is AC500's register set plus the read-only SOC thresholds, read
+# on two real units (bluetti-registers#35: device type EP500P, SOC, AC/PV
+# powers, grid frequency and firmware versions match the app), the AC/DC
+# output switches switched on real hardware by the second owner. The
+# *generated* profile has not yet been run in Home Assistant by an owner -
+# same gate as BALCO500_CONFIRMED until it has.
+EP500P_CONFIRMED = False
 
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would
@@ -68,7 +70,7 @@ DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
     "ac500": "AC500",
     "balco260": "Balco 260",
     "balco500": "Balco 500",
-    "ep500pro": "EP500Pro",
+    "ep500p": "EP500Pro",
     "smeter": "S Meter",
 }
 

@@ -755,14 +755,14 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
-    async def test_ep500pro_shares_ac500s_field_overrides_but_keeps_g_i_switch(
+    async def test_ep500p_shares_ac500s_field_overrides_but_keeps_g_i_switch(
         self, config_cls, dev_info_fn, get_device_fn
     ):
-        # AC500's register set read on a real EP500Pro (bluetti-registers
+        # AC500's register set read on a real EP500P (bluetti-registers
         # #35): the three AC500 exceptions apply - but its g_i_switch read
         # 0 there, not AC500's stuck 1, so AC500_FIELDS_NOT_SHOWN does not,
         # and the (read-only) switch state stays a sensor.
-        config_cls.from_dict.return_value = MagicMock(dev_type="ep500pro", address="10.2.1.60")
+        config_cls.from_dict.return_value = MagicMock(dev_type="ep500p", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
 
         def _field(name):
