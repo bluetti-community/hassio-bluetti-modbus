@@ -752,6 +752,51 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(by_key["pv_1_i_type"]._attr_entity_registry_enabled_default)
         self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
 
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_ep500pro_shares_ac500s_field_overrides_but_keeps_g_i_switch(
+        self, config_cls, dev_info_fn, get_device_fn
+    ):
+        # AC500's register set read on a real EP500Pro (bluetti-registers
+        # #35): the three AC500 exceptions apply - but its g_i_switch read
+        # 0 there, not AC500's stuck 1, so AC500_FIELDS_NOT_SHOWN does not,
+        # and the (read-only) switch state stays a sensor.
+        config_cls.from_dict.return_value = MagicMock(dev_type="ep500pro", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+
+        def _field(name):
+            f = MagicMock(address=50001, unit=None, writable=False)
+            f.name = name
+            return f
+
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = [
+            "b_soc_total",
+            "pv_1_i_type",
+            "pv_i_e_local",
+            "g_i_switch",
+        ]
+        bluetti_device.get_field.side_effect = _field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        by_key = {s._response_key: s for s in added}
+        self.assertIn("g_i_switch", by_key)
+        self.assertEqual(by_key["b_soc_total"]._attr_device_class, SensorDeviceClass.BATTERY)
+        self.assertFalse(by_key["pv_1_i_type"]._attr_entity_registry_enabled_default)
+        self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
+
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")

@@ -142,6 +142,28 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ac200l", values)
 
+    async def test_ep500pro_not_offered_by_default(self):
+        # EP500PRO_CONFIRMED is False - see its own comment in const.py:
+        # the generated profile hasn't been run in Home Assistant by its
+        # owner yet (bluetti-registers#35).
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("ep500pro", values)
+
+    @patch("custom_components.bluetti_modbus.config_flow.EP500PRO_CONFIRMED", True)
+    async def test_ep500pro_offered_once_confirmed(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertIn("ep500pro", values)
+
     @patch("custom_components.bluetti_modbus.config_flow.BALCO500_CONFIRMED", True)
     async def test_balco500_offered_once_confirmed(self):
         flow = _flow()

@@ -21,6 +21,7 @@ from .vendor.bluetti_modbus_lib import (
     MAX_BATTERY_PACKS,
     Balco260,
     Balco500,
+    EP500Pro,
     SMeter,
     aggregate_pack_summary,
     battery_pack,
@@ -96,7 +97,7 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._aggregate_summary: Balco260 | None = None
 
     @property
-    def device(self) -> AC200L | AC500 | Balco260 | Balco500 | EP2000 | SMeter:
+    def device(self) -> AC200L | AC500 | Balco260 | Balco500 | EP2000 | EP500Pro | SMeter:
         """The underlying bluetti_modbus_lib device - for reading fields.
 
         Not for writing - call async_write() instead of device.write()

@@ -28,6 +28,7 @@ from .const import (
     BALCO500_CONFIRMED,
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
+    EP500PRO_CONFIRMED,
 )
 from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
@@ -163,7 +164,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # Balco 500 (BALCO500_CONFIRMED) is gated the same
                         # way, but entirely untested - see that constant's
                         # own comment. AC200L (AC200L_CONFIRMED) too, until
-                        # its owner has run the generated profile.
+                        # its owner has run the generated profile - and
+                        # EP500Pro (EP500PRO_CONFIRMED) likewise.
                         options=[
                             *(
                                 [SelectOptionDict(value="ac200l", label="AC200L / AC200L2")]
@@ -179,6 +181,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             *(
                                 [SelectOptionDict(value="balco500", label="Balco 500")]
                                 if BALCO500_CONFIRMED
+                                else []
+                            ),
+                            *(
+                                [SelectOptionDict(value="ep500pro", label="EP500Pro")]
+                                if EP500PRO_CONFIRMED
                                 else []
                             ),
                             SelectOptionDict(value="smeter", label="S Meter"),
