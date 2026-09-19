@@ -29,9 +29,9 @@ _TRANSLATIONS_PATH = (
 # of its own that could go untranslated). ac200l is included even though
 # it is gated (AC200L_CONFIRMED): its field set is AC500's plus Balco260's
 # b_soc_low/b_soc_high, so this proves nothing of it can go untranslated
-# the day the flag flips. ep500pro likewise (EP500PRO_CONFIRMED): AC500's
+# the day the flag flips. ep500p likewise (EP500P_CONFIRMED): AC500's
 # exact field set, none of it writable, so every one of them is a sensor.
-_DEV_TYPES = ("ac200l", "ac500", "balco260", "ep500pro", "smeter")
+_DEV_TYPES = ("ac200l", "ac500", "balco260", "ep500p", "smeter")
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -21,6 +22,7 @@ from .const import (
 )
 from .coordinator import PollingCoordinator
 from .types import FullDeviceConfig as FullDeviceConfig
+from .types.initial_device_config import CONF_TYPE
 from .vendor.bluetti_modbus_lib import PACK_INFO_FIELDS
 
 PLATFORMS: list[Platform] = [
@@ -120,7 +122,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 18
+_CURRENT_VERSION = 19
 
 # The twelve Balco260 registers bluetti-registers 0.0.42 dropped from its
 # profile (bluetti-modbus 0.21.0 no longer declares them): matched as
@@ -327,6 +329,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     (_BALCO260_DROPPED_FIELD_SUFFIXES), or they would linger as
     permanently unavailable. Balco260 only: the other models still declare
     the fields.
+
+    18 -> 19: the EP500Pro's dev_type is "ep500p" (the device's own type
+    string, as AC200L's is), not the "ep500pro" 0.0.74 stored - that
+    version only ever offered it behind EP500PRO_CONFIRMED, so the only
+    entries carrying the old value are testers' who flipped the flag by
+    hand; rewrite entry.data so their entry keeps loading instead of
+    failing on a dev_type get_device() no longer knows.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -582,10 +591,18 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     registry.async_remove(entity_entry.entity_id)
         version = 18
 
+    new_data: dict[str, Any] | None = None
+    if version == 18:
+        if config is not None and config.dev_type == "ep500pro":
+            new_data = {**entry.data, CONF_TYPE: "ep500p"}
+        version = 19
+
+    updates: dict[str, Any] = {"version": version}
     if new_title is not None:
-        hass.config_entries.async_update_entry(entry, title=new_title, version=version)
-    else:
-        hass.config_entries.async_update_entry(entry, version=version)
+        updates["title"] = new_title
+    if new_data is not None:
+        updates["data"] = new_data
+    hass.config_entries.async_update_entry(entry, **updates)
 
     return True
 

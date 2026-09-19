@@ -28,7 +28,7 @@ from .const import (
     BALCO500_CONFIRMED,
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
-    EP500PRO_CONFIRMED,
+    EP500P_CONFIRMED,
 )
 from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
@@ -53,7 +53,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # version with (a fresh entry created at a stale VERSION here would
     # otherwise immediately trigger a real migration step on its very next
     # setup, for no reason).
-    VERSION = 18
+    VERSION = 19
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")
@@ -165,7 +165,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # way, but entirely untested - see that constant's
                         # own comment. AC200L (AC200L_CONFIRMED) too, until
                         # its owner has run the generated profile - and
-                        # EP500Pro (EP500PRO_CONFIRMED) likewise.
+                        # EP500P (EP500P_CONFIRMED) likewise.
                         options=[
                             *(
                                 [SelectOptionDict(value="ac200l", label="AC200L / AC200L2")]
@@ -184,8 +184,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 else []
                             ),
                             *(
-                                [SelectOptionDict(value="ep500pro", label="EP500Pro")]
-                                if EP500PRO_CONFIRMED
+                                [SelectOptionDict(value="ep500p", label="EP500Pro")]
+                                if EP500P_CONFIRMED
                                 else []
                             ),
                             SelectOptionDict(value="smeter", label="S Meter"),
