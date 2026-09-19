@@ -46,10 +46,13 @@ from .field_metadata import metadata_for
 from .vendor.bluetti_modbus_lib import MAX_BATTERY_PACKS, PACK_INFO_FIELDS, get_device
 
 # field name -> phase, the reverse of SMETER_PHASE_FIELDS's phase -> fields.
-# AC500 and AC200L: the same register family (AC200L's profile was derived
-# from AC500's and confirmed on hardware - bluetti-registers#31), so the
-# AC500-specific sensor exceptions below hold for both.
-_AC_FAMILY = ("ac500", "ac200l")
+# AC500, AC200L and EP500Pro: the same register family (AC200L's profile
+# was derived from AC500's and confirmed on hardware - bluetti-registers#31;
+# EP500Pro's is AC500's, read on a real unit - bluetti-registers#35), so
+# the AC500-specific sensor exceptions below hold for all three. Not
+# AC500_FIELDS_NOT_SHOWN, though: the EP500Pro's g_i_switch read 0, not
+# AC500's stuck 1, so it stays a (read-only) sensor there.
+_AC_FAMILY = ("ac500", "ac200l", "ep500pro")
 
 _PHASE_FOR_FIELD = {
     field_name: phase
