@@ -47,7 +47,7 @@ documentation and verified against real hardware.
 | --- | --- | --- |
 | **Balco 260** | ✅ Confirmed | Full support: 107 fields, switches, SoC thresholds, battery sub-device, one sub-device per BC260 expansion pack. Verified against real hardware and BLUETTI's official register spec. |
 | **S Meter** | ✅ Confirmed | 31 fields, per-phase sub-devices. Verified against real hardware. |
-| **AC500** | ✅ Confirmed | 30 fields, switches, SoC thresholds. Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. |
+| **AC500** | ✅ Confirmed | 30 fields, switches, SoC thresholds. Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. No mDNS: manual setup ([#98](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/98)). Never address a Modbus unit id other than 1 on it - a read at any other unit id froze its Modbus TCP stack until a power cycle ([bluetti-registers#13](https://github.com/bluetti-community/bluetti-registers/issues/13)). |
 | **AC200L / AC200L2** | ✅ Confirmed | 30 fields, AC/DC output switches, SoC thresholds (read-only). Contributed from and confirmed on a real AC200L2, cross-checked against its BLE readings ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); energy and PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the device calls itself "AC200L" - whether an original AC200L exposes Modbus TCP at all is unknown. No mDNS: manual setup. |
 | **EP500Pro** | 🧪 Beta, not yet offered | 30 fields, all read-only (no switch or threshold entities until a write has been tested). Modbus TCP appeared with IoT firmware 9041.17; AC500's register set read on a real unit by its owner - device type `EP500P`, SoC, AC/PV powers and firmware versions match the app ([bluetti-registers#35](https://github.com/bluetti-community/bluetti-registers/issues/35)); energies and per-string PV fields carried over unverified. Appears in the device dropdown once its owner has confirmed the generated profile in Home Assistant. Absent from BLUETTI's official register list. |
 
@@ -133,8 +133,8 @@ to find out what your device announces (an mDNS browse) and what its own web pag
 3. Fill in:
    * **Address** - the IP address or hostname of your device.
    * **Port** - `502` unless you changed it on the device.
-   * **Type** - Balco 260, S Meter, AC500, or AC200L / AC200L2 (the AC200L2 does not
-     announce itself on the network, so this is the only way to add one).
+   * **Type** - Balco 260, S Meter, AC500, or AC200L / AC200L2 (the AC500 and the AC200L2
+     do not announce themselves on the network, so this is the only way to add them).
 
 The device is contacted straight away, so a wrong address or a device with Modbus TCP
 still disabled fails immediately rather than after setup.
