@@ -29,6 +29,7 @@ from .const import (
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
     EP500P_CONFIRMED,
+    FP_CONFIRMED,
 )
 from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
@@ -165,7 +166,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # way, but entirely untested - see that constant's
                         # own comment. AC200L (AC200L_CONFIRMED) and EP500P
                         # (EP500P_CONFIRMED) went through the same gate and
-                        # are confirmed.
+                        # are confirmed; FP (FP_CONFIRMED) is in it.
                         options=[
                             *(
                                 [SelectOptionDict(value="ac200l", label="AC200L / AC200L2")]
@@ -186,6 +187,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             *(
                                 [SelectOptionDict(value="ep500p", label="EP500Pro")]
                                 if EP500P_CONFIRMED
+                                else []
+                            ),
+                            *(
+                                [SelectOptionDict(value="fp", label="FridgePower")]
+                                if FP_CONFIRMED
                                 else []
                             ),
                             SelectOptionDict(value="smeter", label="S Meter"),
