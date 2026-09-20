@@ -184,9 +184,9 @@ FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}
 # as zeros - wrong addresses, not missing data - which is what this gate
 # waited on. Kept as a constant rather than removed so the mechanism stays
 # in one place: both coordinator.py and sensor.py check it before doing
-# anything with packs 2+. One thing the same hardware showed: a slot the
-# inverter still knows can answer its serial number and zeros for
-# everything else (a pack asleep, off or unplugged since) - coordinator.py
-# publishes nothing for such a pack (bluetti_modbus_lib.pack_is_reporting()),
+# anything with packs 2+. One thing the same hardware showed: a slot can
+# answer its serial number and zeros for everything else - a firmware
+# issue BLUETTI has confirmed and plans to fix - and coordinator.py
+# publishes nothing for such a slot (bluetti_modbus_lib.pack_is_reporting()),
 # so its entities go unavailable rather than showing 0 %, 0 V.
 INDIVIDUAL_BC260_PACKS_CONFIRMED = True

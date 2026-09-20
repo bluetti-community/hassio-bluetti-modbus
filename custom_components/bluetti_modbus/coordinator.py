@@ -199,11 +199,11 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 pack = battery_pack(self._client.conn, pack_slave_id(pack_num))
                 self._packs[pack_num] = pack
             await pack.async_update_with_retry()
-            # A slot the inverter knows but whose pack reports nothing
-            # (serial number served, every other field 0 - seen on real
-            # hardware for a pack asleep/off) publishes nothing: its
-            # entities then read "No data" and go unavailable, instead of
-            # showing 0 %, 0 V and the 3000 A that b_c's raw 0 decodes to.
+            # A slot that reports nothing but its serial number (every
+            # other field 0 - a firmware issue BLUETTI has confirmed and
+            # plans to fix) publishes nothing: its entities then read "No
+            # data" and go unavailable, instead of showing 0 %, 0 V and the
+            # 3000 A that b_c's raw 0 decodes to.
             if not pack_is_reporting(pack.values):
                 continue
             for name, value in pack.values.items():

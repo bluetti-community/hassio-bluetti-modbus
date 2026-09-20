@@ -210,10 +210,10 @@ integration - documented here so you don't have to rediscover them.
 * **BC260 expansion packs each get their own sub-device** ("Pack 2", "Pack 3", ...),
   with the same sensors as the built-in battery: type, serial number, voltage, current,
   SoC, SoH, cycle count, firmware, energies. Confirmed on a Balco 260 with three packs.
-  A pack the inverter knows but that is not reporting (asleep, switched off, or
-  unplugged since) shows its sensors as **unavailable** rather than as 0 % / 0 V - that
-  is the device saying nothing, not a fault. The aggregate totals are shown on the main
-  device as before.
+  A pack slot that answers only its serial number - a firmware issue BLUETTI has
+  confirmed and plans to fix - shows its sensors as **unavailable** rather than as
+  0 % / 0 V; that is the device saying nothing, not a fault. The aggregate totals are
+  shown on the main device as before.
 * **Write confirmations name the device's internal register, not the Modbus one.**
   Writing a switch or a SoC threshold applies correctly on the device, but the Modbus
   confirmation echoes the same setting's address in the device's own internal register
