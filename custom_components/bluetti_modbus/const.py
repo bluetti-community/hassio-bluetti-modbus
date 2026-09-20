@@ -64,6 +64,21 @@ AC200L_CONFIRMED = True
 # Same mechanism as BALCO500_CONFIRMED.
 EP500P_CONFIRMED = True
 
+# FP - the BLUETTI FridgePower, named after the type string the device
+# gives at 50200 (bluetti-modbus 0.26.0+, bluetti-registers fp-beta-1): a
+# fridge-sized station that, on the Modbus side, is a Balco-family device
+# - a real US unit answered the whole Balco 260 profile with values
+# matching the app (bluetti-registers#38: energy totals, SOC, thresholds,
+# time to empty to the minute). Read-only until a write has been tested.
+# The *generated* profile has not yet been run in Home Assistant by an
+# owner - same gate as BALCO500_CONFIRMED until it has.
+FP_CONFIRMED = False
+
+# Devices whose own built-in battery reports through PACK_INFO_FIELDS at
+# the main unit's Modbus address, and so get a battery sub-device: the
+# Balco 260 and, being a Balco-family device, the FridgePower.
+BUILT_IN_BATTERY_DEV_TYPES = ("balco260", "fp")
+
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would
 # show the raw stored string ("smeter") instead of "S Meter".
@@ -73,6 +88,7 @@ DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
     "balco260": "Balco 260",
     "balco500": "Balco 500",
     "ep500p": "EP500Pro",
+    "fp": "FridgePower",
     "smeter": "S Meter",
 }
 

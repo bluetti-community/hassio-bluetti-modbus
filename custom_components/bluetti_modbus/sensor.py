@@ -30,6 +30,7 @@ from . import (
 from . import device_info as dev_info
 from .const import (
     AC500_FIELDS_NOT_SHOWN,
+    BUILT_IN_BATTERY_DEV_TYPES,
     DATA_COORDINATOR,
     DOMAIN,
     FIELDS_NOT_SHOWN,
@@ -140,11 +141,13 @@ async def async_setup_entry(
                 assert info is not None  # same guarantee as dev_info() above
                 pack_device_infos[pack_num] = info
 
-    # Balco260's own built-in battery gets its own sub-device too, like the
-    # BC260 packs above - but unconditionally (a Balco260 always has one),
-    # unlike those, which depend on d_num_battery_packs having been read.
+    # The built-in battery gets its own sub-device too, like the BC260
+    # packs above - but unconditionally (a Balco260, or a FridgePower,
+    # always has one), unlike those, which depend on d_num_battery_packs
+    # having been read. Without it, PACK_INFO_FIELDS - skipped from the
+    # main device below - would have nowhere to go on such a device.
     battery_info: DeviceInfo | None = None
-    if config.dev_type == "balco260":
+    if config.dev_type in BUILT_IN_BATTERY_DEV_TYPES:
         battery_info = battery_device_info(hass, entry, coordinator)
         assert battery_info is not None  # same guarantee as dev_info() above
 

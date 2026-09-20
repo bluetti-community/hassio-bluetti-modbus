@@ -31,7 +31,9 @@ _TRANSLATIONS_PATH = (
 # b_soc_low/b_soc_high, so this proves nothing of it can go untranslated
 # the day the flag flips. ep500p likewise (EP500P_CONFIRMED): AC500's
 # exact field set, none of it writable, so every one of them is a sensor.
-_DEV_TYPES = ("ac200l", "ac500", "balco260", "ep500p", "smeter")
+# fp likewise (FP_CONFIRMED): Balco 260's field set plus dc_o_switch and
+# the "(Single)" local fields, all of which other profiles already name.
+_DEV_TYPES = ("ac200l", "ac500", "balco260", "ep500p", "fp", "smeter")
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):

@@ -1054,6 +1054,45 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all(s.device_info == {"name": "Test Device Battery"} for s in added))
 
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_fridgepower_gets_the_battery_sub_device_too(
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
+    ):
+        # A FridgePower is a Balco-family device with the same built-in
+        # battery block at the main unit's address (bluetti-registers#38)
+        # - const.py's BUILT_IN_BATTERY_DEV_TYPES. Without this gate its
+        # b_soc/b_v/... would be skipped from the main device (they are
+        # PACK_INFO_FIELDS) and shown nowhere.
+        config_cls.from_dict.return_value = MagicMock(dev_type="fp", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
+
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = []
+        bluetti_device.get_field.side_effect = _pack_field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            PACK_INFO_FIELDS,
+        )
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        response_keys = {s._response_key for s in added}
+        self.assertEqual(response_keys, PACK_INFO_FIELDS - {"b_serial", "b_ver_1"})
+        self.assertTrue(all(s.device_info == {"name": "Test Device Battery"} for s in added))
+
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
