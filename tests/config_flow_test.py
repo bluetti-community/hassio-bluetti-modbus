@@ -142,10 +142,11 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ac200l", values)
 
-    async def test_ep500p_not_offered_by_default(self):
-        # EP500P_CONFIRMED is False - see its own comment in const.py:
-        # the generated profile hasn't been run in Home Assistant by its
-        # owner yet (bluetti-registers#35).
+    @patch("custom_components.bluetti_modbus.config_flow.EP500P_CONFIRMED", False)
+    async def test_ep500p_not_offered_if_unconfirmed(self):
+        # The flag mechanism still works even though EP500P_CONFIRMED is
+        # True by default now (bluetti-registers#35) - proven by patching
+        # it back to False, as for AC500 and AC200L.
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
@@ -154,8 +155,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertNotIn("ep500p", values)
 
-    @patch("custom_components.bluetti_modbus.config_flow.EP500P_CONFIRMED", True)
-    async def test_ep500p_offered_once_confirmed(self):
+    async def test_ep500p_offered_by_default(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
