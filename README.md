@@ -49,7 +49,7 @@ documentation and verified against real hardware.
 | **S Meter** | ✅ Confirmed | 31 fields, per-phase sub-devices. Verified against real hardware. |
 | **AC500** | ✅ Confirmed | 30 fields, switches, SoC thresholds. Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. No mDNS: manual setup ([#98](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/98)). Never address a Modbus unit id other than 1 on it - a read at any other unit id froze its Modbus TCP stack until a power cycle ([bluetti-registers#13](https://github.com/bluetti-community/bluetti-registers/issues/13)). |
 | **AC200L / AC200L2** | ✅ Confirmed | 30 fields, AC/DC output switches, SoC thresholds (read-only). Contributed from and confirmed on a real AC200L2, cross-checked against its BLE readings ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); energy and PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the device calls itself "AC200L" - whether an original AC200L exposes Modbus TCP at all is unknown. No mDNS: manual setup. |
-| **EP500Pro** | 🧪 Beta, not yet offered | 32 fields, AC/DC output switches (switched on real hardware), SoC thresholds and grid charging read-only. Modbus TCP appeared with IoT firmware 9041.17; AC500's register set read on two real units - device type `EP500P` (the profile's own name), SoC, AC/PV powers, grid frequency and firmware versions match the app ([bluetti-registers#35](https://github.com/bluetti-community/bluetti-registers/issues/35)); energies and per-string PV fields carried over unverified. Appears in the device dropdown once an owner has confirmed the generated profile in Home Assistant. Absent from BLUETTI's official register list; no mDNS expected. |
+| **EP500Pro** | ✅ Confirmed | 32 fields, AC/DC output switches (switched on real hardware), SoC thresholds and grid charging read-only. Modbus TCP appeared with IoT firmware 9041.17 (enable it on the unit's local web page, port 80); AC500's register set read on two real units and run in Home Assistant by one of them, every value matching the app ([bluetti-registers#35](https://github.com/bluetti-community/bluetti-registers/issues/35)); energies and per-string PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the profile carries the device's own type string, `EP500P`. No mDNS: manual setup. |
 
 **EP2000 is not supported.** Its Modbus TCP support was withdrawn pending
 confirmation the device exposes Modbus TCP at all - a real-world report found an
@@ -133,8 +133,9 @@ to find out what your device announces (an mDNS browse) and what its own web pag
 3. Fill in:
    * **Address** - the IP address or hostname of your device.
    * **Port** - `502` unless you changed it on the device.
-   * **Type** - Balco 260, S Meter, AC500, or AC200L / AC200L2 (the AC500 and the AC200L2
-     do not announce themselves on the network, so this is the only way to add them).
+   * **Type** - Balco 260, S Meter, AC500, AC200L / AC200L2, or EP500Pro (the AC500, the
+     AC200L2 and the EP500Pro do not announce themselves on the network, so this is the
+     only way to add them).
 
 The device is contacted straight away, so a wrong address or a device with Modbus TCP
 still disabled fails immediately rather than after setup.

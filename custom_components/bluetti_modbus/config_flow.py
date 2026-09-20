@@ -163,9 +163,9 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         #
                         # Balco 500 (BALCO500_CONFIRMED) is gated the same
                         # way, but entirely untested - see that constant's
-                        # own comment. AC200L (AC200L_CONFIRMED) too, until
-                        # its owner has run the generated profile - and
-                        # EP500P (EP500P_CONFIRMED) likewise.
+                        # own comment. AC200L (AC200L_CONFIRMED) and EP500P
+                        # (EP500P_CONFIRMED) went through the same gate and
+                        # are confirmed.
                         options=[
                             *(
                                 [SelectOptionDict(value="ac200l", label="AC200L / AC200L2")]

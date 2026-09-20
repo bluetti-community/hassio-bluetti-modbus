@@ -57,10 +57,12 @@ AC200L_CONFIRMED = True
 # profile is AC500's register set plus the read-only SOC thresholds, read
 # on two real units (bluetti-registers#35: device type EP500P, SOC, AC/PV
 # powers, grid frequency and firmware versions match the app), the AC/DC
-# output switches switched on real hardware by the second owner. The
-# *generated* profile has not yet been run in Home Assistant by an owner -
-# same gate as BALCO500_CONFIRMED until it has.
-EP500P_CONFIRMED = False
+# output switches switched on real hardware by the second owner. Flipped
+# to True: the first owner ran the generated profile in Home Assistant on
+# 0.0.74 (flag flipped by hand) and 0.0.75 (migrated entry) for a day -
+# every value matching the app 1:1 (bluetti-registers#35, 2026-09-20).
+# Same mechanism as BALCO500_CONFIRMED.
+EP500P_CONFIRMED = True
 
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would
