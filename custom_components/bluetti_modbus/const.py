@@ -70,9 +70,9 @@ EP500P_CONFIRMED = True
 # - a real US unit answered the whole Balco 260 profile with values
 # matching the app (bluetti-registers#38: energy totals, SOC, thresholds,
 # time to empty to the minute). Read-only until a write has been tested.
-# The *generated* profile has not yet been run in Home Assistant by an
-# owner - same gate as BALCO500_CONFIRMED until it has.
-FP_CONFIRMED = False
+# Confirmed in Home Assistant by that unit's owner (hassio#127): device,
+# battery sub-device and values as in the app.
+FP_CONFIRMED = True
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: the

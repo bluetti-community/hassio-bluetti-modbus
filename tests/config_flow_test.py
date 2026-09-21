@@ -142,10 +142,10 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ac200l", values)
 
-    async def test_fp_not_offered_by_default(self):
-        # FP_CONFIRMED is False - see its own comment in const.py: the
-        # generated profile hasn't been run in Home Assistant by an owner
-        # yet (bluetti-registers#38).
+    @patch("custom_components.bluetti_modbus.config_flow.FP_CONFIRMED", False)
+    async def test_fp_not_offered_if_unconfirmed(self):
+        # The flag mechanism still works even though FP_CONFIRMED is True
+        # by default now (hassio#127) - proven by patching it back to False.
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
@@ -154,8 +154,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertNotIn("fp", values)
 
-    @patch("custom_components.bluetti_modbus.config_flow.FP_CONFIRMED", True)
-    async def test_fp_offered_once_confirmed(self):
+    async def test_fp_offered_by_default(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
