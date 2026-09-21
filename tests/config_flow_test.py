@@ -142,10 +142,12 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ac200l", values)
 
-    async def test_fp_not_offered_by_default(self):
-        # FP_CONFIRMED is False - see its own comment in const.py: the
-        # generated profile hasn't been run in Home Assistant by an owner
-        # yet (bluetti-registers#38).
+    @patch("custom_components.bluetti_modbus.config_flow.FP_CONFIRMED", False)
+    async def test_fp_not_offered_if_unconfirmed(self):
+        # This is the FridgePower beta prerelease: FP_CONFIRMED is True here
+        # so a tester gets the device from HACS's beta channel without
+        # editing const.py; main keeps it False until an owner has seen it
+        # work (hassio#127). The gate itself is proven by patching it back.
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
@@ -154,8 +156,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertNotIn("fp", values)
 
-    @patch("custom_components.bluetti_modbus.config_flow.FP_CONFIRMED", True)
-    async def test_fp_offered_once_confirmed(self):
+    async def test_fp_offered_in_the_beta(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()

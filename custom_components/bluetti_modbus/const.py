@@ -71,8 +71,10 @@ EP500P_CONFIRMED = True
 # matching the app (bluetti-registers#38: energy totals, SOC, thresholds,
 # time to empty to the minute). Read-only until a write has been tested.
 # The *generated* profile has not yet been run in Home Assistant by an
-# owner - same gate as BALCO500_CONFIRMED until it has.
-FP_CONFIRMED = False
+# owner - same gate as BALCO500_CONFIRMED until it has. True HERE ONLY:
+# this is the beta prerelease (0.0.84-beta.1, HACS "show beta versions")
+# that lets an owner test without editing this file; main keeps False.
+FP_CONFIRMED = True
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: the
