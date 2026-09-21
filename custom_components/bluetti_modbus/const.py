@@ -1,7 +1,7 @@
-"""Constants for the Bluetti Modbus integration."""
+"""Constants for the BLUETTI Modbus integration."""
 
 DOMAIN = "bluetti_modbus"
-MANUFACTURER = "Bluetti"
+MANUFACTURER = "BLUETTI"
 
 CONF_OPTIONS = "options"
 
@@ -186,7 +186,7 @@ FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_ver_arm", "d_ver_dsp", "d_iot_ver", "d_serial
 # FIELDS_SHOWN_VIA_DEVICE_INFO above but for the battery specifically.
 # b_serial ("Pack SN") is the battery sub-device's serial_number; b_ver_1
 # ("BMS", the battery's own firmware, confirmed against real hardware and
-# the Bluetti app) is its sw_version. Every other PACK_INFO_FIELDS name
+# the BLUETTI app) is its sw_version. Every other PACK_INFO_FIELDS name
 # becomes a plain sensor on that same sub-device instead of the main
 # device - see sensor.py.
 FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}

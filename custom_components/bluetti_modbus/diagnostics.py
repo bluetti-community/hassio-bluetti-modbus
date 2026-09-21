@@ -1,4 +1,4 @@
-"""Diagnostics support for the Bluetti Modbus integration."""
+"""Diagnostics support for the BLUETTI Modbus integration."""
 
 from __future__ import annotations
 

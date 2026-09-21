@@ -1,4 +1,4 @@
-"""Bluetti Modbus binary sensors."""
+"""BLUETTI Modbus binary sensors."""
 
 from __future__ import annotations
 

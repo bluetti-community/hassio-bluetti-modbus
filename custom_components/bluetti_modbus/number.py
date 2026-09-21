@@ -1,4 +1,4 @@
-"""Bluetti Modbus number entities."""
+"""BLUETTI Modbus number entities."""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ async def async_setup_entry(
 
 
 class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
-    """A writable Bluetti Modbus register, e.g. a battery SOC threshold."""
+    """A writable BLUETTI Modbus register, e.g. a battery SOC threshold."""
 
     _attr_has_entity_name = True
     _attr_native_step = 1

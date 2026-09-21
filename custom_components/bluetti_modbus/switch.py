@@ -1,4 +1,4 @@
-"""Bluetti Modbus switch entities."""
+"""BLUETTI Modbus switch entities."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ async def async_setup_entry(
 
 
 class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
-    """A writable Bluetti Modbus register, e.g. the AC output switch."""
+    """A writable BLUETTI Modbus register, e.g. the AC output switch."""
 
     _attr_has_entity_name = True
     # Generic SWITCH, not OUTLET - these control internal AC/grid relays on

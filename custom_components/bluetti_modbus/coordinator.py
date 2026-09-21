@@ -1,4 +1,4 @@
-"""Coordinator for Bluetti integration."""
+"""Coordinator for BLUETTI integration."""
 
 from __future__ import annotations
 
@@ -54,8 +54,8 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             hass,
             logging.getLogger(f"{__name__}.{config.address}"),
             config_entry=config_entry,
-            name="Bluetti polling coordinator",
-            # Bluetti's Modbus TCP stack is fragile under frequent connections -
+            name="BLUETTI polling coordinator",
+            # BLUETTI's Modbus TCP stack is fragile under frequent connections -
             # a rapid burst of TCP connections during testing once made the
             # device's web interface unresponsive and required a factory
             # reset to recover. Keep this conservative.

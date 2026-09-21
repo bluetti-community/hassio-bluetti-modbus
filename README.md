@@ -1,4 +1,4 @@
-# Bluetti Modbus for Home Assistant
+# BLUETTI Modbus for Home Assistant
 
 [![HACS Custom][hacs-shield]][hacs]
 [![Release][release-shield]][release]
@@ -79,7 +79,7 @@ Assistant will stop reaching it.
 > [!NOTE]
 > Modbus TCP is only available on some models and firmware versions. If you cannot
 > find these settings, your device does not support it yet. The page is the same
-> "Bluetti Manager" on a Balco 260 and on an AC200L2.
+> "BLUETTI Manager" on a Balco 260 and on an AC200L2.
 
 ## Installation ⚙️
 
@@ -93,7 +93,7 @@ _or manually:_
 2. In HACS, open the **⋮** menu → **Custom repositories**.
 3. Add `https://github.com/bluetti-community/hassio-bluetti-modbus` with category
    **Integration**.
-4. Find **Bluetti Modbus** in HACS and install it.
+4. Find **BLUETTI Modbus** in HACS and install it.
 5. **Restart Home Assistant.**
 
 ### Manually
@@ -130,7 +130,7 @@ to find out what your device announces (an mDNS browse) and what its own web pag
 ### Manual setup (everything else, or if discovery doesn't find your device)
 
 1. Go to **Settings** → **Devices & services** → **+ Add integration**.
-2. Search for **Bluetti Modbus**.
+2. Search for **BLUETTI Modbus**.
 3. Fill in:
    * **Address** - the IP address or hostname of your device.
    * **Port** - `502` unless you changed it on the device.
@@ -246,7 +246,7 @@ Logs are under **Settings** → **System** → **Logs**.
 
 ### Download diagnostics
 
-1. **Settings** → **Devices & services** → **Bluetti Modbus**.
+1. **Settings** → **Devices & services** → **BLUETTI Modbus**.
 2. Open the device, then the **⋮** menu → **Download diagnostics**.
 
 The file contains every field the device last reported, plus the raw register words

@@ -92,7 +92,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             config_entry_id="entry1",
             identifiers={(DOMAIN, "10.2.1.60")},
             name=entry.title,
-            manufacturer="Bluetti",
+            manufacturer="BLUETTI",
             model="Balco 260",
             configuration_url="http://10.2.1.60",
         )
