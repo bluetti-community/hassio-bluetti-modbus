@@ -40,9 +40,9 @@ AC500_CONFIRMED = True
 # Flip to True once someone can actually test it on a real Balco 500.
 BALCO500_CONFIRMED = False
 
-# AC200L / AC200L2 (bluetti-modbus 0.22.1+, bluetti-registers 0.0.43): a
+# AC200L (bluetti-modbus 0.22.1+, bluetti-registers 0.0.43): a
 # portable power station absent from BLUETTI's official register list,
-# profile contributed from a real AC200L2 cross-checked against the same
+# profile contributed from a real unit cross-checked against the same
 # unit's BLE readings (bluetti-modbus#76, bluetti-registers#31), and the
 # generated profile confirmed on that unit in Home Assistant by its owner
 # (#118, 2026-09-18: same entities and values, diagnostics posted). Same

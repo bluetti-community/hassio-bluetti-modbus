@@ -169,7 +169,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # are confirmed; FP (FP_CONFIRMED) is in it.
                         options=[
                             *(
-                                [SelectOptionDict(value="ac200l", label="AC200L / AC200L2")]
+                                [SelectOptionDict(value="ac200l", label="AC200L")]
                                 if AC200L_CONFIRMED
                                 else []
                             ),
