@@ -39,6 +39,7 @@ from .const import (
     FIELDS_SHOWN_VIA_DEVICE_INFO,
     FIELDS_SHOWN_VIA_NUMBER,
     FIELDS_SHOWN_VIA_SWITCH,
+    FP_FIELDS_NOT_SHOWN,
     INDIVIDUAL_BC260_PACKS_CONFIRMED,
     SMETER_PHASE_FIELDS,
 )
@@ -162,6 +163,8 @@ async def async_setup_entry(
         if f in FIELDS_NOT_SHOWN:
             continue
         if config.dev_type == "ac500" and f in AC500_FIELDS_NOT_SHOWN:
+            continue
+        if config.dev_type == "fp" and f in FP_FIELDS_NOT_SHOWN:
             continue
         if f in FIELDS_SHOWN_VIA_BINARY_SENSOR:
             continue
