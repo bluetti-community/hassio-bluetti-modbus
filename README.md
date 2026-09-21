@@ -48,7 +48,7 @@ documentation and verified against real hardware.
 | **Balco 260** | ✅ Confirmed | Full support: 107 fields, switches, SoC thresholds, battery sub-device, one sub-device per BC260 expansion pack. Verified against real hardware and BLUETTI's official register spec. |
 | **S Meter** | ✅ Confirmed | 31 fields, per-phase sub-devices. Verified against real hardware. |
 | **AC500** | ✅ Confirmed | 32 fields, AC/DC output switches, "Customized UPS" SoC thresholds (read-only). Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. No mDNS: manual setup ([#98](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/98)). No per-pack data: the pack registers are a window onto the pack the BLUETTI app has selected, and the selector is not reachable over Modbus TCP ([bluetti-registers#13](https://github.com/bluetti-community/bluetti-registers/issues/13)). Never address a Modbus unit id other than 1 on it - a read at any other unit id froze its Modbus TCP stack until a power cycle. |
-| **AC200L / AC200L2** | ✅ Confirmed | 30 fields, AC/DC output switches, SoC thresholds (read-only). Contributed from and confirmed on a real AC200L2, cross-checked against its BLE readings ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); energy and PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the device calls itself "AC200L" - whether an original AC200L exposes Modbus TCP at all is unknown. No mDNS: manual setup. |
+| **AC200L** | ✅ Confirmed | 30 fields, AC/DC output switches, SoC thresholds (read-only). Contributed from and confirmed on a real unit, cross-checked against its BLE readings ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); energy and PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the device calls itself "AC200L" - whether an original AC200L exposes Modbus TCP at all is unknown. No mDNS: manual setup. |
 | **FridgePower** | 🧪 Beta, not yet offered | BLUETTI's full Balco register set on a fridge-sized station: 120 fields, battery sub-device, all read-only until a write has been tested. A real US unit answered the whole Balco 260 profile with values matching the app ([bluetti-registers#38](https://github.com/bluetti-community/bluetti-registers/issues/38)); pack voltage at 0.01 V, signed grid power. Two units read so far (US and EU). Appears in the device dropdown once an owner has confirmed the generated profile in Home Assistant. Modbus TCP is enabled on the unit's local web page; no mDNS announcement, so it is set up manually by IP. |
 | **EP500Pro** | ✅ Confirmed | 32 fields, AC/DC output switches (switched on real hardware), SoC thresholds and grid charging read-only. Modbus TCP appeared with IoT firmware 9041.17 (enable it on the unit's local web page, port 80); AC500's register set read on two real units and run in Home Assistant by one of them, every value matching the app ([bluetti-registers#35](https://github.com/bluetti-community/bluetti-registers/issues/35)); energies and per-string PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the profile carries the device's own type string, `EP500P`. No mDNS: manual setup. |
 
@@ -68,8 +68,8 @@ the device's own local web server first.
 1. Make sure your computer is on the same network as the device.
 2. Find the device's IP address on the network configuration page of the BLUETTI app.
 3. Open that IP address in a browser to reach the device's local web page.
-4. Sign in. The username is `admin`; the password is your BLUETTI **app account**
-   password (not a device-local one), or blank if you never set one.
+4. Sign in. The username is `admin`; the password is the **device's Bluetooth password**
+   set in the BLUETTI app, or blank if you never set one - not your app account password.
 5. Go to **Settings** → **Modbus TCP**, turn on **Enable**, set **Port** to `502`,
    and select **Settings** to save.
 
@@ -79,7 +79,7 @@ Assistant will stop reaching it.
 > [!NOTE]
 > Modbus TCP is only available on some models and firmware versions. If you cannot
 > find these settings, your device does not support it yet. The page is the same
-> "Bluetti Manager" on a Balco 260 and on an AC200L2.
+> "Bluetti Manager" on a Balco 260 and on an AC200L.
 
 ## Installation ⚙️
 
@@ -134,8 +134,8 @@ to find out what your device announces (an mDNS browse) and what its own web pag
 3. Fill in:
    * **Address** - the IP address or hostname of your device.
    * **Port** - `502` unless you changed it on the device.
-   * **Type** - Balco 260, S Meter, AC500, AC200L / AC200L2, or EP500Pro (the AC500, the
-     AC200L2 and the EP500Pro do not announce themselves on the network, so this is the
+   * **Type** - Balco 260, S Meter, AC500, AC200L, or EP500Pro (the AC500, the
+     AC200L and the EP500Pro do not announce themselves on the network, so this is the
      only way to add them).
 
 The device is contacted straight away, so a wrong address or a device with Modbus TCP
