@@ -1,4 +1,4 @@
-"""Bluetti Modbus sensors."""
+"""BLUETTI Modbus sensors."""
 
 from __future__ import annotations
 
@@ -297,7 +297,7 @@ async def async_setup_entry(
 
 
 class BluettiSensor(CoordinatorEntity, RestoreSensor):
-    """Bluetti universal sensor.
+    """BLUETTI universal sensor.
 
     RestoreSensor (instead of plain SensorEntity) so TOTAL_INCREASING energy
     counters can restore their last known value across an HA restart - see

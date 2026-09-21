@@ -1,4 +1,4 @@
-"""Bluetti Modbus Config Flow"""
+"""BLUETTI Modbus Config Flow"""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle config flow for Bluetti Modbus devices."""
+    """Handle config flow for BLUETTI Modbus devices."""
 
     # Bumped for the one-time d_timestamp-disable, d_serial/d_ver_arm/
     # d_ver_dsp-removal, legible-default-title, title-spacing,

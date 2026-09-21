@@ -1,4 +1,4 @@
-"""Bluetti Modbus Integration"""
+"""BLUETTI Modbus Integration"""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ PLATFORMS: list[Platform] = [
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Bluetti Powerstation from a config entry."""
+    """Set up BLUETTI Powerstation from a config entry."""
 
     config = FullDeviceConfig.from_dict(entry.data)
 
@@ -43,7 +43,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     logger = logging.getLogger(f"{__name__}.{config.address}")
 
-    logger.debug("Init Bluetti Modbus Integration")
+    logger.debug("Init BLUETTI Modbus Integration")
 
     # Create data structure
     hass.data.setdefault(DOMAIN, {})
@@ -211,7 +211,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     plain sensor - it joins ARM/DSP in DeviceInfo.sw_version instead (see
     _modbus_identity()), now that bluetti_modbus_lib decodes it into the
     same dotted major.minor.patch format, confirmed against real hardware
-    and the Bluetti app. Remove the old sensor entity explicitly, once -
+    and the BLUETTI app. Remove the old sensor entity explicitly, once -
     matches the 2 -> 3 and 6 -> 7 steps' identical pattern. b_ver_2/3/4 are
     untouched - unlike b_ver_1, their meaning isn't confirmed, so they stay
     plain sensors.
