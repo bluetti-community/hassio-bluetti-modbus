@@ -79,7 +79,7 @@ Assistant will stop reaching it.
 > [!NOTE]
 > Modbus TCP is only available on some models and firmware versions. If you cannot
 > find these settings, your device does not support it yet. The page is the same
-> "BLUETTI Manager" on a Balco 260 and on an AC200L2.
+> "Bluetti Manager" on a Balco 260 and on an AC200L2.
 
 ## Installation ⚙️
 
