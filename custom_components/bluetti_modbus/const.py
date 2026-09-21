@@ -138,6 +138,13 @@ FIELDS_NOT_SHOWN = {"d_inverter_fault", "d_inverter_warning"}
 # premature.
 AC500_FIELDS_NOT_SHOWN = {"g_i_switch"}
 
+# g_o_switch (57010, the grid feed-in switch): served by the FridgePower
+# because it carries the whole Balco register map, but the unit is for
+# off-grid use only ("do not connect its AC output to the grid", user
+# manual) - there is no feed-in to switch. Not shown, like AC500's
+# g_i_switch above.
+FP_FIELDS_NOT_SHOWN = {"g_o_switch"}
+
 # b_soc_low/b_soc_high (57016/57017): battery empty/full SOC thresholds,
 # 0-100% - genuinely user-configurable settings, not readings. Routed to
 # number.py instead of sensor.py, but only where bluetti_modbus_lib actually
