@@ -5,7 +5,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from modbus_connection.exceptions import ModbusConnectionError
 
-from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+from custom_components.bluetti_modbus.coordinator import (
+    POLL_FAILURES_TOLERATED,
+    PollingCoordinator,
+)
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
     AC500,
     Balco260,
@@ -77,11 +80,60 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
 
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_modbus_error_becomes_update_failed(self, client_cls):
+        # No values yet (the first refresh): nothing to ride out on, the
+        # failure surfaces at once so setup fails properly.
         client_cls.return_value.read = AsyncMock(
             side_effect=ModbusConnectionError("no route to host")
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
+        with self.assertRaises(UpdateFailed):
+            await coordinator._async_update_data()
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_failed_poll_keeps_the_last_values(self, client_cls):
+        # A Balco 260 fails about one poll an hour even after the library's
+        # retries, and the next poll recovers: the entities keep their last
+        # values instead of going unavailable for a cycle.
+        client_cls.return_value.read = AsyncMock(
+            side_effect=ModbusConnectionError("Connection lost before response was received.")
+        )
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+        coordinator.data = {"b_soc": 89}
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result, {"b_soc": 89})
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_more_failed_polls_than_tolerated_become_update_failed(self, client_cls):
+        client_cls.return_value.read = AsyncMock(
+            side_effect=ModbusConnectionError("Connection lost before response was received.")
+        )
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+        coordinator.data = {"b_soc": 89}
+
+        for _ in range(POLL_FAILURES_TOLERATED):
+            self.assertEqual(await coordinator._async_update_data(), {"b_soc": 89})
+        with self.assertRaises(UpdateFailed):
+            await coordinator._async_update_data()
+
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_successful_poll_resets_the_tolerance(self, client_cls):
+        lost = ModbusConnectionError("Connection lost before response was received.")
+        client_cls.return_value.read = AsyncMock(
+            side_effect=[lost, lost, [_result("b_soc", 90)], lost, lost, lost]
+        )
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+        coordinator.data = {"b_soc": 89}
+
+        await coordinator._async_update_data()
+        await coordinator._async_update_data()
+        self.assertEqual(await coordinator._async_update_data(), {"b_soc": 90})
+        coordinator.data = {"b_soc": 90}
+        # Two more are tolerated again before the third raises.
+        await coordinator._async_update_data()
+        await coordinator._async_update_data()
         with self.assertRaises(UpdateFailed):
             await coordinator._async_update_data()
 
