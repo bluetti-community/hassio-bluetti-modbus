@@ -31,6 +31,15 @@ from .vendor.bluetti_modbus_lib import (
 )
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
+# Failed polls in a row a coordinator rides out on its last values before
+# its entities go unavailable. A Balco 260 fails about one poll an hour even
+# after the library's own retries (a dropped connection, a corrupted reply,
+# a timeout - always recovered by the next poll); without this, every such
+# poll flipped a hundred entities to unavailable for 30 s and logged an
+# error. Two tolerated failures = at most 90 s on stale values before the
+# entities say so.
+POLL_FAILURES_TOLERATED = 2
+
 
 class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Polling coordinator."""
@@ -96,6 +105,9 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # device's own - see bluetti_modbus_lib.aggregate_pack_summary()'s
         # docstring. Built lazily on first use, same as self._packs.
         self._aggregate_summary: Balco260 | None = None
+        # Failed polls since the last successful one - see
+        # POLL_FAILURES_TOLERATED.
+        self._failed_polls = 0
 
     @property
     def device(self) -> AC200L | AC500 | FP | Balco260 | Balco500 | EP2000 | EP500P | SMeter:
@@ -153,16 +165,26 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 result = {k: v for k, v in [[d.name, d.value] for d in data]}
                 await self._async_update_battery_packs(result)
         except ModbusError as err:
-            # bluetti-modbus-lib already retries once on transient
-            # ACKNOWLEDGE/SERVER_DEVICE_BUSY and corrupted/timed-out
-            # responses this device is known to occasionally return -
-            # reaching here means a more persistent connectivity problem.
-            # Surface it as an ordinary failed update rather than letting it
+            # The library already retried the transient failures this
+            # device is known for; reaching here means the whole poll
+            # failed. Ride out the first POLL_FAILURES_TOLERATED on the last
+            # values (the next poll recovers in nearly every case), then
+            # surface it as an ordinary failed update rather than letting it
             # fall through to DataUpdateCoordinator's "unexpected exception"
             # path, which would log a full traceback for an expected,
             # recoverable condition.
+            if self.data is not None and self._failed_polls < POLL_FAILURES_TOLERATED:
+                self._failed_polls += 1
+                self.logger.debug(
+                    "Poll failed (%d of %d tolerated), keeping the last values: %s",
+                    self._failed_polls,
+                    POLL_FAILURES_TOLERATED,
+                    err,
+                )
+                return self.data
             raise UpdateFailed(str(err)) from err
 
+        self._failed_polls = 0
         return result
 
     async def _async_update_battery_packs(self, result: dict[str, Any]) -> None:

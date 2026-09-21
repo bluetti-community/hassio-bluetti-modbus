@@ -6,6 +6,7 @@ from typing import Any, override
 
 from modbus_connection.exceptions import (
     AcknowledgeError,
+    ModbusConnectionError,
     ModbusError,
     ModbusProtocolError,
     ModbusTimeoutError,
@@ -29,14 +30,14 @@ _WRITE_SINGLE_REGISTER_FUNCTION_CODE = 6
 # an internal one and builds the confirmation from that, so a strict Modbus
 # client sees a confirmation that doesn't match its request. That internal
 # space differs between product families - a Balco 260 confirms its AC
-# output switch at 2011, an AC200L2 its DC output switch at 3008, nowhere
+# output switch at 2011, an AC200L its DC output switch at 3008, nowhere
 # near the 2012 the Balco family's map would predict - so the table is
 # keyed by device class name, then by the Modbus holding-register address
 # written to, and holds only captured echoes: every Balco 260 entry from
 # 2026-09-16 (all five of its writable registers), the AC200L one from
 # 2026-09-18 (bluetti-modbus#78), the EP500P one from 2026-09-20 (its
 # owner's first toggles in Home Assistant, hassio-bluetti-modbus#122) -
-# the same 3008 as the AC200L2, the portable stations sharing one internal
+# the same 3008 as the AC200L, the portable stations sharing one internal
 # map. A device or register with no entry gets its echo accepted and
 # reported - see BluettiDevice.write.
 _INTERNAL_WRITE_ADDRESS: dict[str, dict[int, int]] = {
@@ -48,7 +49,7 @@ _INTERNAL_WRITE_ADDRESS: dict[str, dict[int, int]] = {
         57017: 2023,  # b_soc_high - SYS_SOC_HIGH_CAPACITY
     },
     "AC200L": {
-        57005: 3008,  # dc_o_switch - captured on a real AC200L2
+        57005: 3008,  # dc_o_switch - captured on a real AC200L
     },
     "EP500P": {
         57005: 3008,  # dc_o_switch - captured on a real EP500Pro
@@ -67,6 +68,14 @@ _INTERNAL_WRITE_ADDRESS: dict[str, dict[int, int]] = {
 # Not proven sufficient either - a starting point pending extended
 # real-hardware monitoring, same as Balco260's max_span override.
 _TRANSIENT_RETRY_COUNT = 2
+
+# The failures a following attempt can recover from: a corrupted or
+# truncated reply, no reply, or a connection the device dropped mid-request
+# (the backend reconnects on the next request by itself). A dropped
+# connection shows up on a real Balco 260 about as often as the other two,
+# always on the first block of a poll, and used to fail the whole poll at
+# once while those were retried.
+_TRANSIENT_CAUSES = (ModbusProtocolError, ModbusTimeoutError, ModbusConnectionError)
 
 
 class BluettiDevice(Component):
@@ -166,6 +175,10 @@ class BluettiDevice(Component):
           accepted the request but wants more time - seen in practice on
           registers that otherwise read fine, so it's transient device
           behavior, not a permanently bad address. Retried once.
+        - A connection the device dropped mid-request (ModbusConnectionError,
+          "Connection lost before response was received"): the backend
+          reconnects on the next request, so it is retried like the two
+          below.
         - A corrupted/truncated reply - ModbusProtocolError under tmodbus
           (bluetti-community/bluetti-modbus#29), or the same event
           classified as ModbusTimeoutError under pymodbus, which can't tell
@@ -205,7 +218,7 @@ class BluettiDevice(Component):
             await self._async_update_with_timeout()
             return
         except BluettiModbusConnectionError as err:
-            if not isinstance(err.__cause__, (ModbusProtocolError, ModbusTimeoutError)):
+            if not isinstance(err.__cause__, _TRANSIENT_CAUSES):
                 raise
 
         for attempt in range(_TRANSIENT_RETRY_COUNT):
@@ -213,9 +226,7 @@ class BluettiDevice(Component):
                 await self._async_update_with_timeout()
                 return
             except BluettiModbusConnectionError as err:
-                if not isinstance(
-                    err.__cause__, (ModbusProtocolError, ModbusTimeoutError)
-                ):
+                if not isinstance(err.__cause__, _TRANSIENT_CAUSES):
                     raise
                 if attempt == _TRANSIENT_RETRY_COUNT - 1:
                     await self.modbus_unit.disconnect()
