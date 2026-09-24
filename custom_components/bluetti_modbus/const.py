@@ -74,6 +74,18 @@ EP500P_CONFIRMED = True
 # battery sub-device and values as in the app.
 FP_CONFIRMED = True
 
+# Balcotrans - the Balco Transfer Hub, named after the type string the
+# device gives at 50200, as AC200L and EP500P are (bluetti-modbus 0.31.0+,
+# bluetti-registers 0.0.46): a grid-tie controller that links a portable
+# power station to the mains. It has no battery of its own, so its SOC,
+# battery voltage and PV registers carry the connected station's values.
+# The profile was built from four probe runs on two real hubs in opposite
+# states, one charging a station and one feeding the grid, every value
+# checked against the BLUETTI app (bluetti-registers#29) - but nobody has
+# run it in Home Assistant yet, so the same gate as BALCO500_CONFIRMED
+# applies. Read-only: this firmware serves no writable register at all.
+BALCOTRANS_CONFIRMED = False
+
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: the
 # Balco 260 and, being a Balco-family device, the FridgePower.
@@ -87,6 +99,7 @@ DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
     "ac500": "AC500",
     "balco260": "Balco 260",
     "balco500": "Balco 500",
+    "balcotrans": "Balco Transfer Hub",
     "ep500p": "EP500Pro",
     "fp": "FridgePower",
     "smeter": "S Meter",
