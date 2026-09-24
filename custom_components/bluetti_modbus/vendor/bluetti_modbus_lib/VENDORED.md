@@ -1,4 +1,4 @@
 Vendored from https://github.com/bluetti-community/bluetti-modbus
-(published on PyPI as bluetti-modbus) at commit 436b72d424d7fcc889b2c88e8e6f80d26e920924 (0.32.0).
+(published on PyPI as bluetti-modbus) at commit f8a439cb6ea5a09a757f467055f5cf2055ae834f (0.33.0).
 
 Re-vendor with: scripts/vendor_bluetti_modbus_lib.sh [ref]
