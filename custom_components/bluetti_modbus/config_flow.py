@@ -26,6 +26,7 @@ from .const import (
     AC200L_CONFIRMED,
     AC500_CONFIRMED,
     BALCO500_CONFIRMED,
+    BALCOTRANS_CONFIRMED,
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
     EP500P_CONFIRMED,
@@ -166,7 +167,10 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # way, but entirely untested - see that constant's
                         # own comment. AC200L (AC200L_CONFIRMED) and EP500P
                         # (EP500P_CONFIRMED) went through the same gate and
-                        # are confirmed; FP (FP_CONFIRMED) is in it.
+                        # are confirmed; FP (FP_CONFIRMED) is in it, and
+                        # Balcotrans (BALCOTRANS_CONFIRMED) is the one in it
+                        # now - read on real hardware, not yet in Home
+                        # Assistant.
                         options=[
                             *(
                                 [SelectOptionDict(value="ac200l", label="AC200L")]
@@ -182,6 +186,15 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             *(
                                 [SelectOptionDict(value="balco500", label="Balco 500")]
                                 if BALCO500_CONFIRMED
+                                else []
+                            ),
+                            *(
+                                [
+                                    SelectOptionDict(
+                                        value="balcotrans", label="Balco Transfer Hub"
+                                    )
+                                ]
+                                if BALCOTRANS_CONFIRMED
                                 else []
                             ),
                             *(
