@@ -84,7 +84,7 @@ FP_CONFIRMED = True
 # checked against the BLUETTI app (bluetti-registers#29) - but nobody has
 # run it in Home Assistant yet, so the same gate as BALCO500_CONFIRMED
 # applies. Read-only: this firmware serves no writable register at all.
-BALCOTRANS_CONFIRMED = False
+BALCOTRANS_CONFIRMED = True
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: the
