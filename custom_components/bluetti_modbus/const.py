@@ -81,10 +81,14 @@ FP_CONFIRMED = True
 # battery voltage and PV registers carry the connected station's values.
 # The profile was built from four probe runs on two real hubs in opposite
 # states, one charging a station and one feeding the grid, every value
-# checked against the BLUETTI app (bluetti-registers#29) - but nobody has
-# run it in Home Assistant yet, so the same gate as BALCO500_CONFIRMED
-# applies. Read-only: this firmware serves no writable register at all.
-BALCOTRANS_CONFIRMED = False
+# checked against the BLUETTI app (bluetti-registers#29). Confirmed in Home
+# Assistant by that owner across three prereleases, the last of them
+# matching his app field for field: grid power 99 W against the app's 99 W,
+# the connected station's charge 25 % against its 25 %, its battery at 52 V
+# against the station's own 51.83 V, its PV at 168 W, both firmware
+# versions against the hub's own web page, and the grid at 50 Hz.
+# Read-only: this firmware serves no writable register at all.
+BALCOTRANS_CONFIRMED = True
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: the
