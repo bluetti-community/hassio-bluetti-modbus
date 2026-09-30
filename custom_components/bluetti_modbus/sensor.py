@@ -48,14 +48,22 @@ from .field_metadata import metadata_for
 from .vendor.bluetti_modbus_lib import MAX_BATTERY_PACKS, PACK_INFO_FIELDS, get_device
 
 # field name -> phase, the reverse of SMETER_PHASE_FIELDS's phase -> fields.
-# AC500, AC200L and EP500P: the same register family (AC200L's profile
-# was derived from AC500's and confirmed on hardware - bluetti-registers#31;
-# EP500P's is AC500's, read on two real units - bluetti-registers#35), so
-# the AC500-specific sensor exceptions below hold for all three. Not
-# AC500_FIELDS_NOT_SHOWN, though: the EP500P's g_i_switch reads 0 on one
-# unit and 1 on the other, not AC500's stuck 1 - a real state, kept as a
-# (read-only) sensor there.
-_AC_FAMILY = ("ac500", "ac200l", "ep500p")
+# AC500, AC200L, EP500P and PA030: the same register family (AC200L's
+# profile was derived from AC500's and confirmed on hardware -
+# bluetti-registers#31; EP500P's is AC500's, read on two real units -
+# bluetti-registers#35; PA030's is AC500's too, answered in full on a real
+# Apex 300 - bluetti-registers#49), so the AC500-specific sensor exceptions
+# below hold for all four. Not AC500_FIELDS_NOT_SHOWN, though: the EP500P's
+# g_i_switch reads 0 on one unit and 1 on the other, not AC500's stuck 1 - a
+# real state, kept as a (read-only) sensor there.
+_AC_FAMILY = ("ac500", "ac200l", "ep500p", "pa030")
+
+# The PV type exception below is the one member of that set the Apex 300
+# does not share: on it both strings read DcPv, with two DC inputs declared,
+# which is the mapping Balco260 confirms - not the raw 0 that makes the
+# reading suspect on the other three (bluetti-registers#49). So its PV type
+# sensors are enabled like any other confirmed field.
+_PV_TYPE_UNVERIFIED = ("ac500", "ac200l", "ep500p")
 
 _PHASE_FOR_FIELD = {
     field_name: phase
@@ -215,7 +223,10 @@ async def async_setup_entry(
         # BLUETTI or further real-hardware testing confirms the mapping;
         # showing a plausible-looking but potentially-wrong type string by
         # default would be worse than not showing it at all.
-        if config.dev_type in _AC_FAMILY and field.name in ("pv_1_i_type", "pv_2_i_type"):
+        if config.dev_type in _PV_TYPE_UNVERIFIED and field.name in (
+            "pv_1_i_type",
+            "pv_2_i_type",
+        ):
             metadata = dataclasses.replace(metadata, enabled_by_default=False)
         # pv_i_e_local is disabled by default as a flat-0 register on
         # Balco260 (field_metadata.py), but AC500 declares no pv_i_e_total
