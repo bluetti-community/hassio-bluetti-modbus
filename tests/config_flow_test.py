@@ -185,6 +185,31 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ep500p", values)
 
+    async def test_pa030_not_offered_by_default(self):
+        # PA030_CONFIRMED is False by default - see its own comment in
+        # const.py. The Apex 300's profile has been read on real hardware
+        # but not yet run in Home Assistant, so it ships behind the gate and
+        # a prerelease is what its owner tests.
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("pa030", values)
+        self.assertIn("balco260", values)
+        self.assertIn("smeter", values)
+
+    @patch("custom_components.bluetti_modbus.config_flow.PA030_CONFIRMED", True)
+    async def test_pa030_offered_once_confirmed(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        labels = {o["value"]: o["label"] for o in options}
+        self.assertEqual(labels.get("pa030"), "Apex 300")
+
     @patch("custom_components.bluetti_modbus.config_flow.BALCO500_CONFIRMED", True)
     async def test_balco500_offered_once_confirmed(self):
         flow = _flow()

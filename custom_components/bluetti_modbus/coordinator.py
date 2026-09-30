@@ -21,6 +21,7 @@ from .vendor.bluetti_modbus_lib import (
     EP2000,
     FP,
     MAX_BATTERY_PACKS,
+    PA030,
     Balco260,
     Balco500,
     Balcotrans,
@@ -114,7 +115,16 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def device(
         self,
     ) -> (
-        AC200L | AC500 | FP | Balco260 | Balco500 | Balcotrans | EP2000 | EP500P | SMeter
+        AC200L
+        | AC500
+        | FP
+        | PA030
+        | Balco260
+        | Balco500
+        | Balcotrans
+        | EP2000
+        | EP500P
+        | SMeter
     ):
         """The underlying bluetti_modbus_lib device - for reading fields.
 

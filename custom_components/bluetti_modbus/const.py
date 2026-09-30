@@ -90,6 +90,22 @@ FP_CONFIRMED = True
 # Read-only: this firmware serves no writable register at all.
 BALCOTRANS_CONFIRMED = True
 
+# PA030 - the BLUETTI Apex 300, named after the type string the device
+# gives at 50200, as AC200L, EP500P and FP are (bluetti-modbus 0.36.0+,
+# bluetti-registers 0.0.49): a new-generation station on which the local
+# web page and the Modbus TCP switch arrive with IoT firmware v8026.14,
+# reached over the unit's own Wi-Fi access point. A real unit answered the
+# whole AC500 register set - every field, 31 isolated block reads, no
+# errors, values matching the app (bluetti-registers#49). Two things set it
+# apart from its AC500 cousins: its pack voltage is scaled 0.01 V, and it
+# populates the PV metadata and energy counters they leave empty. Nothing
+# is writable - no write of any kind has been tried on this model. Same
+# mechanism as BALCO500_CONFIRMED: the dropdown only offers "pa030" while
+# this is True. It stays False on main; a prerelease cut from a pa030-beta
+# branch with it set to True is what the unit's owner tests in Home
+# Assistant, and that test is what flips it here.
+PA030_CONFIRMED = False
+
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: the
 # Balco 260 and, being a Balco-family device, the FridgePower.
@@ -106,6 +122,7 @@ DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
     "balcotrans": "Balco Transfer Hub",
     "ep500p": "EP500Pro",
     "fp": "FridgePower",
+    "pa030": "Apex 300",
     "smeter": "S Meter",
 }
 

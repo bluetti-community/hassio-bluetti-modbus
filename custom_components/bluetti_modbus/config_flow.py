@@ -31,6 +31,7 @@ from .const import (
     DOMAIN,
     EP500P_CONFIRMED,
     FP_CONFIRMED,
+    PA030_CONFIRMED,
 )
 from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
@@ -168,7 +169,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # own comment. AC200L (AC200L_CONFIRMED) and EP500P
                         # (EP500P_CONFIRMED) went through the same gate and
                         # are confirmed; FP (FP_CONFIRMED) is in it, and
-                        # Balcotrans (BALCOTRANS_CONFIRMED) is the one in it
+                        # Balcotrans (BALCOTRANS_CONFIRMED) went through it
+                        # too, and PA030 (PA030_CONFIRMED) is the one in it
                         # now - read on real hardware, not yet in Home
                         # Assistant.
                         options=[
@@ -205,6 +207,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             *(
                                 [SelectOptionDict(value="fp", label="FridgePower")]
                                 if FP_CONFIRMED
+                                else []
+                            ),
+                            *(
+                                [SelectOptionDict(value="pa030", label="Apex 300")]
+                                if PA030_CONFIRMED
                                 else []
                             ),
                             SelectOptionDict(value="smeter", label="S Meter"),

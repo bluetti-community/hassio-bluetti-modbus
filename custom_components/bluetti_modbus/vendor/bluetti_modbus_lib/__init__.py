@@ -10,6 +10,7 @@ from .devices import (
     EXPANSION_PACK_FIRST_SLAVE_ID,
     FP,
     MAX_BATTERY_PACKS,
+    PA030,
     PACK_INFO_FIELDS,
     Balco260,
     Balco500,
@@ -21,7 +22,13 @@ from .devices import (
     pack_is_reporting,
     pack_slave_id,
 )
-from .enums import InverterFault, InverterStatus, InverterWarning, PackChargingStatus
+from .enums import (
+    InverterFault,
+    InverterStatus,
+    InverterWarning,
+    PackChargingStatus,
+    PvType,
+)
 from .exceptions import BluettiModbusConnectionError, BluettiModbusError
 from .modbus import BluettiModbusClient
 
@@ -35,6 +42,7 @@ __all__ = [
     "EXPANSION_PACK_FIRST_SLAVE_ID",
     "FP",
     "MAX_BATTERY_PACKS",
+    "PA030",
     "PACK_INFO_FIELDS",
     "Balco260",
     "Balco500",
@@ -46,6 +54,7 @@ __all__ = [
     "InverterStatus",
     "InverterWarning",
     "PackChargingStatus",
+    "PvType",
     "SMeter",
     "aggregate_pack_summary",
     "battery_pack",
