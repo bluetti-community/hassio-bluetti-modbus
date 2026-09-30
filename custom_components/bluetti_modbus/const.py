@@ -104,7 +104,7 @@ BALCOTRANS_CONFIRMED = True
 # this is True. It stays False on main; a prerelease cut from a pa030-beta
 # branch with it set to True is what the unit's owner tests in Home
 # Assistant, and that test is what flips it here.
-PA030_CONFIRMED = False
+PA030_CONFIRMED = True
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: the
