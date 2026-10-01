@@ -44,10 +44,12 @@ BluettiProfile = (
 # its entities go unavailable. A Balco 260 fails about one poll an hour even
 # after the library's own retries (a dropped connection, a corrupted reply,
 # a timeout - always recovered by the next poll); without this, every such
-# poll flipped a hundred entities to unavailable for 30 s and logged an
-# error. Two tolerated failures = at most 90 s on stale values before the
-# entities say so.
-POLL_FAILURES_TOLERATED = 2
+# poll flipped a hundred entities to unavailable and logged an error. The
+# grace period is 90 s on stale values before the entities say so, which at
+# the 15 s readings cycle (READINGS_SCAN_INTERVAL below) is five tolerated
+# failures - kept in time rather than in polls, so reading faster does not
+# make entities go unavailable sooner.
+POLL_FAILURES_TOLERATED = 5
 
 # The data area is read on every cycle and the settings block on its own,
 # slower one - the split home-assistant/core's sofar and solaredge_modbus
@@ -60,6 +62,11 @@ POLL_FAILURES_TOLERATED = 2
 READINGS_SCAN_INTERVAL = timedelta(seconds=15)
 SETTINGS_SCAN_INTERVAL = timedelta(seconds=60)
 SETTINGS_FIRST_ADDRESS = 57001
+# A device applies a write at once but serves the old value for a moment
+# afterwards - on a Balco 260, b_soc_low written 15 -> 16 read back 15, and 16
+# a moment later. The library's bluetti-modwrite waits this long before its
+# own read-back for the same reason.
+SETTINGS_WRITE_SETTLE = timedelta(seconds=2)
 
 
 class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -219,11 +226,15 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         async with self._io_lock:
             await self.device.write(field_name, value)
-        # A settings field would otherwise show its old value until the next
-        # settings read, up to a minute away - the switch would snap back under
-        # the owner's hand. Bring that read forward to the next poll.
+        # Keep what was just written in the settings snapshot, and confirm it
+        # on the first poll after the device has settled. Both halves matter:
+        # without the first, a poll before the next settings read would merge
+        # the old value back in and the switch would snap back; without the
+        # settle, a settings read straight after the write would read the old
+        # value - see SETTINGS_WRITE_SETTLE - and then keep it for a minute.
         if self._settings is not None and self._settings.get_field(field_name) is not None:
-            self._settings_due_at = 0.0
+            self._settings_values[field_name] = value
+            self._settings_due_at = time.monotonic() + SETTINGS_WRITE_SETTLE.total_seconds()
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""

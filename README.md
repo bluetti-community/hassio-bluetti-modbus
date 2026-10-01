@@ -142,9 +142,13 @@ to find out what your device announces (an mDNS browse) and what its own web pag
 The device is contacted straight away, so a wrong address or a device with Modbus TCP
 still disabled fails immediately rather than after setup.
 
-The poll interval is fixed at 30 seconds and is not configurable: this device's
-Modbus TCP stack has been observed becoming unresponsive under heavier polling, to
-the point of needing a factory reset to recover.
+Polling is fixed and not configurable: the data area is read every 15 seconds and
+the settings block (output switches, grid charging, SOC thresholds - 57001 and up)
+every 60. Settings only change when you change them, so reading them less often is
+what makes the faster readings safe on a Modbus TCP stack that has been observed
+becoming unresponsive under heavier polling, to the point of needing a factory reset
+to recover. A device with no settings block, such as the S Meter, is read whole every
+15 seconds.
 
 ## Entities 🧩
 

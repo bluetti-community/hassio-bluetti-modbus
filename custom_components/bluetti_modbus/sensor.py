@@ -428,7 +428,7 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
         created (see __init__.py), coordinator.data is already populated;
         without this, this sensor would stay unavailable (_attr_available
         starts False in __init__) until the coordinator's next scheduled
-        poll, up to update_interval (30s) later - _handle_coordinator_update()
+        poll, up to update_interval (15 s) later - _handle_coordinator_update()
         below still runs regardless of whether a value was just restored, so
         a restored value only remains visible if this device doesn't answer
         this particular field on the very next poll either.

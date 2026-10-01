@@ -124,19 +124,20 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_a_successful_poll_resets_the_tolerance(self, client_cls):
         lost = ModbusConnectionError("Connection lost before response was received.")
+        n = POLL_FAILURES_TOLERATED
         client_cls.return_value.read = AsyncMock(
-            side_effect=[lost, lost, [_result("b_soc", 90)], lost, lost, lost]
+            side_effect=[lost] * n + [[_result("b_soc", 90)]] + [lost] * (n + 1)
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
         coordinator.data = {"b_soc": 89}
 
-        await coordinator._async_update_data()
-        await coordinator._async_update_data()
+        for _ in range(n):
+            await coordinator._async_update_data()
         self.assertEqual(await coordinator._async_update_data(), {"b_soc": 90})
         coordinator.data = {"b_soc": 90}
-        # Two more are tolerated again before the third raises.
-        await coordinator._async_update_data()
-        await coordinator._async_update_data()
+        # The full tolerance is available again before the next one raises.
+        for _ in range(n):
+            await coordinator._async_update_data()
         with self.assertRaises(UpdateFailed):
             await coordinator._async_update_data()
 
@@ -226,6 +227,13 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(READINGS_SCAN_INTERVAL.total_seconds(), 15)
         self.assertEqual(SETTINGS_SCAN_INTERVAL.total_seconds(), 60)
 
+    def test_reading_faster_keeps_the_ninety_second_grace_period(self):
+        # The tolerance is a time budget, not a poll count: stale values are
+        # kept for 90 s before entities go unavailable, as at 30 s with two
+        # tolerated failures. Halving the interval must not halve that.
+        grace = (POLL_FAILURES_TOLERATED + 1) * READINGS_SCAN_INTERVAL.total_seconds()
+        self.assertEqual(grace, 90)
+
     @patch("custom_components.bluetti_modbus.coordinator.get_device")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_the_settings_block_leaves_the_every_cycle_read(self, client_cls, get_device):
@@ -302,12 +310,35 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
 
         await coordinator.async_write("ac_o_switch", 0)
 
-        # Written through the whole profile, and re-read on the next poll
-        # rather than up to a minute later, so the switch does not snap back.
+        # Written through the whole profile, and confirmed on the first poll
+        # once the device has settled rather than up to a minute later.
         schema.write.assert_awaited_once_with("ac_o_switch", 0)
+        settings.values = {"ac_o_switch": 0}
         monotonic.return_value = 1015.0
-        await coordinator._async_update_data()
+        result = await coordinator._async_update_data()
         self.assertEqual(settings.async_update_with_retry.await_count, 2)
+        self.assertEqual(result["ac_o_switch"], 0)
+
+    @patch("custom_components.bluetti_modbus.coordinator.time.monotonic")
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_poll_right_after_a_write_keeps_the_written_value(
+        self, client_cls, get_device, monotonic
+    ):
+        # The device serves the old value for a moment after a write. A poll
+        # landing in that moment must neither read the settings - it would
+        # read the old value and keep it for a minute - nor merge the old
+        # snapshot back in: the switch would snap back under the owner's hand.
+        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+        monotonic.return_value = 1000.0
+        await coordinator._async_update_data()
+
+        await coordinator.async_write("ac_o_switch", 0)
+        monotonic.return_value = 1001.0
+        result = await coordinator._async_update_data()
+
+        settings.async_update_with_retry.assert_awaited_once()
+        self.assertEqual(result["ac_o_switch"], 0)
 
     @patch("custom_components.bluetti_modbus.coordinator.get_device")
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")

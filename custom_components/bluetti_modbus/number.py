@@ -95,7 +95,7 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
         async_config_entry_first_refresh() already ran before this entity was
         created (see __init__.py), coordinator.data is already populated;
         without this, native_value would stay unknown until the coordinator's
-        next scheduled poll, up to update_interval (30s) later.
+        next scheduled poll, up to update_interval (15 s) later.
         """
         await super().async_added_to_hass()
         self._handle_coordinator_update()
@@ -113,8 +113,10 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
             raise HomeAssistantError(
                 f"Failed to write to {self._device_name} {self._field_name}: {err}"
             ) from err
-        # Optimistic - the next poll (30s) reconciles with what the device
-        # actually accepted, same as every other write-capable HA entity.
+        # Optimistic - the coordinator keeps the written value and confirms
+        # it against the device on the first poll after the device has
+        # settled (see coordinator.SETTINGS_WRITE_SETTLE), same as every other
+        # write-capable HA entity.
         self._attr_native_value = value
         self.async_write_ha_state()
 
