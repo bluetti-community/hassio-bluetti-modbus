@@ -915,11 +915,11 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self, config_cls, dev_info_fn, get_device_fn
     ):
         # AC500's register set read in full on a real Apex 300
-        # (bluetti-registers#49): no plain b_soc and no pv_i_e_total, so
-        # those two exceptions apply. The PV type one does not - both
-        # strings read DcPv there, the mapping Balco260 confirms, not the
-        # raw 0 that makes it suspect on AC500 - so those sensors stay
-        # enabled.
+        # (bluetti-registers#49): no plain b_soc, so the battery-class
+        # exception applies. The PV type one does not - both strings read
+        # DcPv there, the mapping Balco260 confirms - and it serves
+        # pv_i_e_total, so pv_i_e_local stays the disabled repeat it is on the
+        # Balco family.
         config_cls.from_dict.return_value = MagicMock(dev_type="pa030", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
 
@@ -953,7 +953,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(by_key["b_soc_total"]._attr_device_class, SensorDeviceClass.BATTERY)
         self.assertTrue(by_key["pv_1_i_type"]._attr_entity_registry_enabled_default)
         self.assertTrue(by_key["pv_2_i_type"]._attr_entity_registry_enabled_default)
-        self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
+        self.assertFalse(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
 
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
