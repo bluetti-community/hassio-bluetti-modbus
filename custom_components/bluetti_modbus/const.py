@@ -119,9 +119,12 @@ PA030_CONFIRMED = True
 EP2000_CONFIRMED = True
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
-# the main unit's Modbus address, and so get a battery sub-device: the
-# Balco 260 and, being a Balco-family device, the FridgePower.
-BUILT_IN_BATTERY_DEV_TYPES = ("balco260", "fp")
+# the main unit's Modbus address, and so get a battery sub-device: every
+# profile that carries that block - the Balco 260 and Balco 500, the
+# FridgePower, and the EP2000, whose block describes its HV800 battery. A
+# profile with those fields but missing here would have them skipped from the
+# main device and shown nowhere; a test checks the two never drift apart.
+BUILT_IN_BATTERY_DEV_TYPES = ("balco260", "balco500", "ep2000", "fp")
 
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would

@@ -534,10 +534,10 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     async def test_non_writable_ac_o_switch_stays_a_sensor(
         self, config_cls, dev_info_fn, get_device_fn
     ):
-        # e.g. EP2000 today: the schema knows about ac_o_switch, but
+        # e.g. the Apex 300 today: the schema knows about ac_o_switch, but
         # bluetti_modbus_lib doesn't mark it writable there yet - it must
         # stay readable as a plain sensor, not disappear.
-        config_cls.from_dict.return_value = MagicMock(dev_type="ep2000", address="10.2.1.60")
+        config_cls.from_dict.return_value = MagicMock(dev_type="pa030", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
 
         field = MagicMock(address=57001, unit=None, writable=False)
@@ -626,10 +626,10 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     async def test_non_writable_b_soc_low_stays_a_sensor(
         self, config_cls, dev_info_fn, get_device_fn
     ):
-        # e.g. EP2000 today: the schema knows about b_soc_low, but
+        # e.g. the Apex 300 today: the schema knows about b_soc_low, but
         # bluetti_modbus_lib doesn't mark it writable there yet - it must
         # stay readable as a plain sensor, not disappear.
-        config_cls.from_dict.return_value = MagicMock(dev_type="ep2000", address="10.2.1.60")
+        config_cls.from_dict.return_value = MagicMock(dev_type="pa030", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
 
         field = MagicMock(address=57016, unit="%", writable=False)
@@ -1177,6 +1177,32 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         response_keys = {s._response_key for s in added}
         self.assertEqual(response_keys, PACK_INFO_FIELDS - {"b_serial", "b_ver_1"})
         self.assertTrue(all(s.device_info == {"name": "Test Device Battery"} for s in added))
+
+    def test_every_profile_with_a_battery_block_gets_the_battery_sub_device(self):
+        # PACK_INFO_FIELDS are always skipped from the main device, so a
+        # profile carrying them must have the battery sub-device to receive
+        # them, or its battery's SOC, health, cycles and identity are shown
+        # nowhere - what the EP2000 and the Balco 500 were missing. Checked
+        # against the real profiles, both ways.
+        from custom_components.bluetti_modbus.const import (
+            BUILT_IN_BATTERY_DEV_TYPES,
+            DEVICE_TYPE_DISPLAY_NAMES,
+        )
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            PACK_INFO_FIELDS,
+        )
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            get_device as real_get_device,
+        )
+
+        with_block = set()
+        for dev_type in DEVICE_TYPE_DISPLAY_NAMES:
+            device = real_get_device(dev_type)
+            assert device is not None
+            if PACK_INFO_FIELDS & set(device.field_names()):
+                with_block.add(dev_type)
+
+        self.assertEqual(with_block, set(BUILT_IN_BATTERY_DEV_TYPES))
 
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
