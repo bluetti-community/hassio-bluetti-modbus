@@ -30,6 +30,7 @@ from .const import (
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
     EP500P_CONFIRMED,
+    EP2000_CONFIRMED,
     FP_CONFIRMED,
     PA030_CONFIRMED,
 )
@@ -197,6 +198,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                     )
                                 ]
                                 if BALCOTRANS_CONFIRMED
+                                else []
+                            ),
+                            *(
+                                [SelectOptionDict(value="ep2000", label="EP2000")]
+                                if EP2000_CONFIRMED
                                 else []
                             ),
                             *(
