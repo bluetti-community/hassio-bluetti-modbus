@@ -28,10 +28,10 @@ documentation and verified against real hardware.
 * **Entities built from the device's own register map.** Every field the device
   reports becomes an entity, with the right device class, unit and precision applied
   automatically. Nothing is hard-coded per model.
-* **Real controls, not just readings.** On Balco 260: AC output, grid charging and
-  grid feed-in switches, plus the two battery SoC threshold settings.
-* **Proper device structure.** The battery is its own sub-device; S Meter's three
-  phases each get their own, linked back to the meter.
+* **Real controls, not just readings.** Output, grid charging and feed-in switches and
+  SoC limits where the device accepts the write - see the table below.
+* **Proper device structure.** The battery and each expansion pack are their own
+  sub-devices; S Meter's three phases each get their own, linked back to the meter.
 * **Stable entity IDs.** Entities are keyed on the device's real serial number read
   over Modbus, so they survive an IP change, a backup restore, or a move to a new
   Home Assistant instance.
@@ -43,26 +43,62 @@ documentation and verified against real hardware.
 
 ## Supported devices 🔋
 
-| Device | Status | Notes |
-| --- | --- | --- |
-| **Balco 260** | ✅ Confirmed | Full support: 107 fields, switches, SoC thresholds, battery sub-device, one sub-device per BC260 expansion pack. Verified against real hardware and BLUETTI's official register spec. |
-| **S Meter** | ✅ Confirmed | 31 fields, per-phase sub-devices. Verified against real hardware. |
-| **AC500** | ✅ Confirmed | 32 fields, AC/DC output switches, "Customized UPS" SoC thresholds (read-only). Verified against real hardware by the community, not yet BLUETTI-support-confirmed like Balco 260/S Meter. No mDNS: manual setup ([#98](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/98)). No per-pack data: the pack registers are a window onto the pack the BLUETTI app has selected, and the selector is not reachable over Modbus TCP ([bluetti-registers#13](https://github.com/bluetti-community/bluetti-registers/issues/13)). Never address a Modbus unit id other than 1 on it - a read at any other unit id froze its Modbus TCP stack until a power cycle. |
-| **AC200L** | ✅ Confirmed | 30 fields, AC/DC output switches, SoC thresholds (read-only). Contributed from and confirmed on a real unit, cross-checked against its BLE readings, and read on a second unit charging at 810 W, which settled the battery current's scale ([bluetti-registers#31](https://github.com/bluetti-community/bluetti-registers/issues/31)); energy and PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the device calls itself "AC200L" - whether an original AC200L exposes Modbus TCP at all is unknown. No mDNS: manual setup. |
-| **FridgePower** | ✅ Confirmed | BLUETTI's full Balco register set on a fridge-sized station: 120 fields, battery sub-device, DC output and grid charging switches (writes confirmed on a real unit); the SoC thresholds refuse writes on this model and stay read-only, the AC output switch is untried (it powers the fridge), and the grid feed-in switch is not shown - the unit is off-grid only. Three real units read (US and EU) with values matching the app ([bluetti-registers#38](https://github.com/bluetti-community/bluetti-registers/issues/38)), and the integration confirmed in Home Assistant by two of their owners; pack voltage at 0.01 V, signed grid power. Entities for phases 2-3, PV strings 2-4 and pack slots 2-4 read empty on a single-phase, single-pack unit. Modbus TCP is enabled on the unit's local web page; no mDNS announcement, so it is set up manually by IP. BlueCell 200 expansion packs not yet seen over Modbus. |
-| **EP500Pro** | ✅ Confirmed | 32 fields, AC/DC output switches (switched on real hardware), SoC thresholds and grid charging read-only. Modbus TCP appeared with IoT firmware 9041.17 (enable it on the unit's local web page, port 80); AC500's register set read on two real units and run in Home Assistant by one of them, every value matching the app ([bluetti-registers#35](https://github.com/bluetti-community/bluetti-registers/issues/35)); energies and per-string PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the profile carries the device's own type string, `EP500P`. No mDNS: manual setup. |
-| **Balco Transfer Hub** | ✅ Confirmed | A grid-tie controller, not a power station: it links a portable station to the mains, feeding up to 800 W or charging it with up to 2300 W of bypass power. 27 read-only fields, every one confirmed against the app on two real hubs in opposite states ([bluetti-registers#29](https://github.com/bluetti-community/bluetti-registers/issues/29)). It has no battery of its own, so the SoC, battery voltage and PV entities carry the **connected station's** values. This firmware serves no writable register at all - the working mode, the feed-in limit and the schedule stay in the app - and its energy counters read zero, so there are none. The device calls itself `Balcotrans`. No mDNS: an owner's Zeroconf browser saw nothing from the hub, only the Balco 260 and the S Meter, so setup is manual by IP. Modbus TCP is off by default on its local web page. Confirmed in Home Assistant by an owner, field for field against his app. Getting there found two things about this firmware: the battery voltage needed the connected station's own scale, and the hub answers a block read with a word inserted partway through and the rest shifted one register late - so it is read one field per request. |
+| Device | Setup | What you can control | Evidence |
+| --- | --- | --- | --- |
+| **Balco 260** | Discovered | AC output, grid charging, grid feed-in; SoC low/high limits | Real hardware + BLUETTI spec |
+| **S Meter** | Discovered | Read-only | Real hardware + BLUETTI spec |
+| **FridgePower** | Manual (IP) | DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/38) |
+| **AC500** | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
+| **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
+| **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
+| **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
 
-**EP2000 is in testing.** A real unit has been read over Modbus TCP and its
-profile corrected against that read
-([bluetti-registers#42](https://github.com/bluetti-community/bluetti-registers/issues/42)),
-but it has not run in Home Assistant yet, so it is not offered in the device list.
-On this model the port is opened by the BLUETTI app's **VPP** option - the web
-page has no Modbus switch. A virtual power plant can let an aggregator charge and
-discharge the battery, so know what that option authorises before turning it on.
+Every field the device reports is shown as a reading; the controls listed are the
+writes confirmed on a real unit.
+
+**In testing** - offered only in the [beta prerelease](#beta-versions), not in the
+stable release yet:
+
+| Device | Where it stands | Tracking |
+| --- | --- | --- |
+| **Apex 300** | Read in full on a real unit, matches the app; read-only | [#143](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143) |
+| **EP2000** | Read on a real unit; read-only. Modbus TCP is opened by the app's **VPP** option, which can let an aggregator charge and discharge the battery | [#145](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
+
+**Not possible:** the EP600 has no local web page, so no Modbus TCP.
 
 Have a different BLUETTI model? Register data is welcome - see
 [bluetti-community/bluetti-registers](https://github.com/bluetti-community/bluetti-registers).
+
+<details>
+<summary><b>Per-device notes</b></summary>
+
+**Balco 260** - the battery and each BC260 expansion pack get their own sub-device.
+
+**FridgePower**
+- The SoC limits refuse writes on this model and stay read-only; the AC output switch
+  is left untried (it powers the fridge).
+- No grid feed-in switch: the unit is off-grid only.
+- On a single-phase, single-pack unit, the entities for phases 2-3, PV strings 2-4
+  and pack slots 2-4 read empty.
+
+**AC500, EP500Pro, AC200L, Apex 300** - one shared register layout.
+- The SoC limits are read-only: the AC500 refuses the write.
+- No per-pack data: the pack registers show whichever pack the app has selected, and
+  that selector is not reachable over Modbus TCP.
+- On the AC500 and EP500Pro, never address a Modbus unit id other than 1: it freezes
+  their Modbus TCP until a power cycle.
+- Energy and per-string PV fields are not yet seen non-zero on the EP500Pro and AC200L.
+- The AC200L and EP500Pro are absent from BLUETTI's official register list; they are
+  supported from what real units return.
+
+**Balco Transfer Hub** - a grid-tie controller, not a power station.
+- It has no battery: the SoC, battery voltage and PV entities show the **connected
+  station's** values.
+- Working mode, feed-in limit and schedule stay in the app: this firmware has no
+  writable register.
+- Its energy counters read zero, so there are none.
+
+</details>
 
 ## Prerequisites 🔌
 
@@ -82,8 +118,9 @@ Assistant will stop reaching it.
 
 > [!NOTE]
 > Modbus TCP is only available on some models and firmware versions. If you cannot
-> find these settings, your device does not support it yet. The page is the same
-> "Bluetti Manager" on a Balco 260 and on an AC200L.
+> find these settings, your device does not support it yet. On an Apex 300 the page
+> is served on the unit's own Wi-Fi access point; an EP2000 has no switch on its page
+> (see [In testing](#supported-devices-)).
 
 ## Installation ⚙️
 
@@ -99,6 +136,13 @@ _or manually:_
    **Integration**.
 4. Find **BLUETTI Modbus** in HACS and install it.
 5. **Restart Home Assistant.**
+
+### Beta versions
+
+Devices still in testing ship in a prerelease. In HACS: **BLUETTI Modbus** → **⋮** →
+**Redownload** → turn on **Show beta versions** → pick the latest `-beta` version →
+restart Home Assistant. The [releases page](https://github.com/bluetti-community/hassio-bluetti-modbus/releases)
+lists what each one carries.
 
 ### Manually
 
@@ -138,9 +182,8 @@ to find out what your device announces (an mDNS browse) and what its own web pag
 3. Fill in:
    * **Address** - the IP address or hostname of your device.
    * **Port** - `502` unless you changed it on the device.
-   * **Type** - Balco 260, S Meter, AC500, AC200L, or EP500Pro (the AC500, the
-     AC200L and the EP500Pro do not announce themselves on the network, so this is the
-     only way to add them).
+   * **Type** - your model. Only the Balco 260 and the S Meter announce themselves
+     on the network; every other model is added this way.
 
 The device is contacted straight away, so a wrong address or a device with Modbus TCP
 still disabled fails immediately rather than after setup.
@@ -171,16 +214,16 @@ set depends on your model.
   factor on three **Phase A/B/C** sub-devices, with the totals and averages on the
   meter itself.
 
-### Switches (Balco 260)
+### Switches and numbers
 
-* **AC Output** - turn the AC output on or off.
+Only on the models whose writes are confirmed - see
+[Supported devices](#supported-devices-):
+
+* **AC Output** / **DC Output** - turn that output on or off.
 * **Grid Charging** - allow or block charging from the grid.
 * **Grid Feed-in** - allow or block exporting to the grid.
-
-### Numbers (Balco 260)
-
-* **Min Discharge Limit (SoC Low)** - 5-90%.
-* **Max Charge Limit (SoC High)** - 0-100%.
+* **Min Discharge Limit (SoC Low)** (5-90%) and **Max Charge Limit (SoC High)**
+  (0-100%) - Balco 260 only.
 
 ### Binary sensors (S Meter)
 
