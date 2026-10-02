@@ -551,6 +551,177 @@
       },
       "ac_pf_total": {
         "name": "Total Power Factor"
+      },
+      "b_p": {
+        "name": "Battery Power"
+      },
+      "d_manufacturer": {
+        "name": "Manufacturer"
+      },
+      "d_reactive_p_total": {
+        "name": "Total Reactive Power"
+      },
+      "d_apparent_p_total": {
+        "name": "Total Apparent Power"
+      },
+      "d_rated_p_max": {
+        "name": "Rated Max Active Power"
+      },
+      "d_rated_p_max_continuous": {
+        "name": "Rated Continuous Active Power"
+      },
+      "d_rated_va_max_continuous": {
+        "name": "Rated Continuous Apparent Power"
+      },
+      "d_rated_var_max_continuous": {
+        "name": "Rated Continuous Reactive Power (Injected)"
+      },
+      "d_rated_var_max_continuous_neg": {
+        "name": "Rated Continuous Reactive Power (Absorbed)"
+      },
+      "d_rated_pf_min_over_excited": {
+        "name": "Min Power Factor (Injecting Reactive)"
+      },
+      "d_rated_pf_min_under_excited": {
+        "name": "Min Power Factor (Absorbing Reactive)"
+      },
+      "d_online_component": {
+        "name": "Online Accessories"
+      },
+      "d_rated_v": {
+        "name": "Rated Voltage"
+      },
+      "d_rated_f": {
+        "name": "Rated Frequency"
+      },
+      "d_hw_ver": {
+        "name": "Hardware Version"
+      },
+      "d_p_active": {
+        "name": "DER Active Power"
+      },
+      "d_p_reactive": {
+        "name": "DER Reactive Power"
+      },
+      "d_f": {
+        "name": "DER Frequency"
+      },
+      "d_operational_mode_status": {
+        "name": "DER Operational Mode"
+      },
+      "d_connection_status": {
+        "name": "DER Connection Status"
+      },
+      "d_alarm_status": {
+        "name": "DER Alarm Status"
+      },
+      "d_inverter_der_status": {
+        "name": "DER Inverter Status"
+      },
+      "d_local_control_mode_status": {
+        "name": "DER Control Mode"
+      },
+      "d_storage_mode_status": {
+        "name": "DER Storage Mode"
+      },
+      "d_ems_ctrl": {
+        "name": "Remote Control"
+      },
+      "d_p_output_level_pct": {
+        "name": "Active Power Output Level"
+      },
+      "d_p_limit_timeout": {
+        "name": "Power Limit Timeout"
+      },
+      "d_p_limit_ramp_time": {
+        "name": "Power Limit Ramp Time"
+      },
+      "d_p_limit_ramp_rate_pct": {
+        "name": "Power Limit Ramp Rate"
+      },
+      "d_battery_control": {
+        "name": "Battery Control Mode"
+      },
+      "d_export_limit": {
+        "name": "Grid Export Limit"
+      },
+      "d_storage_set_point": {
+        "name": "Forced Charge/Discharge Power"
+      },
+      "d_op_mod_connect": {
+        "name": "Connect/Energize State"
+      },
+      "d_op_mod_gen_lim_w": {
+        "name": "Charging (Import) Power Limit"
+      },
+      "d_op_mod_load_lim_w": {
+        "name": "Discharging (Export) Power Limit"
+      },
+      "d_ramp_rate": {
+        "name": "Ramp Rate"
+      },
+      "g_1_p_active": {
+        "name": "Grid Phase 1 Active Power"
+      },
+      "g_1_p_reactive": {
+        "name": "Grid Phase 1 Reactive Power"
+      },
+      "g_1_p_apparent": {
+        "name": "Grid Phase 1 Apparent Power"
+      },
+      "d_inverter_1_p_active_internal": {
+        "name": "Inverter 1 Internal Active Power"
+      },
+      "d_p_active_target_l1": {
+        "name": "Phase 1 Active Power Target"
+      },
+      "d_p_reactive_target_l1": {
+        "name": "Phase 1 Reactive Power Target"
+      },
+      "d_p_apparent_target_l1": {
+        "name": "Phase 1 Apparent Power Target"
+      },
+      "g_2_p_active": {
+        "name": "Grid Phase 2 Active Power"
+      },
+      "g_2_p_reactive": {
+        "name": "Grid Phase 2 Reactive Power"
+      },
+      "g_2_p_apparent": {
+        "name": "Grid Phase 2 Apparent Power"
+      },
+      "d_inverter_2_p_active_internal": {
+        "name": "Inverter 2 Internal Active Power"
+      },
+      "d_p_active_target_l2": {
+        "name": "Phase 2 Active Power Target"
+      },
+      "d_p_reactive_target_l2": {
+        "name": "Phase 2 Reactive Power Target"
+      },
+      "d_p_apparent_target_l2": {
+        "name": "Phase 2 Apparent Power Target"
+      },
+      "g_3_p_active": {
+        "name": "Grid Phase 3 Active Power"
+      },
+      "g_3_p_reactive": {
+        "name": "Grid Phase 3 Reactive Power"
+      },
+      "g_3_p_apparent": {
+        "name": "Grid Phase 3 Apparent Power"
+      },
+      "d_inverter_3_p_active_internal": {
+        "name": "Inverter 3 Internal Active Power"
+      },
+      "d_p_active_target_l3": {
+        "name": "Phase 3 Active Power Target"
+      },
+      "d_p_reactive_target_l3": {
+        "name": "Phase 3 Reactive Power Target"
+      },
+      "d_p_apparent_target_l3": {
+        "name": "Phase 3 Apparent Power Target"
       }
     },
     "binary_sensor": {
