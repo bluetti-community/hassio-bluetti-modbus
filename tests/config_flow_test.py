@@ -206,11 +206,8 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         labels = {o["value"]: o["label"] for o in options}
         self.assertEqual(labels.get("ep2000"), "EP2000")
 
-    async def test_pa030_not_offered_by_default(self):
-        # PA030_CONFIRMED is False by default - see its own comment in
-        # const.py. The Apex 300's profile has been read on real hardware
-        # but not yet run in Home Assistant, so it ships behind the gate and
-        # a prerelease is what its owner tests.
+    @patch("custom_components.bluetti_modbus.config_flow.PA030_CONFIRMED", False)
+    async def test_pa030_not_offered_unless_confirmed(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
