@@ -98,12 +98,11 @@ BALCOTRANS_CONFIRMED = True
 # whole AC500 register set - every field, 31 isolated block reads, no
 # errors, values matching the app (bluetti-registers#49). Two things set it
 # apart from its AC500 cousins: its pack voltage is scaled 0.01 V, and it
-# populates the PV metadata and energy counters they leave empty. Nothing
-# is writable - no write of any kind has been tried on this model. Same
-# mechanism as BALCO500_CONFIRMED: the dropdown only offers "pa030" while
-# this is True. It stays False on main; a prerelease cut from a pa030-beta
-# branch with it set to True is what the unit's owner tests in Home
-# Assistant, and that test is what flips it here.
+# populates the PV metadata and energy counters they leave empty. Confirmed
+# in Home Assistant by that owner, against his app: PV 231 W at 36 V and
+# 6.4 A per string, the battery at 74 % and 54 V, AC output 29 W, the grid
+# at 50 Hz. Nothing is writable - no write of any kind has been tried on
+# this model.
 PA030_CONFIRMED = True
 
 # EP2000 - BLUETTI's three-phase home system, whose EMS answers as EBOX

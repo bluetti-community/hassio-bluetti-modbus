@@ -208,10 +208,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(labels.get("ep2000"), "EP2000")
 
     @patch("custom_components.bluetti_modbus.config_flow.PA030_CONFIRMED", False)
-    async def test_pa030_not_offered_if_unconfirmed(self):
-        # PA030_CONFIRMED is True on this beta branch only - see its own
-        # comment in const.py. The flag mechanism itself still works,
-        # proven by patching it back to False, as for AC500 and FP.
+    async def test_pa030_not_offered_unless_confirmed(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
