@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from custom_components.bluetti_modbus.const import (
+    DEVICE_TYPE_DISPLAY_NAMES,
     FIELDS_NOT_SHOWN,
     FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO,
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
@@ -20,20 +21,10 @@ _TRANSLATIONS_PATH = (
     / "en.json"
 )
 
-# Only device types actually reachable via config_flow.py's dropdown - not
-# EP2000, which isn't offered there yet. ac500 included since a missing
-# translation (dc_o_switch, added alongside AC500_CONFIRMED graduating to
-# True) is exactly the kind of real bug this coverage check exists to
-# catch - balco500 isn't included: it's still gated behind
-# BALCO500_CONFIRMED, and reuses Balco260's exact field names (no new ones
-# of its own that could go untranslated). ac200l is included even though
-# it is gated (AC200L_CONFIRMED): its field set is AC500's plus Balco260's
-# b_soc_low/b_soc_high, so this proves nothing of it can go untranslated
-# the day the flag flips. ep500p likewise (EP500P_CONFIRMED): AC500's
-# exact field set, none of it writable, so every one of them is a sensor.
-# fp likewise (FP_CONFIRMED): Balco 260's field set plus dc_o_switch and
-# the "(Single)" local fields, all of which other profiles already name.
-_DEV_TYPES = ("ac200l", "ac500", "balco260", "ep500p", "fp", "smeter")
+# Every device type the integration knows, gated or not: a gated model is
+# what an owner tests from a prerelease, and an untranslated field there
+# shows the device's own name in place of the entity's.
+_DEV_TYPES = tuple(DEVICE_TYPE_DISPLAY_NAMES)
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):
