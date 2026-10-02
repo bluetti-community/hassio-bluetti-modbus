@@ -52,10 +52,12 @@ documentation and verified against real hardware.
 | **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
-| **Apex 300** | Manual (IP) | Read-only | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143) |
+| **Apex 300** (from 2.0.0) | Manual (IP) | DC output | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143) |
 
 Every field the device reports is shown as a reading; the controls listed are the
 writes confirmed on a real unit.
+The Apex 300 arrives with version 2.0.0, available as a [beta prerelease](#beta-versions)
+until it is published.
 
 **In testing** - offered only in the [beta prerelease](#beta-versions), not in the
 stable release yet:
@@ -124,7 +126,7 @@ Assistant will stop reaching it.
 
 ## Installation ⚙️
 
-Requires **Home Assistant 2026.9.0 or newer**.
+From version 2.0.0: requires **Home Assistant 2026.9.0 or newer**.
 
 ### Via HACS (recommended)
 

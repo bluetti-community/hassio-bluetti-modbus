@@ -28,7 +28,7 @@
         "name": "PV-Eingangsleistung Gesamt"
       },
       "g_i_p_total": {
-        "name": "Netzeinspeiseleistung Gesamt"
+        "name": "Netzleistung Gesamt"
       },
       "d_inverter_total": {
         "name": "Inverterleistung Gesamt"

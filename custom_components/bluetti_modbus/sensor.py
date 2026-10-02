@@ -66,6 +66,14 @@ _AC_FAMILY = ("ac500", "ac200l", "ep500p", "pa030")
 # sensors are enabled like any other confirmed field.
 _PV_TYPE_UNVERIFIED = ("ac500", "ac200l", "ep500p")
 
+# The AC family members whose profile has no pv_i_e_total.
+_NO_PV_ENERGY_TOTAL = ("ac500", "ac200l", "ep500p")
+
+# On the EP2000 the total grid power is the sum of the three phases without
+# their signs (324 W for phases of -318, 4 and 2 W), so it cannot tell export
+# from import; the signed per-phase powers are the readings to use.
+_UNSIGNED_GRID_TOTAL = ("ep2000",)
+
 _PHASE_FOR_FIELD = {
     field_name: phase
     for phase, field_names in SMETER_PHASE_FIELDS.items()
@@ -246,9 +254,12 @@ async def async_setup_entry(
         # Balco260 (field_metadata.py), but AC500 declares no pv_i_e_total
         # (confirmed: absent from its own register map), so there it is the
         # only cumulative PV energy reading - the one an Energy dashboard
-        # would use - and must stay on.
-        if config.dev_type in _AC_FAMILY and field.name == "pv_i_e_local":
+        # would use - and must stay on. The Apex 300 serves pv_i_e_total, so
+        # its pv_i_e_local is the repeat it is on the Balco family.
+        if config.dev_type in _NO_PV_ENERGY_TOTAL and field.name == "pv_i_e_local":
             metadata = dataclasses.replace(metadata, enabled_by_default=True)
+        if config.dev_type in _UNSIGNED_GRID_TOTAL and field.name == "g_i_p_total":
+            metadata = dataclasses.replace(metadata, enabled_by_default=False)
         field_phase = _PHASE_FOR_FIELD.get(field.name)
         field_device_info = phase_device_infos[field_phase] if field_phase else device_info
         sensors_to_add.append(
