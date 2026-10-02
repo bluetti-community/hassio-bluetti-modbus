@@ -936,7 +936,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     ):
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        pack_device_info_fn.side_effect = lambda hass, entry, pack_num: {
+        # The coordinator is passed along so a pack can be named after its
+        # own b_type - see sub_device_model().
+        pack_device_info_fn.side_effect = lambda hass, entry, pack_num, coordinator: {
             "name": f"Test Device Pack {pack_num}"
         }
         battery_device_info_fn.return_value = {"name": "Test Device Battery"}
