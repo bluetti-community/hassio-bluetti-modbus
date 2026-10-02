@@ -185,6 +185,28 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ep500p", values)
 
+    @patch("custom_components.bluetti_modbus.config_flow.EP2000_CONFIRMED", False)
+    async def test_ep2000_not_offered_if_unconfirmed(self):
+        # EP2000_CONFIRMED is True on this beta line only - see its own
+        # comment in const.py. The gate itself still works, proven by
+        # patching it back to False.
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("ep2000", values)
+
+    async def test_ep2000_offered_on_the_beta_line(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        labels = {o["value"]: o["label"] for o in options}
+        self.assertEqual(labels.get("ep2000"), "EP2000")
+
     @patch("custom_components.bluetti_modbus.config_flow.PA030_CONFIRMED", False)
     async def test_pa030_not_offered_if_unconfirmed(self):
         # PA030_CONFIRMED is True on this beta branch only - see its own

@@ -106,6 +106,18 @@ BALCOTRANS_CONFIRMED = True
 # Assistant, and that test is what flips it here.
 PA030_CONFIRMED = True
 
+# EP2000 - BLUETTI's three-phase home system, whose EMS answers as EBOX
+# (bluetti-modbus 0.37.0+, bluetti-registers 0.0.50). Its profile is BLUETTI's
+# own EBOX register sheet, withdrawn here in August when the one unit checked
+# had no Modbus TCP port at all. A real unit has since been read in full -
+# 15 blocks, no error, battery power equal to current x voltage to the watt -
+# and that read corrected the signed powers and two-part versions in 0.0.50
+# (bluetti-registers#42). On this model the port is opened by the BLUETTI
+# app's VPP option, not by a switch on the web page. Read-only: nothing on the
+# EP2000 has been written to. Same mechanism as BALCO500_CONFIRMED; a
+# prerelease with it set to True is what that owner tests.
+EP2000_CONFIRMED = True
+
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: the
 # Balco 260 and, being a Balco-family device, the FridgePower.
@@ -120,6 +132,7 @@ DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
     "balco260": "Balco 260",
     "balco500": "Balco 500",
     "balcotrans": "Balco Transfer Hub",
+    "ep2000": "EP2000",
     "ep500p": "EP500Pro",
     "fp": "FridgePower",
     "pa030": "Apex 300",

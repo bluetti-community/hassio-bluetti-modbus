@@ -53,10 +53,13 @@ documentation and verified against real hardware.
 | **EP500Pro** | ✅ Confirmed | 32 fields, AC/DC output switches (switched on real hardware), SoC thresholds and grid charging read-only. Modbus TCP appeared with IoT firmware 9041.17 (enable it on the unit's local web page, port 80); AC500's register set read on two real units and run in Home Assistant by one of them, every value matching the app ([bluetti-registers#35](https://github.com/bluetti-community/bluetti-registers/issues/35)); energies and per-string PV fields not yet seen non-zero. Absent from BLUETTI's official register list; the profile carries the device's own type string, `EP500P`. No mDNS: manual setup. |
 | **Balco Transfer Hub** | ✅ Confirmed | A grid-tie controller, not a power station: it links a portable station to the mains, feeding up to 800 W or charging it with up to 2300 W of bypass power. 27 read-only fields, every one confirmed against the app on two real hubs in opposite states ([bluetti-registers#29](https://github.com/bluetti-community/bluetti-registers/issues/29)). It has no battery of its own, so the SoC, battery voltage and PV entities carry the **connected station's** values. This firmware serves no writable register at all - the working mode, the feed-in limit and the schedule stay in the app - and its energy counters read zero, so there are none. The device calls itself `Balcotrans`. No mDNS: an owner's Zeroconf browser saw nothing from the hub, only the Balco 260 and the S Meter, so setup is manual by IP. Modbus TCP is off by default on its local web page. Confirmed in Home Assistant by an owner, field for field against his app. Getting there found two things about this firmware: the battery voltage needed the connected station's own scale, and the hub answers a block read with a word inserted partway through and the rest shifted one register late - so it is read one field per request. |
 
-**EP2000 is not supported.** Its Modbus TCP support was withdrawn pending
-confirmation the device exposes Modbus TCP at all - a real-world report found an
-EP2000 with no reachable Modbus TCP port and no local web UI
-([bluetti-official/bluetti-home-assistant#125](https://github.com/bluetti-official/bluetti-home-assistant/issues/125)).
+**EP2000 is in testing.** A real unit has been read over Modbus TCP and its
+profile corrected against that read
+([bluetti-registers#42](https://github.com/bluetti-community/bluetti-registers/issues/42)),
+but it has not run in Home Assistant yet, so it is not offered in the device list.
+On this model the port is opened by the BLUETTI app's **VPP** option - the web
+page has no Modbus switch. A virtual power plant can let an aggregator charge and
+discharge the battery, so know what that option authorises before turning it on.
 
 Have a different BLUETTI model? Register data is welcome - see
 [bluetti-community/bluetti-registers](https://github.com/bluetti-community/bluetti-registers).
