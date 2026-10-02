@@ -52,19 +52,16 @@ documentation and verified against real hardware.
 | **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
-| **Apex 300** (from 2.0.0) | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143) |
 
 Every field the device reports is shown as a reading; the controls listed are the
 writes confirmed on a real unit.
-The Apex 300 arrives with version 2.0.0, available as a [beta prerelease](#beta-versions)
-until it is published.
 
-**In testing** - offered only in the [beta prerelease](#beta-versions), not in the
-stable release yet:
+**In the beta prereleases only** - not in the stable release yet ([how to install a beta](#beta-versions)):
 
-| Device | Where it stands | Tracking |
-| --- | --- | --- |
-| **EP2000** | Read on a real unit; read-only. Modbus TCP is opened by the app's **VPP** option, which can let an aggregator charge and discharge the battery | [#145](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
+| Device | Setup | What you can control | Where it stands |
+| --- | --- | --- | --- |
+| **Apex 300** | Manual (IP) | AC output, DC output | Confirmed on a real unit; joins the stable release with 2.0.0 ([#143](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143)) |
+| **EP2000** | Manual (IP) | Read-only | In testing: read on real units, confirmation in Home Assistant pending ([#145](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145)). Modbus TCP is opened by the app's **VPP** option, which can let an aggregator charge and discharge the battery |
 
 **Not possible:** the EP600 has no local web page, so no Modbus TCP.
 
@@ -122,7 +119,7 @@ Assistant will stop reaching it.
 > Modbus TCP is only available on some models and firmware versions. If you cannot
 > find these settings, your device does not support it yet. On an Apex 300 the page
 > is served on the unit's own Wi-Fi access point; an EP2000 has no switch on its page
-> (see [In testing](#supported-devices-)).
+> (see [Supported devices](#supported-devices-)).
 
 ## Installation ⚙️
 
