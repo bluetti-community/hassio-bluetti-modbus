@@ -12,6 +12,7 @@ from custom_components.bluetti_modbus import (
     get_unique_id,
     pack_device_info,
     phase_device_info,
+    sub_device_model,
 )
 from custom_components.bluetti_modbus.const import DATA_COORDINATOR, DOMAIN
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import PACK_INFO_FIELDS
@@ -1510,6 +1511,24 @@ class TestPhaseDeviceInfo(unittest.TestCase):
         self.assertIsNone(phase_device_info(hass, entry, "a"))
 
 
+class TestSubDeviceModel(unittest.TestCase):
+    """A battery or pack shows its own type only when it adds something."""
+
+    def test_a_type_that_only_repeats_the_device_name_keeps_the_name(self):
+        # A Balco 260's built-in battery reports "Balco260".
+        self.assertEqual(sub_device_model("Balco260", "balco260"), "Balco 260")
+        self.assertEqual(sub_device_model("FP", "fp"), "FridgePower")
+        self.assertEqual(sub_device_model("fridge-power", "fp"), "FridgePower")
+
+    def test_a_type_that_names_something_else_is_shown(self):
+        self.assertEqual(sub_device_model("HV800", "ep2000"), "HV800")
+        self.assertEqual(sub_device_model(" BC260 ", "balco260"), "BC260")
+
+    def test_an_empty_or_unread_type_keeps_the_name(self):
+        for b_type in (None, "", "   ", 0):
+            self.assertEqual(sub_device_model(b_type, "ep2000"), "EP2000")
+
+
 class TestPackDeviceInfo(unittest.TestCase):
     @patch("custom_components.bluetti_modbus.dr")
     def test_returns_sub_device_info_linked_to_the_main_device(self, dr_module):
@@ -1535,6 +1554,19 @@ class TestPackDeviceInfo(unittest.TestCase):
         hass = MagicMock()
 
         self.assertIsNone(pack_device_info(hass, entry, 2))
+
+    @patch("custom_components.bluetti_modbus.dr")
+    def test_an_expansion_pack_is_shown_as_its_own_type(self, dr_module):
+        # A Balco 260's expansion packs report "BC260": that is what they are,
+        # not a Balco 260. Before the first read there is nothing to go on.
+        entry = MagicMock()
+        entry.entry_id = "entry1"
+        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
+        entry.title = "My Balco260"
+        coordinator = MagicMock(data={"pack_2_b_type": "BC260"})
+
+        self.assertEqual(pack_device_info(MagicMock(), entry, 2, coordinator)["model"], "BC260")
+        self.assertEqual(pack_device_info(MagicMock(), entry, 2)["model"], "Balco 260")
 
 
 class TestBatteryDeviceInfo(unittest.TestCase):
@@ -1596,6 +1628,24 @@ class TestBatteryDeviceInfo(unittest.TestCase):
         hass = MagicMock()
 
         self.assertIsNone(battery_device_info(hass, entry))
+
+    @patch("custom_components.bluetti_modbus.dr")
+    def test_the_battery_is_shown_as_its_own_type_when_that_adds_something(self, dr_module):
+        # An EP2000's battery is an HV800; a Balco 260's built-in battery
+        # reports "Balco260", which only repeats the device's name.
+        def _entry(dev_type):
+            entry = MagicMock()
+            entry.entry_id = "entry1"
+            entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": dev_type}
+            entry.title = "Mine"
+            return entry
+
+        hv800 = MagicMock(data={"b_type": "HV800"})
+        balco = MagicMock(data={"b_type": "Balco260"})
+        self.assertEqual(battery_device_info(MagicMock(), _entry("ep2000"), hv800)["model"], "HV800")
+        self.assertEqual(
+            battery_device_info(MagicMock(), _entry("balco260"), balco)["model"], "Balco 260"
+        )
 
 
 class TestGetUniqueId(unittest.TestCase):
