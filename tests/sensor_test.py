@@ -11,6 +11,7 @@ from homeassistant.const import EntityCategory
 
 from custom_components.bluetti_modbus.sensor import (
     BluettiSensor,
+    _display_precision,
     _enum_options,
     _snake_case,
     async_setup_entry,
@@ -90,7 +91,39 @@ class TestEnumOptions(unittest.TestCase):
         self.assertIsNone(_enum_options(field))
 
 
+class TestDisplayPrecision(unittest.TestCase):
+    def test_a_scaled_field_shows_the_decimals_it_has(self):
+        self.assertEqual(_display_precision(MagicMock(scale=0.1)), 1)
+        self.assertEqual(_display_precision(MagicMock(scale=0.01)), 2)
+
+    def test_an_unscaled_field_keeps_home_assistants_default(self):
+        self.assertIsNone(_display_precision(MagicMock(scale=1)))
+        self.assertIsNone(_display_precision(MagicMock(scale=None)))
+        self.assertIsNone(_display_precision(object()))
+
+    def test_the_real_profiles_give_the_decimals_their_readings_have(self):
+        # 53.89 V and 49.9 Hz on a real Apex 300 showed as 54 V and 50 Hz.
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            get_device as real_get_device,
+        )
+
+        pa030 = real_get_device("pa030")
+        assert pa030 is not None
+        self.assertEqual(_display_precision(pa030.get_field("b_v_total")), 2)
+        self.assertEqual(_display_precision(pa030.get_field("g_i_f")), 1)
+        self.assertIsNone(_display_precision(pa030.get_field("pv_i_p_total")))
+
+
 class TestBluettiSensorInit(unittest.TestCase):
+    def test_display_precision_is_suggested_for_a_numeric_sensor(self):
+        sensor = _sensor(display_precision=2)
+        self.assertEqual(sensor.suggested_display_precision, 2)
+
+    def test_display_precision_is_not_set_without_one_or_on_an_enum(self):
+        self.assertIsNone(_sensor().suggested_display_precision)
+        sensor = _sensor(display_precision=1, options=["reserve", "dc_pv"])
+        self.assertIsNone(sensor.suggested_display_precision)
+
     def test_unique_id_and_translation_key_from_response_key(self):
         sensor = _sensor(response_key="d_num_inverters")
         self.assertEqual(sensor._attr_translation_key, "d_num_inverters")

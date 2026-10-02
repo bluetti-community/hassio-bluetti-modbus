@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import math
 import re
 from decimal import Decimal
 from enum import Enum
@@ -104,6 +105,19 @@ def _enum_options(field: object) -> list[str] | None:
     convert = getattr(field, "convert", None)
     if isinstance(convert, type) and issubclass(convert, Enum):
         return [_snake_case(member.name) for member in convert]
+    return None
+
+
+def _display_precision(field: object) -> int | None:
+    """The decimals a scaled field carries, or None to keep HA's default.
+
+    Home Assistant shows a voltage, a frequency or a power with no decimal
+    unless told otherwise, so 53.89 V read as 54 V and 49.9 Hz as 50 Hz.
+    A field read at 0.1 or 0.01 shows the one or two decimals it has.
+    """
+    scale = getattr(field, "scale", None)
+    if isinstance(scale, (int, float)) and 0 < scale < 1:
+        return round(-math.log10(scale))
     return None
 
 
@@ -248,6 +262,7 @@ async def async_setup_entry(
                 device_class=metadata.device_class,
                 state_class=metadata.state_class,
                 options=_enum_options(field),
+                display_precision=_display_precision(field),
                 enabled_by_default=metadata.enabled_by_default,
                 logger=logger,
             )
@@ -273,6 +288,7 @@ async def async_setup_entry(
                     device_class=metadata.device_class,
                     state_class=metadata.state_class,
                     options=_enum_options(field),
+                    display_precision=_display_precision(field),
                     enabled_by_default=metadata.enabled_by_default,
                     logger=logger,
                     pack_num=pack_num,
@@ -297,6 +313,7 @@ async def async_setup_entry(
                     device_class=metadata.device_class,
                     state_class=metadata.state_class,
                     options=_enum_options(field),
+                    display_precision=_display_precision(field),
                     enabled_by_default=metadata.enabled_by_default,
                     logger=logger,
                     # No pack_num - unlike packs 2..5 (own Modbus slave
@@ -334,6 +351,7 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
         cell_num: int | None = None,
         logger: logging.Logger | None = None,
         enabled_by_default: bool = True,
+        display_precision: int | None = None,
     ) -> None:
         """Init sensor entity."""
         super().__init__(coordinator)
@@ -378,6 +396,8 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
             self._attr_options = options
         elif device_class is not None:
             self._attr_device_class = device_class
+        if options is None and display_precision is not None:
+            self._attr_suggested_display_precision = display_precision
         if state_class is not None:
             self._attr_state_class = state_class
         # Stored plainly rather than read back from _attr_state_class in
