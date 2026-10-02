@@ -2,5 +2,6 @@
     "name": "BLUETTI Modbus",
     "render_readme": true,
     "zip_release": true,
-    "filename": "bluetti_modbus.zip"
+    "filename": "bluetti_modbus.zip",
+    "homeassistant": "2026.9.0"
 }
