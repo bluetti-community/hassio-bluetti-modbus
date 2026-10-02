@@ -124,6 +124,8 @@ Assistant will stop reaching it.
 
 ## Installation ⚙️
 
+Requires **Home Assistant 2026.9.0 or newer**.
+
 ### Via HACS (recommended)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bluetti-community&repository=hassio-bluetti-modbus&category=integration)
