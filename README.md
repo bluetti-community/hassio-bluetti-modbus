@@ -52,6 +52,7 @@ documentation and verified against real hardware.
 | **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
+| **Apex 300** | Manual (IP) | Read-only | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143) |
 
 Every field the device reports is shown as a reading; the controls listed are the
 writes confirmed on a real unit.
@@ -61,7 +62,6 @@ stable release yet:
 
 | Device | Where it stands | Tracking |
 | --- | --- | --- |
-| **Apex 300** | Read in full on a real unit, matches the app; read-only | [#143](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143) |
 | **EP2000** | Read on a real unit; read-only. Modbus TCP is opened by the app's **VPP** option, which can let an aggregator charge and discharge the battery | [#145](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
 
 **Not possible:** the EP600 has no local web page, so no Modbus TCP.
