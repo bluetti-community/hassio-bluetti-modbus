@@ -185,6 +185,27 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ep500p", values)
 
+    async def test_ep2000_not_offered_by_default(self):
+        # EP2000_CONFIRMED is False by default - see its own comment in
+        # const.py: read on a real unit, not yet run in Home Assistant.
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("ep2000", values)
+
+    @patch("custom_components.bluetti_modbus.config_flow.EP2000_CONFIRMED", True)
+    async def test_ep2000_offered_once_confirmed(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        labels = {o["value"]: o["label"] for o in options}
+        self.assertEqual(labels.get("ep2000"), "EP2000")
+
     async def test_pa030_not_offered_by_default(self):
         # PA030_CONFIRMED is False by default - see its own comment in
         # const.py. The Apex 300's profile has been read on real hardware
