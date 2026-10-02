@@ -146,7 +146,7 @@ async def async_setup_entry(
         num_packs = coordinator.data.get("d_num_battery_packs")
         if isinstance(num_packs, int):
             for pack_num in range(2, min(num_packs, MAX_BATTERY_PACKS) + 1):
-                info = pack_device_info(hass, entry, pack_num)
+                info = pack_device_info(hass, entry, pack_num, coordinator)
                 assert info is not None  # same guarantee as dev_info() above
                 pack_device_infos[pack_num] = info
 

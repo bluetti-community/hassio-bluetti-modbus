@@ -835,8 +835,33 @@ def phase_device_info(
     )
 
 
+def sub_device_model(b_type: Any, dev_type: str) -> str:
+    """The model a battery or pack sub-device shows on the Devices page.
+
+    Its own b_type when that says something the device's name does not - an
+    EP2000's battery reports "HV800", a Balco 260's expansion packs "BC260" -
+    and the device's name otherwise: a Balco 260's built-in battery reports
+    "Balco260", which adds nothing to "Balco 260". Compared without case,
+    spaces, hyphens or underscores, against both the name and the type
+    string; an empty or unread b_type keeps the name.
+    """
+    name = DEVICE_TYPE_DISPLAY_NAMES.get(dev_type, dev_type)
+    if not isinstance(b_type, str) or not b_type.strip():
+        return name
+
+    def _key(value: str) -> str:
+        return re.sub(r"[\s_-]", "", value).lower()
+
+    if _key(b_type) in {_key(name), _key(dev_type)}:
+        return name
+    return b_type.strip()
+
+
 def pack_device_info(
-    hass: HomeAssistant, entry: ConfigEntry, pack_num: int
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    pack_num: int,
+    coordinator: PollingCoordinator | None = None,
 ) -> DeviceInfo | None:
     """Device info for one of Balco260's BC260 battery pack sub-devices.
 
@@ -853,7 +878,10 @@ def pack_device_info(
         identifiers={(DOMAIN, f"{config.address}-pack-{pack_num}")},
         name=f"{entry.title} Pack {pack_num}",
         manufacturer=MANUFACTURER,
-        model=DEVICE_TYPE_DISPLAY_NAMES.get(config.dev_type, config.dev_type),
+        model=sub_device_model(
+            (coordinator.data or {}).get(f"pack_{pack_num}_b_type") if coordinator else None,
+            config.dev_type,
+        ),
         # Groups this sub-device under the main Balco260 device on the
         # Devices page - same pattern as phase_device_info() above. The main
         # device is registered explicitly in async_setup_entry() above
@@ -890,7 +918,10 @@ def battery_device_info(
         identifiers={(DOMAIN, f"{config.address}-battery")},
         name=f"{entry.title} Battery",
         manufacturer=MANUFACTURER,
-        model=DEVICE_TYPE_DISPLAY_NAMES.get(config.dev_type, config.dev_type),
+        model=sub_device_model(
+            (coordinator.data or {}).get("b_type") if coordinator else None,
+            config.dev_type,
+        ),
         # Groups this sub-device under the main Balco260 device on the
         # Devices page - same pattern as pack_device_info() above. The main
         # device is registered explicitly in async_setup_entry() above
