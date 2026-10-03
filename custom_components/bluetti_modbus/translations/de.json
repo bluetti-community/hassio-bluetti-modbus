@@ -161,6 +161,30 @@
       },
       "b_o_e": {
         "name": "Entladene Batterieenergie Gesamt"
+      },
+      "mppt_1_i_p": {
+        "name": "MPPT 1 Eingangsleistung"
+      },
+      "mppt_1_i_v": {
+        "name": "MPPT 1 Eingangsspannung"
+      },
+      "mppt_1_i_c": {
+        "name": "MPPT 1 Eingangsstrom"
+      },
+      "mppt_1_i_type": {
+        "name": "MPPT 1 Eingangstyp"
+      },
+      "mppt_2_i_p": {
+        "name": "MPPT 2 Eingangsleistung"
+      },
+      "mppt_2_i_v": {
+        "name": "MPPT 2 Eingangsspannung"
+      },
+      "mppt_2_i_c": {
+        "name": "MPPT 2 Eingangsstrom"
+      },
+      "mppt_2_i_type": {
+        "name": "MPPT 2 Eingangstyp"
       }
     }
   }

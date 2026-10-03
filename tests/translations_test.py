@@ -114,3 +114,14 @@ class TestNoDuplicateSensorNames(unittest.TestCase):
                     names_seen[display_name] = name
 
         self.assertEqual(duplicates, [])
+
+
+class TestMpptNames(unittest.TestCase):
+    """The EP2000's PV slots are named after its MPPTs (sensor.py)."""
+
+    def test_every_mppt_key_has_a_name_in_every_language(self):
+        keys = {f"mppt_{n}_i_{k}" for n in (1, 2) for k in ("p", "v", "c", "type")}
+        for lang in ("en", "de"):
+            path = _TRANSLATIONS_PATH.with_name(f"{lang}.json")
+            sensor = json.loads(path.read_text())["entity"]["sensor"]
+            self.assertEqual(keys - set(sensor), set(), lang)
