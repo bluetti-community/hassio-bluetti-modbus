@@ -857,6 +857,32 @@ def sub_device_model(b_type: Any, dev_type: str) -> str:
     return b_type.strip()
 
 
+# Expansion batteries stacked under one controller, counted from the cells
+# the controller reports: an EP2000 battery is an HV800 controller over 2-7
+# B700 packs of 32 cells each (EP2000 user manual, ch. 11) - 96 cells on a
+# 320 V stack with 48 sensors is three, 224 cells at 754 V is seven.
+STACKED_BATTERIES: dict[str, tuple[str, int, range]] = {
+    "ep2000": ("B700", 32, range(2, 8)),
+}
+
+
+def stacked_battery_model(model: str, dev_type: str, cell_count: Any) -> str:
+    """The battery sub-device's model, with its stacked packs when it has them.
+
+    "HV800 + 3 × B700" on an EP2000 reporting 96 cells; the plain model when
+    the count is unread, does not divide into whole packs, or falls outside
+    the range the manual allows.
+    """
+    stack = STACKED_BATTERIES.get(dev_type)
+    if stack is None or not isinstance(cell_count, int) or isinstance(cell_count, bool):
+        return model
+    pack, cells_per_pack, allowed = stack
+    count, rest = divmod(cell_count, cells_per_pack)
+    if rest or count not in allowed:
+        return model
+    return f"{model} + {count} × {pack}"
+
+
 def pack_device_info(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -918,9 +944,13 @@ def battery_device_info(
         identifiers={(DOMAIN, f"{config.address}-battery")},
         name=f"{entry.title} Battery",
         manufacturer=MANUFACTURER,
-        model=sub_device_model(
-            (coordinator.data or {}).get("b_type") if coordinator else None,
+        model=stacked_battery_model(
+            sub_device_model(
+                (coordinator.data or {}).get("b_type") if coordinator else None,
+                config.dev_type,
+            ),
             config.dev_type,
+            (coordinator.data or {}).get("b_cell_count") if coordinator else None,
         ),
         # Groups this sub-device under the main Balco260 device on the
         # Devices page - same pattern as pack_device_info() above. The main

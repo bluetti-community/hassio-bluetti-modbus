@@ -12,6 +12,7 @@ from custom_components.bluetti_modbus import (
     get_unique_id,
     pack_device_info,
     phase_device_info,
+    stacked_battery_model,
     sub_device_model,
 )
 from custom_components.bluetti_modbus.const import DATA_COORDINATOR, DOMAIN
@@ -1608,6 +1609,20 @@ class TestBatteryDeviceInfo(unittest.TestCase):
         self.assertEqual(info["sw_version"], "BMS v50008.01.10")
 
     @patch("custom_components.bluetti_modbus.dr")
+    def test_an_ep2000_battery_shows_its_stack(self, dr_module):
+        # 96 cells under an HV800 controller: three 32-cell B700 packs.
+        dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
+        entry = MagicMock()
+        entry.entry_id = "entry1"
+        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "ep2000"}
+        entry.title = "EP2000"
+        coordinator = MagicMock(data={"b_type": "HV800", "b_cell_count": 96})
+
+        info = battery_device_info(MagicMock(), entry, coordinator)
+
+        self.assertEqual(info["model"], "HV800 + 3 × B700")
+
+    @patch("custom_components.bluetti_modbus.dr")
     def test_omits_serial_and_firmware_before_the_first_read(self, dr_module):
         dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
         entry = MagicMock()
@@ -1779,3 +1794,15 @@ class TestUniqueIdFor(unittest.TestCase):
         _unique_id_for(coordinator, {"name": "My Device"}, "d_num_inverters", "sensor")
 
         registry.async_update_entity.assert_not_called()
+
+
+class TestStackedBatteryModel(unittest.TestCase):
+    def test_counts_whole_packs_within_the_manuals_range(self):
+        self.assertEqual(stacked_battery_model("HV800", "ep2000", 96), "HV800 + 3 × B700")
+        self.assertEqual(stacked_battery_model("HV800", "ep2000", 224), "HV800 + 7 × B700")
+        self.assertEqual(stacked_battery_model("HV800", "ep2000", 64), "HV800 + 2 × B700")
+
+    def test_keeps_the_plain_model_otherwise(self):
+        for cells in (None, 0, 32, 256, 95, True, "96"):
+            self.assertEqual(stacked_battery_model("HV800", "ep2000", cells), "HV800", cells)
+        self.assertEqual(stacked_battery_model("Balco 260", "balco260", 16), "Balco 260")
