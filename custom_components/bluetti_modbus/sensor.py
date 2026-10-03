@@ -69,6 +69,15 @@ _PV_TYPE_UNVERIFIED = ("ac500", "ac200l", "ep500p")
 # The AC family members whose profile has no pv_i_e_total.
 _NO_PV_ENERGY_TOTAL = ("ac500", "ac200l", "ep500p")
 
+# The EP2000 has two MPPTs - terminals PV1+PV2 on one, PV3+PV4 on the other -
+# and reports them in the PV1 and PV2 slots, so those are named after the
+# tracker rather than a terminal. It fills none of the PV energy counters
+# (zero on every read so far), and its pack temperature is a real reading.
+_MPPT_SLOTS = ("ep2000",)
+_NO_PV_ENERGY_COUNTERS = ("ep2000",)
+_PV_ENERGY_COUNTERS = ("pv_i_e_total", "pv_ac_p", "pv_ac_e")
+_REAL_PACK_TEMPERATURE = ("ep2000",)
+
 # On the EP2000 the total grid power is the sum of the three phases without
 # their signs (324 W for phases of -318, 4 and 2 W), so it cannot tell export
 # from import; the signed per-phase powers are the readings to use.
@@ -260,6 +269,13 @@ async def async_setup_entry(
             metadata = dataclasses.replace(metadata, enabled_by_default=True)
         if config.dev_type in _UNSIGNED_GRID_TOTAL and field.name == "g_i_p_total":
             metadata = dataclasses.replace(metadata, enabled_by_default=False)
+        if config.dev_type in _NO_PV_ENERGY_COUNTERS and field.name in _PV_ENERGY_COUNTERS:
+            metadata = dataclasses.replace(metadata, enabled_by_default=False)
+        if config.dev_type in _REAL_PACK_TEMPERATURE and field.name == "b_t_avg":
+            metadata = dataclasses.replace(metadata, enabled_by_default=True)
+        translation_key = None
+        if config.dev_type in _MPPT_SLOTS and field.name.startswith(("pv_1_", "pv_2_")):
+            translation_key = "mppt_" + field.name.removeprefix("pv_")
         field_phase = _PHASE_FOR_FIELD.get(field.name)
         field_device_info = phase_device_infos[field_phase] if field_phase else device_info
         sensors_to_add.append(
@@ -276,6 +292,7 @@ async def async_setup_entry(
                 display_precision=_display_precision(field),
                 enabled_by_default=metadata.enabled_by_default,
                 logger=logger,
+                translation_key=translation_key,
             )
         )
 
@@ -363,6 +380,7 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
         logger: logging.Logger | None = None,
         enabled_by_default: bool = True,
         display_precision: int | None = None,
+        translation_key: str | None = None,
     ) -> None:
         """Init sensor entity."""
         super().__init__(coordinator)
@@ -379,7 +397,7 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
         self._unavailable_counter = 0
 
         self._attr_device_info = device_info
-        self._attr_translation_key = (
+        self._attr_translation_key = translation_key or (
             f"pack_{response_key}" if pack_num else response_key
         )
 

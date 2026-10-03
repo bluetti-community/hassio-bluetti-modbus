@@ -786,6 +786,57 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_ep2000_pv_slots_energies_and_temperature(
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
+    ):
+        # Two MPPTs reported as PV1/PV2, named after the tracker; PV energy
+        # counters that read zero start off; the pack temperature is real.
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
+        names = ["pv_1_i_p", "pv_2_i_c", "pv_i_e_total", "pv_ac_p", "pv_ac_e", "b_t_avg"]
+        for dev_type, ep2000 in (("ep2000", True), ("balco260", False)):
+            config_cls.from_dict.return_value = MagicMock(dev_type=dev_type, address="10.2.1.60")
+            dev_info_fn.return_value = _device_info()
+
+            def _field(name):
+                f = MagicMock(address=50269, unit="W", writable=False, convert=None, scale=1)
+                f.name = name
+                return f
+
+            bluetti_device = MagicMock()
+            bluetti_device.get_sensors.return_value = names
+            bluetti_device.get_field.side_effect = _field
+            get_device_fn.return_value = bluetti_device
+
+            from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+            coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+            coordinator.data = {}
+            hass = MagicMock()
+            hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+            added = []
+
+            await async_setup_entry(hass, MagicMock(entry_id="entry1"), added.extend)
+
+            by_key = {s._response_key: s for s in added}
+            self.assertEqual(
+                by_key["pv_1_i_p"]._attr_translation_key,
+                "mppt_1_i_p" if ep2000 else "pv_1_i_p",
+            )
+            self.assertEqual(
+                by_key["pv_2_i_c"]._attr_translation_key,
+                "mppt_2_i_c" if ep2000 else "pv_2_i_c",
+            )
+            self.assertTrue(by_key["pv_1_i_p"].unique_id.endswith("pv_1_i_p"))
+            for name in ("pv_i_e_total", "pv_ac_p", "pv_ac_e"):
+                self.assertEqual(
+                    by_key[name]._attr_entity_registry_enabled_default, not ep2000, name
+                )
+            self.assertEqual(by_key["b_t_avg"]._attr_entity_registry_enabled_default, ep2000)
+
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_ep2000_grid_total_starts_disabled(
         self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
