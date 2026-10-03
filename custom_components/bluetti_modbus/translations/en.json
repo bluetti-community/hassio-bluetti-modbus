@@ -722,6 +722,30 @@
       },
       "d_p_apparent_target_l3": {
         "name": "Phase 3 Apparent Power Target"
+      },
+      "mppt_1_i_p": {
+        "name": "MPPT 1 Input Power"
+      },
+      "mppt_1_i_v": {
+        "name": "MPPT 1 Input Voltage"
+      },
+      "mppt_1_i_c": {
+        "name": "MPPT 1 Input Current"
+      },
+      "mppt_1_i_type": {
+        "name": "MPPT 1 Input Type"
+      },
+      "mppt_2_i_p": {
+        "name": "MPPT 2 Input Power"
+      },
+      "mppt_2_i_v": {
+        "name": "MPPT 2 Input Voltage"
+      },
+      "mppt_2_i_c": {
+        "name": "MPPT 2 Input Current"
+      },
+      "mppt_2_i_type": {
+        "name": "MPPT 2 Input Type"
       }
     },
     "binary_sensor": {
