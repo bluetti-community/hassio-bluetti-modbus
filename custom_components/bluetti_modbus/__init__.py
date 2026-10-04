@@ -14,6 +14,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
+    CONF_SLOTS_BEYOND_COUNT_PENDING,
     DATA_COORDINATOR,
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
@@ -122,7 +123,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 19
+_CURRENT_VERSION = 20
 
 # The twelve Balco260 registers bluetti-registers 0.0.42 dropped from its
 # profile (bluetti-modbus 0.21.0 no longer declares them): matched as
@@ -336,6 +337,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entries carrying the old value are testers' who flipped the flag by
     hand; rewrite entry.data so their entry keeps loading instead of
     failing on a dev_type get_device() no longer knows.
+
+    19 -> 20: entities numbered beyond the count the unit reports (phases,
+    inverters, PV inputs, firmware slots - see sensor.py's _SLOT_GROUPS) are
+    now created disabled. Existing installs have them registered as enabled,
+    and the counts are only known after the first poll, so this step only
+    flags the entry; the sensor platform disables them once and clears the
+    flag (sensor.py's _disable_registered_beyond_count()).
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -596,6 +604,10 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if config is not None and config.dev_type == "ep500pro":
             new_data = {**entry.data, CONF_TYPE: "ep500p"}
         version = 19
+
+    if version == 19:
+        new_data = {**(new_data or entry.data), CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+        version = 20
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:

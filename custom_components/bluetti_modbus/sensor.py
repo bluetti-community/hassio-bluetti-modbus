@@ -8,6 +8,7 @@ import math
 import re
 from decimal import Decimal
 from enum import Enum
+from typing import Any
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -17,6 +18,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -32,6 +34,7 @@ from . import device_info as dev_info
 from .const import (
     AC500_FIELDS_NOT_SHOWN,
     BUILT_IN_BATTERY_DEV_TYPES,
+    CONF_SLOTS_BEYOND_COUNT_PENDING,
     DATA_COORDINATOR,
     DOMAIN,
     FIELDS_NOT_SHOWN,
@@ -82,6 +85,46 @@ _REAL_PACK_TEMPERATURE = ("ep2000",)
 # their signs (324 W for phases of -318, 4 and 2 W), so it cannot tell export
 # from import; the signed per-phase powers are the readings to use.
 _UNSIGNED_GRID_TOTAL = ("ep2000",)
+
+# Numbered fields and the count the unit reports for their group: a number
+# above the count is a phase, inverter, PV input or firmware slot the unit
+# says it does not have, so its entity is created disabled. The registers are
+# still read - they sit inside the same block reads as their neighbours. On
+# the EP2000 d_inverter_1..3 are the three phases of one inverter
+# (d_num_inverters reads 1), hence d_inverter_phase_count. A count that is
+# missing or 0 (d_inverter_phase_count on the FridgePower) hides nothing.
+_SLOT_GROUPS = (
+    (re.compile(r"^g_(\d)_[ip]_"), "d_phase_count", None),
+    (re.compile(r"^ac_(\d)_o_"), "ac_phase_count", None),
+    (re.compile(r"^d_inverter_(\d)_"), "d_inverter_phase_count", None),
+    (re.compile(r"^pv_(\d)_i_"), "pv_dc_count", "pv_ac_count"),
+    (re.compile(r"^b_ver_(\d)$"), "b_ver_count", None),
+)
+
+
+def _count(value: object) -> int | None:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    return None
+
+
+def beyond_reported_count(field_name: str, data: dict[str, Any], prefix: str = "") -> bool:
+    """Whether field_name's number exceeds the count the unit reports.
+
+    prefix is "pack_{n}_" for an expansion pack, whose counts are its own.
+    """
+    for pattern, count_key, extra_key in _SLOT_GROUPS:
+        match = pattern.match(field_name)
+        if match is None:
+            continue
+        count = _count(data.get(prefix + count_key))
+        if count is None:
+            return False
+        if extra_key is not None:
+            count += _count(data.get(prefix + extra_key)) or 0
+        return count > 0 and int(match.group(1)) > count
+    return False
+
 
 _PHASE_FOR_FIELD = {
     field_name: phase
@@ -229,6 +272,8 @@ async def async_setup_entry(
         sensor_fields.append(field)
 
     sensors_to_add = []
+    sensors_beyond_count: list[BluettiSensor] = []
+    data = coordinator.data or {}
 
     for field in sensor_fields:
         metadata = metadata_for(field.name)
@@ -273,28 +318,32 @@ async def async_setup_entry(
             metadata = dataclasses.replace(metadata, enabled_by_default=False)
         if config.dev_type in _REAL_PACK_TEMPERATURE and field.name == "b_t_avg":
             metadata = dataclasses.replace(metadata, enabled_by_default=True)
+        beyond_count = beyond_reported_count(field.name, data)
+        if beyond_count:
+            metadata = dataclasses.replace(metadata, enabled_by_default=False)
         translation_key = None
         if config.dev_type in _MPPT_SLOTS and field.name.startswith(("pv_1_", "pv_2_")):
             translation_key = "mppt_" + field.name.removeprefix("pv_")
         field_phase = _PHASE_FOR_FIELD.get(field.name)
         field_device_info = phase_device_infos[field_phase] if field_phase else device_info
-        sensors_to_add.append(
-            BluettiSensor(
-                coordinator,
-                field_device_info,
-                field.address,
-                field.name,
-                unit_of_measurement=field.unit,
-                category=metadata.category,
-                device_class=metadata.device_class,
-                state_class=metadata.state_class,
-                options=_enum_options(field),
-                display_precision=_display_precision(field),
-                enabled_by_default=metadata.enabled_by_default,
-                logger=logger,
-                translation_key=translation_key,
-            )
+        sensor = BluettiSensor(
+            coordinator,
+            field_device_info,
+            field.address,
+            field.name,
+            unit_of_measurement=field.unit,
+            category=metadata.category,
+            device_class=metadata.device_class,
+            state_class=metadata.state_class,
+            options=_enum_options(field),
+            display_precision=_display_precision(field),
+            enabled_by_default=metadata.enabled_by_default,
+            logger=logger,
+            translation_key=translation_key,
         )
+        sensors_to_add.append(sensor)
+        if beyond_count:
+            sensors_beyond_count.append(sensor)
 
     for pack_num, pack_info in pack_device_infos.items():
         for name in PACK_INFO_FIELDS:
@@ -305,23 +354,27 @@ async def async_setup_entry(
             field = bluetti_device.get_field(name)
             assert field is not None  # PACK_INFO_FIELDS names are Balco260 fields
             metadata = metadata_for(name)
-            sensors_to_add.append(
-                BluettiSensor(
-                    coordinator,
-                    pack_info,
-                    field.address,
-                    field.name,
-                    unit_of_measurement=field.unit,
-                    category=metadata.category,
-                    device_class=metadata.device_class,
-                    state_class=metadata.state_class,
-                    options=_enum_options(field),
-                    display_precision=_display_precision(field),
-                    enabled_by_default=metadata.enabled_by_default,
-                    logger=logger,
-                    pack_num=pack_num,
-                )
+            beyond_count = beyond_reported_count(name, data, f"pack_{pack_num}_")
+            if beyond_count:
+                metadata = dataclasses.replace(metadata, enabled_by_default=False)
+            sensor = BluettiSensor(
+                coordinator,
+                pack_info,
+                field.address,
+                field.name,
+                unit_of_measurement=field.unit,
+                category=metadata.category,
+                device_class=metadata.device_class,
+                state_class=metadata.state_class,
+                options=_enum_options(field),
+                display_precision=_display_precision(field),
+                enabled_by_default=metadata.enabled_by_default,
+                logger=logger,
+                pack_num=pack_num,
             )
+            sensors_to_add.append(sensor)
+            if beyond_count:
+                sensors_beyond_count.append(sensor)
 
     if battery_info is not None:
         for name in PACK_INFO_FIELDS:
@@ -330,29 +383,63 @@ async def async_setup_entry(
             field = bluetti_device.get_field(name)
             assert field is not None  # PACK_INFO_FIELDS names are Balco260 fields
             metadata = metadata_for(name)
-            sensors_to_add.append(
-                BluettiSensor(
-                    coordinator,
-                    battery_info,
-                    field.address,
-                    field.name,
-                    unit_of_measurement=field.unit,
-                    category=metadata.category,
-                    device_class=metadata.device_class,
-                    state_class=metadata.state_class,
-                    options=_enum_options(field),
-                    display_precision=_display_precision(field),
-                    enabled_by_default=metadata.enabled_by_default,
-                    logger=logger,
-                    # No pack_num - unlike packs 2..5 (own Modbus slave
-                    # address), the built-in battery's data comes from the
-                    # main device's own read, under its plain field names
-                    # (e.g. "b_soc", not "pack_1_b_soc" - see
-                    # coordinator.py).
-                )
+            beyond_count = beyond_reported_count(name, data)
+            if beyond_count:
+                metadata = dataclasses.replace(metadata, enabled_by_default=False)
+            sensor = BluettiSensor(
+                coordinator,
+                battery_info,
+                field.address,
+                field.name,
+                unit_of_measurement=field.unit,
+                category=metadata.category,
+                device_class=metadata.device_class,
+                state_class=metadata.state_class,
+                options=_enum_options(field),
+                display_precision=_display_precision(field),
+                enabled_by_default=metadata.enabled_by_default,
+                logger=logger,
+                # No pack_num - unlike packs 2..5 (own Modbus slave
+                # address), the built-in battery's data comes from the
+                # main device's own read, under its plain field names
+                # (e.g. "b_soc", not "pack_1_b_soc" - see
+                # coordinator.py).
             )
+            sensors_to_add.append(sensor)
+            if beyond_count:
+                sensors_beyond_count.append(sensor)
+
+    if entry.data.get(CONF_SLOTS_BEYOND_COUNT_PENDING) is True:
+        _disable_registered_beyond_count(hass, entry, sensors_beyond_count)
 
     async_add_entities(sensors_to_add)
+
+
+def _disable_registered_beyond_count(
+    hass: HomeAssistant, entry: ConfigEntry, sensors: list[BluettiSensor]
+) -> None:
+    """Disable, once, the entities beyond the reported counts that an
+    existing install already has registered as enabled.
+
+    enabled_by_default only applies when an entity is first registered, and
+    the 19 -> 20 migration cannot read the counts (it runs before the first
+    poll), so it only sets the pending flag this clears. Done before
+    async_add_entities, so a disabled entity is never added. An entity the
+    user re-enables afterwards stays enabled.
+    """
+    registry = er.async_get(hass)
+    for sensor in sensors:
+        assert sensor.unique_id is not None  # set in BluettiSensor.__init__
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, sensor.unique_id)
+        if entity_id is None:
+            continue
+        registry_entry = registry.async_get(entity_id)
+        if registry_entry is not None and registry_entry.disabled_by is None:
+            registry.async_update_entity(
+                entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION
+            )
+    new_data = {k: v for k, v in entry.data.items() if k != CONF_SLOTS_BEYOND_COUNT_PENDING}
+    hass.config_entries.async_update_entry(entry, data=new_data)
 
 
 class BluettiSensor(CoordinatorEntity, RestoreSensor):
