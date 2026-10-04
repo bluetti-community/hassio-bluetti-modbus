@@ -5,6 +5,10 @@ MANUFACTURER = "BLUETTI"
 
 CONF_OPTIONS = "options"
 
+# Set in entry.data by the 19 -> 20 migration, cleared by the sensor platform
+# once it has disabled the entities beyond the counts the unit reports.
+CONF_SLOTS_BEYOND_COUNT_PENDING = "slots_beyond_count_pending"
+
 DATA_COORDINATOR = "coordinator"
 
 # AC500 support (bluetti-modbus 0.15.0+) is community-confirmed against real
