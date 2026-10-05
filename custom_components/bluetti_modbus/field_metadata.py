@@ -322,7 +322,7 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     # block start disabled.
     "b_p": _POWER,
     "d_manufacturer": _DIAGNOSTIC,
-    "d_hw_ver": _DIAGNOSTIC,
+    "d_hw_ver": _DIAGNOSTIC_DISABLED,
     "d_rated_p_max": _DIAGNOSTIC,
     "d_rated_p_max_continuous": _DIAGNOSTIC,
     "d_rated_va_max_continuous": _DIAGNOSTIC,
