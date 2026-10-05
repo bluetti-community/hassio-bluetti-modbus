@@ -117,8 +117,8 @@ PA030_CONFIRMED = True
 # and that read corrected the signed powers and two-part versions in 0.0.50
 # (bluetti-registers#42). On this model the port is opened by the BLUETTI
 # app's VPP option, not by a switch on the web page. Read-only: nothing on the
-# EP2000 has been written to. Same mechanism as BALCO500_CONFIRMED; a
-# prerelease with it set to True is what that owner tests.
+# EP2000 has been written to. Confirmed in Home Assistant on a real unit
+# (hassio-bluetti-modbus#145).
 EP2000_CONFIRMED = True
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at

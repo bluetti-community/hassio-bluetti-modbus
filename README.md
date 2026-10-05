@@ -51,17 +51,12 @@ documentation and verified against real hardware.
 | **AC500** | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
 | **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
+| **Apex 300** | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143) |
+| **EP2000** | Manual (IP) | Read-only | [3 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
 
 Every field the device reports is shown as a reading; the controls listed are the
 writes confirmed on a real unit.
-
-**In the beta prereleases only** - not in the stable release yet ([how to install a beta](#beta-versions)):
-
-| Device | Setup | What you can control | Where it stands |
-| --- | --- | --- | --- |
-| **Apex 300** | Manual (IP) | AC output, DC output | Confirmed on a real unit; joins the stable release with 2.0.0 ([#143](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143)) |
-| **EP2000** | Manual (IP) | Read-only | In testing: read on real units, confirmation in Home Assistant pending ([#145](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145)). Modbus TCP is opened by the app's **VPP** option, which can let an aggregator charge and discharge the battery |
 
 **Not possible:** the EP600 has no local web page, so no Modbus TCP.
 
@@ -91,6 +86,9 @@ Have a different BLUETTI model? Register data is welcome - see
   supported from what real units return.
 
 **EP2000**
+- Modbus TCP is opened by the BLUETTI app's **VPP** option; the web page has no
+  switch for it. A virtual power plant can let an aggregator charge and discharge
+  the battery, so know what your provider's option authorises before enabling it.
 - The grid entities measure the EP2000's own grid port, not the house's connection
   to the grid: with AC-coupled solar (a separate PV inverter on the AC side), that
   solar's output shows there. The app's Grid figure comes from the system's meter,
