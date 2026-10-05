@@ -90,6 +90,14 @@ Have a different BLUETTI model? Register data is welcome - see
 - The AC200L and EP500Pro are absent from BLUETTI's official register list; they are
   supported from what real units return.
 
+**EP2000**
+- The grid entities measure the EP2000's own grid port, not the house's connection
+  to the grid: with AC-coupled solar (a separate PV inverter on the AC side), that
+  solar's output shows there. The app's Grid figure comes from the system's meter,
+  which is not in the Modbus map, so on such a setup do not use Total Grid Power as
+  the grid meter in the Energy dashboard.
+  ([evidence](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145#issuecomment-5987109089))
+
 **Balco Transfer Hub** - a grid-tie controller, not a power station.
 - It has no battery: the SoC, battery voltage and PV entities show the **connected
   station's** values.

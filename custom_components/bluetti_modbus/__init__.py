@@ -1002,20 +1002,34 @@ def battery_device_info(
     return info
 
 
+# The part each firmware slot belongs to, per battery type, as the app's
+# firmware upgrade page names them (slot order: b_ver_1, b_ver_2, ...).
+_FIRMWARE_PART_NAMES: dict[str, tuple[str, ...]] = {
+    "HV800": ("BCU", "Safety Module", "BMU"),
+}
+
+
 def battery_firmware(data: dict[str, Any]) -> str | None:
     """The built-in battery's firmware, as its device page shows it.
 
     One valid slot (b_ver_count 1, the Balco family) is the BMS. Several
-    (the EP2000's HV800 reports three) are listed in slot order, unnamed, as
-    the EMS box's own web page lists them: nothing names the parts they
-    belong to.
+    (the EP2000's HV800 reports three) are listed in slot order, each named
+    after its part when the battery type is known, unnamed otherwise.
     """
     count = data.get("b_ver_count")
     if not isinstance(count, int) or isinstance(count, bool) or count <= 1:
         bms = data.get("b_ver_1")
         return None if bms is None else f"BMS v{bms}"
-    versions = [data.get(f"b_ver_{slot}") for slot in range(1, min(count, 4) + 1)]
-    return ", ".join(f"v{version}" for version in versions if version is not None) or None
+    b_type = data.get("b_type")
+    names = _FIRMWARE_PART_NAMES.get(b_type.strip(), ()) if isinstance(b_type, str) else ()
+    parts = []
+    for slot in range(1, min(count, 4) + 1):
+        version = data.get(f"b_ver_{slot}")
+        if version is None:
+            continue
+        name = names[slot - 1] if slot <= len(names) else None
+        parts.append(f"{name} v{version}" if name else f"v{version}")
+    return ", ".join(parts) or None
 
 
 def get_unique_id(name: str, sensor_type: str | None = None) -> str:

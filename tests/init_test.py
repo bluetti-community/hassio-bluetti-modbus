@@ -1770,6 +1770,7 @@ class TestBatteryDeviceInfo(unittest.TestCase):
         entry.title = "EP2000"
         coordinator = MagicMock(
             data={
+                "b_type": "HV800",
                 "b_ver_count": 3,
                 "b_ver_1": "1074.18",
                 "b_ver_2": "1076.05",
@@ -1780,7 +1781,9 @@ class TestBatteryDeviceInfo(unittest.TestCase):
 
         info = battery_device_info(MagicMock(), entry, coordinator)
 
-        self.assertEqual(info["sw_version"], "v1074.18, v1076.05, v1075.07")
+        self.assertEqual(
+            info["sw_version"], "BCU v1074.18, Safety Module v1076.05, BMU v1075.07"
+        )
 
     @patch("custom_components.bluetti_modbus.dr")
     def test_omits_serial_and_firmware_before_the_first_read(self, dr_module):
@@ -1962,7 +1965,7 @@ class TestBatteryFirmware(unittest.TestCase):
         self.assertEqual(battery_firmware(data), "BMS v50008.01.10")
 
     def test_several_slots_are_listed_in_order_up_to_the_count(self):
-        # The EP2000's HV800, as the EMS box's web page lists it.
+        # The EP2000's HV800, with no battery type read.
         data = {
             "b_ver_count": 3,
             "b_ver_1": "1074.18",
@@ -1971,6 +1974,24 @@ class TestBatteryFirmware(unittest.TestCase):
             "b_ver_4": "0.00",
         }
         self.assertEqual(battery_firmware(data), "v1074.18, v1076.05, v1075.07")
+
+    def test_the_hv800_names_its_parts(self):
+        data = {
+            "b_type": "HV800 ",
+            "b_ver_count": 3,
+            "b_ver_1": "1074.18",
+            "b_ver_2": "1076.05",
+            "b_ver_3": "1075.07",
+            "b_ver_4": "0.00",
+        }
+        self.assertEqual(
+            battery_firmware(data),
+            "BCU v1074.18, Safety Module v1076.05, BMU v1075.07",
+        )
+
+    def test_a_slot_beyond_the_known_parts_stays_unnamed(self):
+        data = {"b_type": "HV800", "b_ver_count": 4, "b_ver_2": "1076.05", "b_ver_4": "9.00"}
+        self.assertEqual(battery_firmware(data), "Safety Module v1076.05, v9.00")
 
     def test_a_count_above_four_reads_the_four_slots(self):
         data = {"b_ver_count": 9, **{f"b_ver_{i}": f"{i}.00" for i in range(1, 5)}}
