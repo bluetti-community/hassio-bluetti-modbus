@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -28,19 +29,44 @@ from .vendor.bluetti_modbus_lib import (
     SMeter,
     aggregate_pack_summary,
     battery_pack,
+    get_device,
     pack_is_reporting,
     pack_slave_id,
 )
 from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
+# Every profile the library can build - what get_device() returns, minus None.
+BluettiProfile = (
+    AC200L | AC500 | FP | PA030 | Balco260 | Balco500 | Balcotrans | EP2000 | EP500P | SMeter
+)
+
 # Failed polls in a row a coordinator rides out on its last values before
 # its entities go unavailable. A Balco 260 fails about one poll an hour even
 # after the library's own retries (a dropped connection, a corrupted reply,
 # a timeout - always recovered by the next poll); without this, every such
-# poll flipped a hundred entities to unavailable for 30 s and logged an
-# error. Two tolerated failures = at most 90 s on stale values before the
-# entities say so.
-POLL_FAILURES_TOLERATED = 2
+# poll flipped a hundred entities to unavailable and logged an error. The
+# grace period is 90 s on stale values before the entities say so, which at
+# the 15 s readings cycle (READINGS_SCAN_INTERVAL below) is five tolerated
+# failures - kept in time rather than in polls, so reading faster does not
+# make entities go unavailable sooner.
+POLL_FAILURES_TOLERATED = 5
+
+# The data area is read on every cycle and the settings block on its own,
+# slower one - the split home-assistant/core's sofar and solaredge_modbus
+# integrations make between readings and settings. 57001 is where BLUETTI's
+# register list starts its "Inverter Set" block: output switches, grid
+# charging, SOC thresholds. Those change when an owner changes them, so
+# reading them a quarter as often takes requests off a Modbus stack this
+# device is known to struggle with, which is what pays for reading the data
+# area twice as fast.
+READINGS_SCAN_INTERVAL = timedelta(seconds=15)
+SETTINGS_SCAN_INTERVAL = timedelta(seconds=60)
+SETTINGS_FIRST_ADDRESS = 57001
+# A device applies a write at once but serves the old value for a moment
+# afterwards - on a Balco 260, b_soc_low written 15 -> 16 read back 15, and 16
+# a moment later. The library's bluetti-modwrite waits this long before its
+# own read-back for the same reason.
+SETTINGS_WRITE_SETTLE = timedelta(seconds=2)
 
 
 class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -69,8 +95,10 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # BLUETTI's Modbus TCP stack is fragile under frequent connections -
             # a rapid burst of TCP connections during testing once made the
             # device's web interface unresponsive and required a factory
-            # reset to recover. Keep this conservative.
-            update_interval=timedelta(seconds=30),
+            # reset to recover. The connection is persistent and the settings
+            # block only comes along every fourth cycle (see
+            # SETTINGS_SCAN_INTERVAL), which is what makes this rate safe.
+            update_interval=READINGS_SCAN_INTERVAL,
         )
 
         self.config = config
@@ -94,6 +122,17 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # sees one request in flight at a time, regardless of what HA
         # schedules concurrently.
         self._io_lock = asyncio.Lock()
+        # Split the profile's read plan in two - see SETTINGS_SCAN_INTERVAL.
+        # self._schema keeps the whole profile, unpolled, for everything that
+        # needs every field: the platforms building entities, writes, and the
+        # raw diagnostics dump. On a profile with no settings field there is
+        # nothing to split, and all three stay the client's own device.
+        self._schema: BluettiProfile = self._client.device
+        self._settings: BluettiProfile | None = None
+        self._settings_values: dict[str, Any] = {}
+        # Monotonic deadline for the next settings read; 0.0 = on this poll.
+        self._settings_due_at = 0.0
+        self._split_read_plan()
         # Balco260 only - BC260 packs beyond the first, built lazily once
         # d_num_battery_packs is known from the main device's own read, keyed
         # by pack number (2..MAX_BATTERY_PACKS). Pack 1's data already comes
@@ -112,27 +151,43 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._failed_polls = 0
 
     @property
-    def device(
-        self,
-    ) -> (
-        AC200L
-        | AC500
-        | FP
-        | PA030
-        | Balco260
-        | Balco500
-        | Balcotrans
-        | EP2000
-        | EP500P
-        | SMeter
-    ):
+    def device(self) -> BluettiProfile:
         """The underlying bluetti_modbus_lib device - for reading fields.
 
         Not for writing - call async_write() instead of device.write()
         directly, so a write is serialized against the periodic poll below
         via self._io_lock (see its own comment in __init__).
         """
-        return self._client.device
+        return self._schema
+
+    def _split_read_plan(self) -> None:
+        """Move the settings fields out of the client's every-cycle read.
+
+        The client's own device keeps the data area and is what each poll
+        reads; a second component on the same connection keeps the settings
+        and is read on SETTINGS_SCAN_INTERVAL; a third, whole and unpolled,
+        becomes the schema the device property returns.
+        """
+        device = self._client.device
+        settings_names = [
+            name
+            for name in device.field_names()
+            if (field := device.get_field(name)) is not None
+            and field.address >= SETTINGS_FIRST_ADDRESS
+        ]
+        if not settings_names:
+            return
+        unit = self._client.conn.for_unit(1)
+        schema = get_device(self.config.dev_type, unit)
+        settings = get_device(self.config.dev_type, unit)
+        # The client already built this profile, so get_device() cannot miss.
+        assert schema is not None and settings is not None
+        wanted = set(settings_names)
+        readings_names = [n for n in device.field_names() if n not in wanted]
+        settings.restrict_fields(settings_names)
+        device.restrict_fields(readings_names)
+        self._schema = schema
+        self._settings = settings
 
     async def async_read_raw_registers(self) -> dict[str, dict[str, dict[int, int | bool]]]:
         """Read every declared register block again and return it undecoded.
@@ -171,6 +226,15 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         async with self._io_lock:
             await self.device.write(field_name, value)
+        # Keep what was just written in the settings snapshot, and confirm it
+        # on the first poll after the device has settled. Both halves matter:
+        # without the first, a poll before the next settings read would merge
+        # the old value back in and the switch would snap back; without the
+        # settle, a settings read straight after the write would read the old
+        # value - see SETTINGS_WRITE_SETTLE - and then keep it for a minute.
+        if self._settings is not None and self._settings.get_field(field_name) is not None:
+            self._settings_values[field_name] = value
+            self._settings_due_at = time.monotonic() + SETTINGS_WRITE_SETTLE.total_seconds()
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from device."""
@@ -178,6 +242,8 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             async with self._io_lock:
                 data = await self._client.read()
                 result = {k: v for k, v in [[d.name, d.value] for d in data]}
+                await self._async_read_settings_if_due()
+                result = {**self._settings_values, **result}
                 await self._async_update_battery_packs(result)
         except ModbusError as err:
             # The library already retried the transient failures this
@@ -201,6 +267,27 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._failed_polls = 0
         return result
+
+    async def _async_read_settings_if_due(self) -> None:
+        """Read the settings block when its own interval has come round.
+
+        Runs inside the poll's lock, on the connection the poll just used. A
+        failure here does not fail the poll: the settings keep their last
+        values and the next cycle tries again, the reasoning behind
+        POLL_FAILURES_TOLERATED applied to a block read a quarter as often.
+        """
+        if self._settings is None:
+            return
+        now = time.monotonic()
+        if now < self._settings_due_at:
+            return
+        try:
+            await self._settings.async_update_with_retry()
+        except ModbusError as err:
+            self.logger.debug("Settings read failed, keeping the last values: %s", err)
+            return
+        self._settings_values = dict(self._settings.values)
+        self._settings_due_at = now + SETTINGS_SCAN_INTERVAL.total_seconds()
 
     async def _async_update_battery_packs(self, result: dict[str, Any]) -> None:
         """Overwrite the aggregate "Pack Summary" fields in result (they

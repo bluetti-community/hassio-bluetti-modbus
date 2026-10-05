@@ -7,6 +7,9 @@ from modbus_connection.exceptions import ModbusConnectionError
 
 from custom_components.bluetti_modbus.coordinator import (
     POLL_FAILURES_TOLERATED,
+    READINGS_SCAN_INTERVAL,
+    SETTINGS_FIRST_ADDRESS,
+    SETTINGS_SCAN_INTERVAL,
     PollingCoordinator,
 )
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
@@ -121,19 +124,20 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
     async def test_a_successful_poll_resets_the_tolerance(self, client_cls):
         lost = ModbusConnectionError("Connection lost before response was received.")
+        n = POLL_FAILURES_TOLERATED
         client_cls.return_value.read = AsyncMock(
-            side_effect=[lost, lost, [_result("b_soc", 90)], lost, lost, lost]
+            side_effect=[lost] * n + [[_result("b_soc", 90)]] + [lost] * (n + 1)
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
         coordinator.data = {"b_soc": 89}
 
-        await coordinator._async_update_data()
-        await coordinator._async_update_data()
+        for _ in range(n):
+            await coordinator._async_update_data()
         self.assertEqual(await coordinator._async_update_data(), {"b_soc": 90})
         coordinator.data = {"b_soc": 90}
-        # Two more are tolerated again before the third raises.
-        await coordinator._async_update_data()
-        await coordinator._async_update_data()
+        # The full tolerance is available again before the next one raises.
+        for _ in range(n):
+            await coordinator._async_update_data()
         with self.assertRaises(UpdateFailed):
             await coordinator._async_update_data()
 
@@ -195,6 +199,173 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         await coordinator.aclose()
 
         client_cls.return_value.aclose.assert_awaited_once()
+
+
+class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
+    """The data area every cycle, the settings block on its own slower one."""
+
+    def _coordinator(self, client_cls, get_device):
+        # The real Balco 260 profile as the client's device, so the split runs
+        # on genuine addresses; the two components it builds are doubles, so
+        # nothing here can reach for a connection.
+        device = Balco260(None)
+        client_cls.return_value.device = device
+        client_cls.return_value.read = AsyncMock(return_value=[_result("b_soc_total", 80)])
+        schema = MagicMock()
+        schema.write = AsyncMock()
+        settings = MagicMock()
+        settings.async_update_with_retry = AsyncMock()
+        settings.values = {"ac_o_switch": 1}
+        settings.get_field.side_effect = lambda name: (
+            MagicMock() if name == "ac_o_switch" else None
+        )
+        get_device.side_effect = [schema, settings]
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+        return coordinator, device, schema, settings
+
+    def test_the_intervals_are_fifteen_and_sixty_seconds(self):
+        self.assertEqual(READINGS_SCAN_INTERVAL.total_seconds(), 15)
+        self.assertEqual(SETTINGS_SCAN_INTERVAL.total_seconds(), 60)
+
+    def test_reading_faster_keeps_the_ninety_second_grace_period(self):
+        # The tolerance is a time budget, not a poll count: stale values are
+        # kept for 90 s before entities go unavailable, as at 30 s with two
+        # tolerated failures. Halving the interval must not halve that.
+        grace = (POLL_FAILURES_TOLERATED + 1) * READINGS_SCAN_INTERVAL.total_seconds()
+        self.assertEqual(grace, 90)
+
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_the_settings_block_leaves_the_every_cycle_read(self, client_cls, get_device):
+        coordinator, device, schema, settings = self._coordinator(client_cls, get_device)
+
+        self.assertEqual(coordinator.update_interval, READINGS_SCAN_INTERVAL)
+        # What every cycle reads: no field from 57001 up is left in it.
+        polled = [device.get_field(n) for n in device.field_names()]
+        self.assertTrue(polled)
+        self.assertTrue(all(f.address < SETTINGS_FIRST_ADDRESS for f in polled))
+        # The settings component gets exactly those fields, and the platforms
+        # keep a whole profile to build their entities from.
+        kept = settings.restrict_fields.call_args.args[0]
+        self.assertIn("ac_o_switch", kept)
+        self.assertIs(coordinator.device, schema)
+        schema.restrict_fields.assert_not_called()
+
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_the_first_poll_reads_both_and_merges_them(self, client_cls, get_device):
+        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result, {"ac_o_switch": 1, "b_soc_total": 80})
+        settings.async_update_with_retry.assert_awaited_once()
+
+    @patch("custom_components.bluetti_modbus.coordinator.time.monotonic")
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_settings_are_read_once_a_minute_and_kept_in_between(
+        self, client_cls, get_device, monotonic
+    ):
+        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+
+        monotonic.return_value = 1000.0
+        await coordinator._async_update_data()
+        monotonic.return_value = 1015.0
+        result = await coordinator._async_update_data()
+
+        # Read once, and still in the snapshot fifteen seconds later.
+        settings.async_update_with_retry.assert_awaited_once()
+        self.assertEqual(result["ac_o_switch"], 1)
+
+        monotonic.return_value = 1060.0
+        await coordinator._async_update_data()
+        self.assertEqual(settings.async_update_with_retry.await_count, 2)
+
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_failed_settings_read_keeps_the_poll_and_the_last_values(
+        self, client_cls, get_device
+    ):
+        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+        await coordinator._async_update_data()
+        settings.async_update_with_retry.side_effect = ModbusConnectionError("dropped")
+        coordinator._settings_due_at = 0.0
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result, {"ac_o_switch": 1, "b_soc_total": 80})
+        # Still due, so the very next cycle tries again.
+        self.assertEqual(coordinator._settings_due_at, 0.0)
+
+    @patch("custom_components.bluetti_modbus.coordinator.time.monotonic")
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_settings_write_brings_the_settings_read_forward(
+        self, client_cls, get_device, monotonic
+    ):
+        coordinator, _device, schema, settings = self._coordinator(client_cls, get_device)
+        monotonic.return_value = 1000.0
+        await coordinator._async_update_data()
+
+        await coordinator.async_write("ac_o_switch", 0)
+
+        # Written through the whole profile, and confirmed on the first poll
+        # once the device has settled rather than up to a minute later.
+        schema.write.assert_awaited_once_with("ac_o_switch", 0)
+        settings.values = {"ac_o_switch": 0}
+        monotonic.return_value = 1015.0
+        result = await coordinator._async_update_data()
+        self.assertEqual(settings.async_update_with_retry.await_count, 2)
+        self.assertEqual(result["ac_o_switch"], 0)
+
+    @patch("custom_components.bluetti_modbus.coordinator.time.monotonic")
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_poll_right_after_a_write_keeps_the_written_value(
+        self, client_cls, get_device, monotonic
+    ):
+        # The device serves the old value for a moment after a write. A poll
+        # landing in that moment must neither read the settings - it would
+        # read the old value and keep it for a minute - nor merge the old
+        # snapshot back in: the switch would snap back under the owner's hand.
+        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+        monotonic.return_value = 1000.0
+        await coordinator._async_update_data()
+
+        await coordinator.async_write("ac_o_switch", 0)
+        monotonic.return_value = 1001.0
+        result = await coordinator._async_update_data()
+
+        settings.async_update_with_retry.assert_awaited_once()
+        self.assertEqual(result["ac_o_switch"], 0)
+
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_data_area_write_leaves_the_settings_schedule_alone(
+        self, client_cls, get_device
+    ):
+        coordinator, _device, _schema, _settings = self._coordinator(client_cls, get_device)
+        await coordinator._async_update_data()
+        due = coordinator._settings_due_at
+
+        await coordinator.async_write("b_soc_total", 50)
+
+        self.assertEqual(coordinator._settings_due_at, due)
+
+    @patch("custom_components.bluetti_modbus.coordinator.get_device")
+    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    async def test_a_profile_without_settings_is_not_split(self, client_cls, get_device):
+        # An S Meter declares nothing from 57001 up: nothing to split, and the
+        # client's own device stays the schema exactly as before.
+        client_cls.return_value.device = SMeter(None)
+        client_cls.return_value.read = AsyncMock(return_value=[])
+
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        get_device.assert_not_called()
+        self.assertIs(coordinator.device, client_cls.return_value.device)
+        self.assertEqual(await coordinator._async_update_data(), {})
 
 
 class TestReadRawRegisters(unittest.IsolatedAsyncioTestCase):

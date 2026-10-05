@@ -74,7 +74,7 @@ class BluettiOnlineBinarySensor(CoordinatorEntity, BinarySensorEntity):
         async_config_entry_first_refresh() already ran before this entity was
         created (see __init__.py), coordinator.data is already populated;
         without this, is_on would stay unknown until the coordinator's next
-        scheduled poll, up to update_interval (30s) later.
+        scheduled poll, up to update_interval (15 s) later.
         """
         await super().async_added_to_hass()
         self._handle_coordinator_update()

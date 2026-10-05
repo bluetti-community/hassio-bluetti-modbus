@@ -185,9 +185,8 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertIn("ep500p", values)
 
-    async def test_ep2000_not_offered_by_default(self):
-        # EP2000_CONFIRMED is False by default - see its own comment in
-        # const.py: read on a real unit, not yet run in Home Assistant.
+    @patch("custom_components.bluetti_modbus.config_flow.EP2000_CONFIRMED", False)
+    async def test_ep2000_not_offered_if_unconfirmed(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
@@ -196,8 +195,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertNotIn("ep2000", values)
 
-    @patch("custom_components.bluetti_modbus.config_flow.EP2000_CONFIRMED", True)
-    async def test_ep2000_offered_once_confirmed(self):
+    async def test_ep2000_offered(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
@@ -218,8 +216,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         self.assertIn("balco260", values)
         self.assertIn("smeter", values)
 
-    @patch("custom_components.bluetti_modbus.config_flow.PA030_CONFIRMED", True)
-    async def test_pa030_offered_once_confirmed(self):
+    async def test_pa030_offered_on_the_beta_line(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
