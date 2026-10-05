@@ -9,6 +9,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import EntityCategory
 
+from custom_components.bluetti_modbus.const import FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO
 from custom_components.bluetti_modbus.sensor import (
     BluettiSensor,
     _display_precision,
@@ -1254,11 +1255,10 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         response_keys = {s._response_key for s in added}
-        # b_serial/b_ver_1 feed the battery's own DeviceInfo instead (see
-        # FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO) - not sensors here.
-        self.assertEqual(
-            response_keys, PACK_INFO_FIELDS - {"b_serial", "b_ver_1"}
-        )
+        # b_serial and the firmware slots b_ver_1-4 feed the battery's own
+        # DeviceInfo instead (see FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO) - not
+        # sensors here.
+        self.assertEqual(response_keys, PACK_INFO_FIELDS - FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO)
         # No pack_N_ prefix - unlike packs 2+, unprefixed (see the class
         # docstring).
         self.assertTrue(all("pack_" not in k for k in response_keys))
@@ -1300,7 +1300,7 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         response_keys = {s._response_key for s in added}
-        self.assertEqual(response_keys, PACK_INFO_FIELDS - {"b_serial", "b_ver_1"})
+        self.assertEqual(response_keys, PACK_INFO_FIELDS - FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO)
         self.assertTrue(all(s.device_info == {"name": "Test Device Battery"} for s in added))
 
     def test_every_profile_with_a_battery_block_gets_the_battery_sub_device(self):

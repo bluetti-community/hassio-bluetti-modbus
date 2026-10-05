@@ -244,12 +244,11 @@ FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_ver_arm", "d_ver_dsp", "d_iot_ver", "d_serial
 # readings - fed into the battery sub-device's own DeviceInfo instead (see
 # battery_device_info() in __init__.py), same reasoning as
 # FIELDS_SHOWN_VIA_DEVICE_INFO above but for the battery specifically.
-# b_serial ("Pack SN") is the battery sub-device's serial_number; b_ver_1
-# ("BMS", the battery's own firmware, confirmed against real hardware and
-# the BLUETTI app) is its sw_version. Every other PACK_INFO_FIELDS name
-# becomes a plain sensor on that same sub-device instead of the main
-# device - see sensor.py.
-FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1"}
+# b_serial ("Pack SN") is the battery sub-device's serial_number; the
+# firmware slots b_ver_1-4, up to b_ver_count, are its sw_version
+# (battery_firmware()). Every other PACK_INFO_FIELDS name becomes a plain
+# sensor on that same sub-device instead of the main device - see sensor.py.
+FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1", "b_ver_2", "b_ver_3", "b_ver_4"}
 
 # Individual BC260 packs beyond the built-in one: confirmed on a real
 # Balco260 with three packs on 2026-09-18 (bluetti-modbus#55) - each answers
