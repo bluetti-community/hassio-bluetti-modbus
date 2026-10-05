@@ -240,10 +240,10 @@ FIELD_METADATA: dict[str, FieldMetadata] = {
     "b_time_to_empty_total": _DURATION,
     "b_time_to_full": _DURATION_DISABLED,
     "b_time_to_full_total": _DURATION,
-    "b_ver_count": _DIAGNOSTIC,
-    # b_ver_1 isn't here - it feeds DeviceInfo.sw_version instead (see
-    # const.py's FIELDS_SHOWN_VIA_DEVICE_INFO). b_ver_2/3/4 stay plain
-    # sensors - their meaning isn't confirmed the way b_ver_1's is.
+    # The built-in battery's firmware slots feed its DeviceInfo.sw_version,
+    # which already shows how many there are. b_ver_2/3/4 stay sensors on
+    # the BC260 expansion packs.
+    "b_ver_count": _DIAGNOSTIC_DISABLED,
     "b_ver_2": _DIAGNOSTIC,
     "b_ver_3": _DIAGNOSTIC,
     "b_ver_4": _DIAGNOSTIC,

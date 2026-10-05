@@ -383,9 +383,8 @@ async def async_setup_entry(
             field = bluetti_device.get_field(name)
             assert field is not None  # PACK_INFO_FIELDS names are Balco260 fields
             metadata = metadata_for(name)
-            beyond_count = beyond_reported_count(name, data)
-            if beyond_count:
-                metadata = dataclasses.replace(metadata, enabled_by_default=False)
+            # No count check here: the built-in battery's only numbered
+            # fields, its firmware slots, are on its device page.
             sensor = BluettiSensor(
                 coordinator,
                 battery_info,
@@ -406,8 +405,6 @@ async def async_setup_entry(
                 # coordinator.py).
             )
             sensors_to_add.append(sensor)
-            if beyond_count:
-                sensors_beyond_count.append(sensor)
 
     if entry.data.get(CONF_SLOTS_BEYOND_COUNT_PENDING) is True:
         _disable_registered_beyond_count(hass, entry, sensors_beyond_count)

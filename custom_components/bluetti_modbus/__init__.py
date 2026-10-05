@@ -14,6 +14,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
+    BUILT_IN_BATTERY_DEV_TYPES,
     CONF_SLOTS_BEYOND_COUNT_PENDING,
     DATA_COORDINATOR,
     DEVICE_TYPE_DISPLAY_NAMES,
@@ -123,7 +124,10 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 20
+_CURRENT_VERSION = 21
+
+# The built-in battery's b_ver_2-4 sensors, retired by the 20 -> 21 step.
+_BATTERY_FIRMWARE_SLOT_SUFFIXES = ("battery_b_ver_2", "battery_b_ver_3", "battery_b_ver_4")
 
 # The twelve Balco260 registers bluetti-registers 0.0.42 dropped from its
 # profile (bluetti-modbus 0.21.0 no longer declares them): matched as
@@ -344,6 +348,12 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     and the counts are only known after the first poll, so this step only
     flags the entry; the sensor platform disables them once and clears the
     flag (sensor.py's _disable_registered_beyond_count()).
+
+    20 -> 21: the built-in battery's firmware slots b_ver_2-4 now join
+    b_ver_1 on its device page (battery_firmware()) instead of being
+    sensors. Remove the battery sub-device's registry entries for them,
+    matched by the "battery_" its unique_ids carry - the BC260 expansion
+    packs keep theirs.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -608,6 +618,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if version == 19:
         new_data = {**(new_data or entry.data), CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         version = 20
+
+    if version == 20:
+        if config is not None and config.dev_type in BUILT_IN_BATTERY_DEV_TYPES:
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.unique_id.endswith(_BATTERY_FIRMWARE_SLOT_SUFFIXES):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 21
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:
@@ -976,13 +993,29 @@ def battery_device_info(
     if coordinator is not None:
         data = coordinator.data or {}
         serial = data.get("b_serial")
-        bms = data.get("b_ver_1")
         if serial is not None:
             info["serial_number"] = str(serial)
-        if bms is not None:
-            info["sw_version"] = f"BMS v{bms}"
+        sw_version = battery_firmware(data)
+        if sw_version is not None:
+            info["sw_version"] = sw_version
 
     return info
+
+
+def battery_firmware(data: dict[str, Any]) -> str | None:
+    """The built-in battery's firmware, as its device page shows it.
+
+    One valid slot (b_ver_count 1, the Balco family) is the BMS. Several
+    (the EP2000's HV800 reports three) are listed in slot order, unnamed, as
+    the EMS box's own web page lists them: nothing names the parts they
+    belong to.
+    """
+    count = data.get("b_ver_count")
+    if not isinstance(count, int) or isinstance(count, bool) or count <= 1:
+        bms = data.get("b_ver_1")
+        return None if bms is None else f"BMS v{bms}"
+    versions = [data.get(f"b_ver_{slot}") for slot in range(1, min(count, 4) + 1)]
+    return ", ".join(f"v{version}" for version in versions if version is not None) or None
 
 
 def get_unique_id(name: str, sensor_type: str | None = None) -> str:
