@@ -58,8 +58,7 @@ from .vendor.bluetti_modbus_lib import MAX_BATTERY_PACKS, PACK_INFO_FIELDS, get_
 # bluetti-registers#35; PA030's is AC500's too, answered in full on a real
 # Apex 300 - bluetti-registers#49), so the AC500-specific sensor exceptions
 # below hold for all four. Not AC500_FIELDS_NOT_SHOWN, though: the EP500P's
-# g_i_switch reads 0 on one unit and 1 on the other, not AC500's stuck 1 - a
-# real state, kept as a (read-only) sensor there.
+# g_i_switch is a working grid charging switch.
 _AC_FAMILY = ("ac500", "ac200l", "ep500p", "pa030")
 
 # The PV type exception below is the one member of that set the Apex 300

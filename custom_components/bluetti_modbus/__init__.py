@@ -124,7 +124,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 22
+_CURRENT_VERSION = 23
 
 # The built-in battery's b_ver_2-4 sensors, retired by the 20 -> 21 step.
 _BATTERY_FIRMWARE_SLOT_SUFFIXES = ("battery_b_ver_2", "battery_b_ver_3", "battery_b_ver_4")
@@ -359,6 +359,11 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     (field_metadata.py) - it reads empty on every unit seen, like the rest
     of its block. Same first-registration-only caveat as the 1 -> 2 step,
     so disable it explicitly here, EP2000 entries only.
+
+    22 -> 23: g_i_switch (EP500P, grid charging) is writable now, so it is a
+    switch entity instead of a read-only sensor. The switch reuses the same
+    unique_id in the switch domain; remove the old sensor entry, EP500P
+    entries only - same pattern as the 6 -> 7 step.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -643,6 +648,15 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         disabled_by=er.RegistryEntryDisabler.INTEGRATION,
                     )
         version = 22
+
+    if version == 22:
+        if config is not None and config.dev_type == "ep500p":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.domain == "sensor" and entity_entry.unique_id.endswith(
+                    "_g_i_switch"
+                ):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 23
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:
