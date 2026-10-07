@@ -51,7 +51,7 @@ documentation and verified against real hardware.
 | **AC500** | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
 | **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
-| **Apex 300** | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/143) |
+| **Apex 300** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/49) |
 | **EP2000** | Manual (IP) | Read-only | [3 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
 
@@ -75,7 +75,8 @@ Have a different BLUETTI model? Register data is welcome - see
 - On a single-phase, single-pack unit, the entities for phases 2-3, PV strings 2-4
   and pack slots 2-4 read empty.
 
-**AC500, EP500Pro, AC200L, Apex 300** - one shared register layout.
+**AC500, EP500Pro, AC200L, Apex 300** - one shared register layout. An AC200PL reads
+with the AC200L profile.
 - The SoC limits are read-only: the AC500 refuses the write.
 - No per-pack data: the pack registers show whichever pack the app has selected, and
   that selector is not reachable over Modbus TCP.
@@ -86,9 +87,10 @@ Have a different BLUETTI model? Register data is welcome - see
   supported from what real units return.
 
 **EP2000**
-- Modbus TCP is opened by the BLUETTI app's **VPP** option; the web page has no
-  switch for it. A virtual power plant can let an aggregator charge and discharge
-  the battery, so know what your provider's option authorises before enabling it.
+- Modbus TCP is opened by the BLUETTI app's **VPP** option (VPP tile on the home
+  page → Join VPP → Voltello, port 502); the web page has no switch for it. A
+  virtual power plant can let an aggregator charge and discharge the battery, so
+  know what your provider's option authorises before enabling it.
 - The grid entities measure the EP2000's own grid port, not the house's connection
   to the grid: with AC-coupled solar (a separate PV inverter on the AC side), that
   solar's output shows there. The app's Grid figure comes from the system's meter,
