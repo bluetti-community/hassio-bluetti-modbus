@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import voluptuous as vol
+import probatio
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS, CONF_PORT, CONF_TYPE
@@ -137,16 +137,16 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
-        data_schema = vol.Schema(
+        data_schema = probatio.Schema(
             {
-                vol.Required(CONF_ADDRESS): TextSelector(),
-                vol.Required(CONF_PORT, default=502): vol.All(
+                probatio.Required(CONF_ADDRESS): TextSelector(),
+                probatio.Required(CONF_PORT, default=502): probatio.All(
                     NumberSelector(
                         NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)
                     ),
-                    vol.Coerce(int),
+                    probatio.Coerce(int),
                 ),
-                vol.Required(
+                probatio.Required(
                     CONF_TYPE,
                     default="balco260",
                 ): SelectSelector(

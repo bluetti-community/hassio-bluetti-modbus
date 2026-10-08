@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.binary_sensor import (
+# Home Assistant 2026.10 re-exports the device class without declaring it.
+from homeassistant.components.binary_sensor import (  # type: ignore[attr-defined,unused-ignore]
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
+# Home Assistant 2026.10 re-exports the device class without declaring it.
+from homeassistant.components.switch import (  # type: ignore[attr-defined,unused-ignore]
+    SwitchDeviceClass,
+    SwitchEntity,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
