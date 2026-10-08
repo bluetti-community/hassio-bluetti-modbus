@@ -380,7 +380,9 @@ async def async_setup_entry(
             if name in FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO:
                 continue
             field = bluetti_device.get_field(name)
-            assert field is not None  # PACK_INFO_FIELDS names are Balco260 fields
+            # The Apex 300 serves only part of the block.
+            if field is None:
+                continue
             metadata = metadata_for(name)
             # No count check here: the built-in battery's only numbered
             # fields, its firmware slots, are on its device page.

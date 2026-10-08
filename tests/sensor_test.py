@@ -562,23 +562,25 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(added, [])
 
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_non_writable_ac_o_switch_stays_a_sensor(
-        self, config_cls, dev_info_fn, get_device_fn
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
         # e.g. the Apex 300 today: the schema knows about ac_o_switch, but
         # bluetti_modbus_lib doesn't mark it writable there yet - it must
         # stay readable as a plain sensor, not disappear.
         config_cls.from_dict.return_value = MagicMock(dev_type="pa030", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
 
         field = MagicMock(address=57001, unit=None, writable=False)
         field.name = "ac_o_switch"
         bluetti_device = MagicMock()
         bluetti_device.get_sensors.return_value = ["ac_o_switch"]
-        bluetti_device.get_field.return_value = field
+        bluetti_device.get_field.side_effect = lambda n: field if n == "ac_o_switch" else None
         get_device_fn.return_value = bluetti_device
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
@@ -654,23 +656,25 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("d_iot_ver", response_keys)
         self.assertNotIn("d_serial", response_keys)
 
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_non_writable_b_soc_low_stays_a_sensor(
-        self, config_cls, dev_info_fn, get_device_fn
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
         # e.g. the Apex 300 today: the schema knows about b_soc_low, but
         # bluetti_modbus_lib doesn't mark it writable there yet - it must
         # stay readable as a plain sensor, not disappear.
         config_cls.from_dict.return_value = MagicMock(dev_type="pa030", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
 
         field = MagicMock(address=57016, unit="%", writable=False)
         field.name = "b_soc_low"
         bluetti_device = MagicMock()
         bluetti_device.get_sensors.return_value = ["b_soc_low"]
-        bluetti_device.get_field.return_value = field
+        bluetti_device.get_field.side_effect = lambda n: field if n == "b_soc_low" else None
         get_device_fn.return_value = bluetti_device
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
@@ -960,11 +964,12 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(by_key["pv_1_i_type"]._attr_entity_registry_enabled_default)
         self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
 
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_pa030_shares_ac500s_overrides_but_keeps_its_pv_types(
-        self, config_cls, dev_info_fn, get_device_fn
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
         # AC500's register set read in full on a real Apex 300
         # (bluetti-registers#49): no plain b_soc, so the battery-class
@@ -974,6 +979,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # Balco family.
         config_cls.from_dict.return_value = MagicMock(dev_type="pa030", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
 
         def _field(name):
             f = MagicMock(address=50001, unit=None, writable=False)
@@ -1302,6 +1308,35 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         response_keys = {s._response_key for s in added}
         self.assertEqual(response_keys, PACK_INFO_FIELDS - FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO)
         self.assertTrue(all(s.device_info == {"name": "Test Device Battery"} for s in added))
+
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_apex_300_battery_shows_the_part_of_the_block_it_serves(
+        self, config_cls, dev_info_fn, battery_device_info_fn
+    ):
+        # The Apex 300's pack block is its own battery, and it serves only
+        # part of it (bluetti-registers#49): the battery sub-device shows
+        # those fields and skips the rest, against the real profile.
+        config_cls.from_dict.return_value = MagicMock(dev_type="pa030", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {}
+        hass = MagicMock()
+        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
+        entry = MagicMock(entry_id="entry1")
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        on_battery = {
+            s._response_key for s in added if s.device_info == {"name": "Test Device Battery"}
+        }
+        self.assertEqual(on_battery, {"b_type", "b_ver_count", "b_soc", "b_cell_count", "b_ntc_count"})
 
     def test_every_profile_with_a_battery_block_gets_the_battery_sub_device(self):
         # PACK_INFO_FIELDS are always skipped from the main device, so a
