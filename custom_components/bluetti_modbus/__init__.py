@@ -676,8 +676,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         data = hass.data[DOMAIN].pop(entry.entry_id)
         coordinator: PollingCoordinator = data[DATA_COORDINATOR]
+        # Home Assistant releases this entry's hold on the shared Modbus
+        # connection itself once the unload completes (see the coordinator).
         await coordinator.async_shutdown()
-        await coordinator.aclose()
 
     return unloaded
 

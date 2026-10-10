@@ -3,16 +3,16 @@
     "name": "BLUETTI Modbus",
     "codeowners": ["@Patrick762", "@chpego"],
     "config_flow": true,
-    "dependencies": [],
+    "dependencies": ["modbus"],
     "documentation": "https://github.com/bluetti-community/hassio-bluetti-modbus",
     "integration_type": "device",
     "iot_class": "local_polling",
     "issue_tracker": "https://github.com/bluetti-community/hassio-bluetti-modbus/issues",
     "requirements": [
-        "modbus-connection[tmodbus]>=4.11.1",
+        "modbus-connection[tmodbus]>=4.12.4",
         "tmodbus[async-serial]>=0.6.1"
     ],
-    "version": "2.0.7",
+    "version": "2.1.0",
     "zeroconf": [
         {
             "type": "_bluetti._tcp.local.",
