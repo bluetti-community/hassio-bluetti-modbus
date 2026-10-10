@@ -75,7 +75,7 @@ class TestAsyncQuerySmeter(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, SmeterWsInfo("V300510106", True))
         ws.send_json.assert_any_await({"type": "getConfig", "data": {}})
         ws.send_json.assert_any_await({"type": "getVersion", "data": {}})
-        session.ws_connect.assert_called_once_with("ws://10.2.1.80:80/8")
+        session.ws_connect.assert_called_once_with("ws://10.2.1.80:80/ws")
 
     async def test_ignores_non_text_messages(self):
         ws = _FakeWs(
@@ -158,6 +158,55 @@ class TestAsyncQuerySmeter(unittest.IsolatedAsyncioTestCase):
             ]
         )
         session = _session(_FakeWsConnect(ws))
+        with patch(
+            "custom_components.bluetti_modbus.smeter_ws.aiohttp_client.async_get_clientsession",
+            return_value=session,
+        ):
+            result = await async_query_smeter(MagicMock(), "10.2.1.80", 80)
+
+        self.assertEqual(result, SmeterWsInfo(None, None))
+
+    async def test_falls_back_to_the_older_path_when_the_newer_one_is_not_a_websocket(self):
+        # Firmware before 300510106 serves the API at /8; on 300510106 /8 is
+        # the web page and /ws the API. Each path is tried in turn.
+        ws = _FakeWs(
+            [
+                _FakeMessage(
+                    aiohttp.WSMsgType.TEXT,
+                    {"type": "getConfigRsp", "data": {"modbus_tcp": {"enable": True}}},
+                ),
+                _FakeMessage(
+                    aiohttp.WSMsgType.TEXT,
+                    {"type": "getVersionRsp", "data": {"firmwares": [{"version": "V1"}]}},
+                ),
+            ]
+        )
+        not_a_websocket = aiohttp.WSServerHandshakeError(MagicMock(), (), status=200)
+        session = MagicMock()
+        session.ws_connect = MagicMock(
+            side_effect=[_FakeWsConnect(connect_error=not_a_websocket), _FakeWsConnect(ws)]
+        )
+        with patch(
+            "custom_components.bluetti_modbus.smeter_ws.aiohttp_client.async_get_clientsession",
+            return_value=session,
+        ):
+            result = await async_query_smeter(MagicMock(), "10.2.1.80", 80)
+
+        self.assertEqual(result, SmeterWsInfo("V1", True))
+        self.assertEqual(
+            [c.args[0] for c in session.ws_connect.call_args_list],
+            ["ws://10.2.1.80:80/ws", "ws://10.2.1.80:80/8"],
+        )
+
+    async def test_no_websocket_at_either_path_returns_none_none(self):
+        not_a_websocket = aiohttp.WSServerHandshakeError(MagicMock(), (), status=200)
+        session = MagicMock()
+        session.ws_connect = MagicMock(
+            side_effect=[
+                _FakeWsConnect(connect_error=not_a_websocket),
+                _FakeWsConnect(connect_error=not_a_websocket),
+            ]
+        )
         with patch(
             "custom_components.bluetti_modbus.smeter_ws.aiohttp_client.async_get_clientsession",
             return_value=session,
