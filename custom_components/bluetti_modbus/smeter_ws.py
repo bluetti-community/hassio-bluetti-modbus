@@ -5,12 +5,15 @@ confirms both devices expose this over their own local web UI - S Meter
 needs no authentication at all, Balco260 requires a token this integration
 has no way to obtain and isn't implemented here.
 
-Confirmed against a real S Meter's own capture: connecting to
-"ws://<host>:<port>/8" (port 80, the mDNS-advertised web UI port - not
-Modbus TCP's own port 502) and sending {"type": "getConfig", "data": {}}
-and {"type": "getVersion", "data": {}} gets back a "getConfigRsp" (whose
+Confirmed against real S Meters' own captures: connecting to
+"ws://<host>:<port>/ws" (firmware 300510106) or ".../8" (earlier firmware)
+on port 80, the mDNS-advertised web UI port - not Modbus TCP's own port
+502 - and sending {"type": "getConfig", "data": {}} and
+{"type": "getVersion", "data": {}} gets back a "getConfigRsp" (whose
 data.modbus_tcp.enable says whether Modbus TCP is actually turned on) and a
 "getVersionRsp" (whose data.firmwares[0].version is the running firmware).
+On 300510106, ".../8" answers with the web page instead of a WebSocket, so
+both paths are tried in turn.
 
 This is unofficial and unconfirmed by BLUETTI (unlike this integration's
 Modbus register maps) - it could change or disappear on a firmware update
@@ -34,6 +37,9 @@ from homeassistant.helpers import aiohttp_client
 _LOGGER = logging.getLogger(__name__)
 
 _TIMEOUT_SECONDS = 5
+
+# Where the WebSocket API lives, newest firmware first.
+_WS_PATHS = ("/ws", "/8")
 
 
 class SmeterWsInfo(NamedTuple):
@@ -62,29 +68,39 @@ async def async_query_smeter(hass: HomeAssistant, host: str, port: int) -> Smete
     should be trusted.
     """
     session = aiohttp_client.async_get_clientsession(hass)
-    firmware_version: str | None = None
-    modbus_tcp_enabled: bool | None = None
     try:
         async with asyncio.timeout(_TIMEOUT_SECONDS):
-            async with session.ws_connect(f"ws://{host}:{port}/8") as ws:
-                await ws.send_json({"type": "getConfig", "data": {}})
-                await ws.send_json({"type": "getVersion", "data": {}})
-
-                async for msg in ws:
-                    if msg.type != aiohttp.WSMsgType.TEXT:
-                        continue
-                    payload = msg.json()
-                    msg_type = payload.get("type")
-                    if msg_type == "getConfigRsp":
-                        modbus_tcp_enabled = payload["data"]["modbus_tcp"]["enable"]
-                    elif msg_type == "getVersionRsp":
-                        firmwares = payload["data"]["firmwares"]
-                        if firmwares:
-                            firmware_version = firmwares[0]["version"]
-                    if firmware_version is not None and modbus_tcp_enabled is not None:
-                        break
+            for path in _WS_PATHS:
+                try:
+                    async with session.ws_connect(f"ws://{host}:{port}{path}") as ws:
+                        return await _async_read_info(ws)
+                except aiohttp.WSServerHandshakeError as err:
+                    # Not a WebSocket at this path on this firmware.
+                    _LOGGER.debug("No S Meter WebSocket at %s: %s", path, err)
     except (TimeoutError, aiohttp.ClientError, ValueError, KeyError, TypeError) as err:
         _LOGGER.debug("Best-effort S Meter WebSocket query failed: %s", err)
-        return SmeterWsInfo(None, None)
+    return SmeterWsInfo(None, None)
+
+
+async def _async_read_info(ws: aiohttp.ClientWebSocketResponse) -> SmeterWsInfo:
+    """Ask an open S Meter WebSocket for its config and version."""
+    firmware_version: str | None = None
+    modbus_tcp_enabled: bool | None = None
+    await ws.send_json({"type": "getConfig", "data": {}})
+    await ws.send_json({"type": "getVersion", "data": {}})
+
+    async for msg in ws:
+        if msg.type != aiohttp.WSMsgType.TEXT:
+            continue
+        payload = msg.json()
+        msg_type = payload.get("type")
+        if msg_type == "getConfigRsp":
+            modbus_tcp_enabled = payload["data"]["modbus_tcp"]["enable"]
+        elif msg_type == "getVersionRsp":
+            firmwares = payload["data"]["firmwares"]
+            if firmwares:
+                firmware_version = firmwares[0]["version"]
+        if firmware_version is not None and modbus_tcp_enabled is not None:
+            break
 
     return SmeterWsInfo(firmware_version, modbus_tcp_enabled)
