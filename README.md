@@ -131,7 +131,7 @@ Assistant will stop reaching it.
 
 ## Installation ⚙️
 
-From version 2.0.0: requires **Home Assistant 2026.9.0 or newer**.
+From version 3.0.0: requires **Home Assistant 2026.10.1 or newer**.
 
 ### Via HACS (recommended)
 

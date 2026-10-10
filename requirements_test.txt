@@ -1,1 +1,5 @@
 coverage
+# The modbus integration this one depends on imports pymodbus; Home Assistant
+# installs it with that integration, the homeassistant package does not.
+# Same version as homeassistant/components/modbus/manifest.json at 2026.10.1.
+pymodbus==3.13.1

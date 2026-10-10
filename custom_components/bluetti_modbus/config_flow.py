@@ -7,8 +7,11 @@ from typing import Any
 
 import probatio
 from homeassistant import config_entries
+from homeassistant.components.modbus import async_get_temporary_unit
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS, CONF_PORT, CONF_TYPE
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
@@ -20,6 +23,7 @@ from homeassistant.helpers.selector import (
     TextSelector,
 )
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+from modbus_connection import ModbusTcpParams
 from modbus_connection.exceptions import ModbusError
 
 from .const import (
@@ -36,9 +40,30 @@ from .const import (
 )
 from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
-from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
+from .vendor.bluetti_modbus_lib import get_device, read_values
 
 _LOGGER = logging.getLogger(__name__)
+
+# What a probe below can fail with: the device not answering (ModbusError,
+# or a bare TimeoutError), or Home Assistant already holding a connection to
+# this host and port with other link settings (HomeAssistantError).
+PROBE_ERRORS = (ModbusError, TimeoutError, HomeAssistantError)
+
+
+async def _async_probe(hass: HomeAssistant, host: str, port: int, dev_type: str) -> dict[str, Any]:
+    """Read a device once and return its values.
+
+    On Home Assistant's shared Modbus connection: an entry already set up for
+    this device keeps its link and the probe goes through it, instead of
+    opening a second one to a device that accepts very few. A link opened
+    here closes again when the probe is done.
+    """
+    params = ModbusTcpParams(host=host, port=port)
+    async with async_get_temporary_unit(hass, params, 1) as unit:
+        device = get_device(dev_type, unit)
+        if device is None:
+            raise ValueError(f"Unsupported device type: {dev_type!r}")
+        return await read_values(device)
 
 
 class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -82,19 +107,16 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             port = user_input.get(CONF_PORT, 502)
             dev_type = user_input.get(CONF_TYPE, "balco260")
 
-            client = BluettiModbusClient(address, port, dev_type)
             serial: object = None
             try:
-                await client.read()
+                values = await _async_probe(self.hass, address, port, dev_type)
                 # S Meter declares no serial-equivalent field over Modbus at
                 # all (see _modbus_identity()'s own docstring) - .get()
                 # simply finds nothing there, no dev_type check needed here.
-                serial = client.device.values.get("d_serial")
-            except (ModbusError, TimeoutError) as err:
+                serial = values.get("d_serial")
+            except PROBE_ERRORS as err:
                 errors["base"] = "cannot_connect"
                 description_placeholders["error"] = str(err)
-            finally:
-                await client.aclose()
 
             if not errors:
                 # Plain product name, matching how other integrations name a
@@ -321,13 +343,10 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if ws_info.modbus_tcp_enabled is False:
             return self.async_abort(reason="modbus_tcp_disabled")
 
-        client = BluettiModbusClient(host, 502, "smeter")
         try:
-            await client.read()
-        except (ModbusError, TimeoutError):
+            await _async_probe(self.hass, host, 502, "smeter")
+        except PROBE_ERRORS:
             return self.async_abort(reason="cannot_connect")
-        finally:
-            await client.aclose()
 
         return await self._async_zeroconf_discovered(
             host, "smeter", serial, firmware_version=ws_info.firmware_version
@@ -370,15 +389,12 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self._async_abort_entries_match({CONF_ADDRESS: host})
 
-        client = BluettiModbusClient(host, 502, "balco260")
         serial: object = None
         try:
-            await client.read()
-            serial = client.device.values.get("d_serial")
-        except (ModbusError, TimeoutError):
+            values = await _async_probe(self.hass, host, 502, "balco260")
+            serial = values.get("d_serial")
+        except PROBE_ERRORS:
             return self.async_abort(reason="cannot_connect")
-        finally:
-            await client.aclose()
 
         await self.async_set_unique_id(
             str(serial) if serial is not None else host, raise_on_progress=False

@@ -8,9 +8,11 @@ import time
 from datetime import timedelta
 from typing import Any
 
+from homeassistant.components.modbus import async_get_unit
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from modbus_connection import ModbusTcpParams, ModbusUnit
 from modbus_connection.exceptions import ModbusError
 
 from .const import INDIVIDUAL_BC260_PACKS_CONFIRMED
@@ -18,6 +20,7 @@ from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
     AC200L,
     AC500,
+    AGGREGATE_SLAVE_ID,
     EP500P,
     EP2000,
     FP,
@@ -27,13 +30,13 @@ from .vendor.bluetti_modbus_lib import (
     Balco500,
     Balcotrans,
     SMeter,
-    aggregate_pack_summary,
-    battery_pack,
+    aggregate_pack_summary_component,
+    battery_pack_component,
     get_device,
     pack_is_reporting,
     pack_slave_id,
+    read_values,
 )
-from .vendor.bluetti_modbus_lib.modbus.client import BluettiModbusClient
 
 # Every profile the library can build - what get_device() returns, minus None.
 BluettiProfile = (
@@ -102,14 +105,19 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         self.config = config
-        # One persistent client for the lifetime of this coordinator, not one
-        # per poll - a fresh connection on every poll is exactly the pattern
-        # that has made the device's Modbus TCP stack unresponsive under load.
-        self._client = BluettiModbusClient(
-            config.address,
-            config.port,
-            config.dev_type,
-        )
+        # The connection is Home Assistant's own, shared with anything else
+        # that reaches this device through the modbus integration (its YAML
+        # hubs, another integration, this integration's config flow) and
+        # listed under Settings -> Connectivity -> Modbus. It stays open
+        # between polls - a fresh connection on every poll is exactly the
+        # pattern that has made the device's Modbus TCP stack unresponsive
+        # under load - and Home Assistant closes it once the last holder has
+        # unloaded. Each unit id this entry reads is held on it.
+        self._params = ModbusTcpParams(host=config.address, port=config.port)
+        device = get_device(config.dev_type, self._unit(1))
+        if device is None:
+            raise ValueError(f"Unsupported device type: {config.dev_type!r}")
+        self._readings: BluettiProfile = device
         # Confirmed on real hardware: a switch/number write landing while the
         # periodic poll below is mid-flight can come back as
         # ModbusProtocolError("Expected response to match request") - not
@@ -126,8 +134,8 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # self._schema keeps the whole profile, unpolled, for everything that
         # needs every field: the platforms building entities, writes, and the
         # raw diagnostics dump. On a profile with no settings field there is
-        # nothing to split, and all three stay the client's own device.
-        self._schema: BluettiProfile = self._client.device
+        # nothing to split, and all three stay the one device above.
+        self._schema: BluettiProfile = device
         self._settings: BluettiProfile | None = None
         self._settings_values: dict[str, Any] = {}
         # Monotonic deadline for the next settings read; 0.0 = on this poll.
@@ -150,6 +158,10 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # POLL_FAILURES_TOLERATED.
         self._failed_polls = 0
 
+    def _unit(self, unit_id: int) -> ModbusUnit:
+        """Hold unit_id on this device's shared connection, until unload."""
+        return async_get_unit(self.hass, self.config_entry, self._params, unit_id)
+
     @property
     def device(self) -> BluettiProfile:
         """The underlying bluetti_modbus_lib device - for reading fields.
@@ -161,14 +173,14 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self._schema
 
     def _split_read_plan(self) -> None:
-        """Move the settings fields out of the client's every-cycle read.
+        """Move the settings fields out of the every-cycle read.
 
-        The client's own device keeps the data area and is what each poll
-        reads; a second component on the same connection keeps the settings
-        and is read on SETTINGS_SCAN_INTERVAL; a third, whole and unpolled,
-        becomes the schema the device property returns.
+        The readings device keeps the data area and is what each poll reads;
+        a second component on the same unit keeps the settings and is read
+        on SETTINGS_SCAN_INTERVAL; a third, whole and unpolled, becomes the
+        schema the device property returns.
         """
-        device = self._client.device
+        device = self._readings
         settings_names = [
             name
             for name in device.field_names()
@@ -177,10 +189,10 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         ]
         if not settings_names:
             return
-        unit = self._client.conn.for_unit(1)
+        unit = device.modbus_unit
         schema = get_device(self.config.dev_type, unit)
         settings = get_device(self.config.dev_type, unit)
-        # The client already built this profile, so get_device() cannot miss.
+        # __init__ already built this profile, so get_device() cannot miss.
         assert schema is not None and settings is not None
         wanted = set(settings_names)
         readings_names = [n for n in device.field_names() if n not in wanted]
@@ -240,8 +252,7 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Fetch data from device."""
         try:
             async with self._io_lock:
-                data = await self._client.read()
-                result = {k: v for k, v in [[d.name, d.value] for d in data]}
+                result = await read_values(self._readings)
                 await self._async_read_settings_if_due()
                 result = {**self._settings_values, **result}
                 await self._async_update_battery_packs(result)
@@ -298,14 +309,15 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Balco260 only, per this integration's current scope - EP2000's
         battery-pack behavior is unconfirmed on real hardware. Packs share
         the main device's own Modbus connection (a different slave address,
-        not a new TCP connection), so this must run after self._client.read()
-        already established it, within the same update cycle.
+        not a new TCP connection), held from the first poll that needs them.
         """
         if not isinstance(self.device, Balco260):
             return
 
         if self._aggregate_summary is None:
-            self._aggregate_summary = aggregate_pack_summary(self._client.conn)
+            self._aggregate_summary = aggregate_pack_summary_component(
+                self._unit(AGGREGATE_SLAVE_ID)
+            )
         await self._aggregate_summary.async_update_with_retry()
         result.update(self._aggregate_summary.values)
 
@@ -321,7 +333,7 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for pack_num in range(2, min(num_packs, MAX_BATTERY_PACKS) + 1):
             pack = self._packs.get(pack_num)
             if pack is None:
-                pack = battery_pack(self._client.conn, pack_slave_id(pack_num))
+                pack = battery_pack_component(self._unit(pack_slave_id(pack_num)))
                 self._packs[pack_num] = pack
             await pack.async_update_with_retry()
             # A slot that reports nothing but its serial number (every
@@ -333,7 +345,3 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 continue
             for name, value in pack.values.items():
                 result[f"pack_{pack_num}_{name}"] = value
-
-    async def aclose(self) -> None:
-        """Close the underlying Modbus connection."""
-        await self._client.aclose()

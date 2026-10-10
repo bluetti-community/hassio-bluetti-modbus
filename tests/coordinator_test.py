@@ -1,8 +1,10 @@
 import asyncio
+import functools
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from modbus_connection import ModbusTcpParams
 from modbus_connection.exceptions import ModbusConnectionError
 
 from custom_components.bluetti_modbus.coordinator import (
@@ -18,12 +20,52 @@ from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
     SMeter,
 )
 
+_COORDINATOR = "custom_components.bluetti_modbus.coordinator"
 
-def _result(name: str, value: object) -> MagicMock:
-    r = MagicMock()
-    r.name = name
-    r.value = value
-    return r
+
+class _SharedConnection:
+    """Home Assistant's shared Modbus connection, as the coordinator sees it.
+
+    async_get_unit hands out one unit double per unit id; get_device builds
+    `device` the first time (the readings device), then each of
+    `extra_devices` in turn (the schema and settings of a split read plan);
+    read_values polls through `read`.
+    """
+
+    def __init__(self) -> None:
+        self.device: object = MagicMock()
+        self.extra_devices: list[object] = []
+        self.read = AsyncMock(return_value={})
+        self.units: dict[int, MagicMock] = {}
+        self.held: list[tuple[object, object, ModbusTcpParams, int]] = []
+        self._built = False
+
+    def get_unit(self, hass, entry, params, unit_id):
+        self.held.append((hass, entry, params, unit_id))
+        return self.units.setdefault(unit_id, MagicMock(unit_id=unit_id))
+
+    def get_device(self, dev_type, unit):
+        if not self._built:
+            self._built = True
+            return self.device
+        return self.extra_devices.pop(0)
+
+    async def read_values(self, device):
+        return await self.read()
+
+
+def _shared(test):
+    @functools.wraps(test)
+    async def wrapper(self, *mocks):
+        link = _SharedConnection()
+        with (
+            patch(f"{_COORDINATOR}.async_get_unit", side_effect=link.get_unit),
+            patch(f"{_COORDINATOR}.get_device", side_effect=link.get_device),
+            patch(f"{_COORDINATOR}.read_values", side_effect=link.read_values),
+        ):
+            await test(self, link, *mocks)
+
+    return wrapper
 
 
 def _config():
@@ -36,17 +78,25 @@ def _config():
 
 
 class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_client_is_built_once_from_config_values(self, client_cls):
-        client_cls.return_value.read = AsyncMock(return_value=[])
+    @_shared
+    async def test_unit_1_is_held_for_the_entry_on_the_devices_address(self, link):
+        hass, entry = MagicMock(), MagicMock()
 
-        PollingCoordinator(MagicMock(), MagicMock(), _config())
+        PollingCoordinator(hass, entry, _config())
 
-        client_cls.assert_called_once_with("10.2.1.60", 502, "balco260")
+        self.assertEqual(
+            link.held, [(hass, entry, ModbusTcpParams(host="10.2.1.60", port=502), 1)]
+        )
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_repeated_updates_reuse_the_same_client(self, client_cls):
-        client_cls.return_value.read = AsyncMock(return_value=[])
+    async def test_an_unknown_device_type_is_refused(self):
+        config = _config()
+        config.dev_type = "nope"
+        with patch(f"{_COORDINATOR}.async_get_unit"), self.assertRaises(ValueError):
+            PollingCoordinator(MagicMock(), MagicMock(), config)
+
+    @_shared
+    async def test_repeated_updates_reuse_the_same_client(self, link):
+        link.read = AsyncMock(return_value={})
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         await coordinator._async_update_data()
@@ -54,38 +104,32 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
 
         # A fresh connection on every poll is exactly the pattern that has
         # made the device's Modbus TCP stack unresponsive under load.
-        client_cls.assert_called_once_with("10.2.1.60", 502, "balco260")
-        self.assertEqual(client_cls.return_value.read.await_count, 2)
+        self.assertEqual(len(link.held), 1)
+        self.assertEqual(link.read.await_count, 2)
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_async_update_data_maps_results_by_name(self, client_cls):
-        r1 = MagicMock(name="d_num_inverters")
-        r1.name = "d_num_inverters"
-        r1.value = 1
-        r2 = MagicMock(name="b_soc")
-        r2.name = "b_soc"
-        r2.value = 89
-        client_cls.return_value.read = AsyncMock(return_value=[r1, r2])
+    @_shared
+    async def test_async_update_data_maps_results_by_name(self, link):
+        link.read = AsyncMock(return_value={"d_num_inverters": 1, "b_soc": 89})
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         result = await coordinator._async_update_data()
 
         self.assertEqual(result, {"d_num_inverters": 1, "b_soc": 89})
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_async_update_data_with_no_fields_returns_empty_dict(self, client_cls):
-        client_cls.return_value.read = AsyncMock(return_value=[])
+    @_shared
+    async def test_async_update_data_with_no_fields_returns_empty_dict(self, link):
+        link.read = AsyncMock(return_value={})
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         result = await coordinator._async_update_data()
 
         self.assertEqual(result, {})
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_modbus_error_becomes_update_failed(self, client_cls):
+    @_shared
+    async def test_modbus_error_becomes_update_failed(self, link):
         # No values yet (the first refresh): nothing to ride out on, the
         # failure surfaces at once so setup fails properly.
-        client_cls.return_value.read = AsyncMock(
+        link.read = AsyncMock(
             side_effect=ModbusConnectionError("no route to host")
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
@@ -93,12 +137,12 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(UpdateFailed):
             await coordinator._async_update_data()
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_a_failed_poll_keeps_the_last_values(self, client_cls):
+    @_shared
+    async def test_a_failed_poll_keeps_the_last_values(self, link):
         # A Balco 260 fails about one poll an hour even after the library's
         # retries, and the next poll recovers: the entities keep their last
         # values instead of going unavailable for a cycle.
-        client_cls.return_value.read = AsyncMock(
+        link.read = AsyncMock(
             side_effect=ModbusConnectionError("Connection lost before response was received.")
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
@@ -108,9 +152,9 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result, {"b_soc": 89})
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_more_failed_polls_than_tolerated_become_update_failed(self, client_cls):
-        client_cls.return_value.read = AsyncMock(
+    @_shared
+    async def test_more_failed_polls_than_tolerated_become_update_failed(self, link):
+        link.read = AsyncMock(
             side_effect=ModbusConnectionError("Connection lost before response was received.")
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
@@ -121,12 +165,12 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(UpdateFailed):
             await coordinator._async_update_data()
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_a_successful_poll_resets_the_tolerance(self, client_cls):
+    @_shared
+    async def test_a_successful_poll_resets_the_tolerance(self, link):
         lost = ModbusConnectionError("Connection lost before response was received.")
         n = POLL_FAILURES_TOLERATED
-        client_cls.return_value.read = AsyncMock(
-            side_effect=[lost] * n + [[_result("b_soc", 90)]] + [lost] * (n + 1)
+        link.read = AsyncMock(
+            side_effect=[lost] * n + [{"b_soc": 90}] + [lost] * (n + 1)
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
         coordinator.data = {"b_soc": 89}
@@ -141,23 +185,23 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(UpdateFailed):
             await coordinator._async_update_data()
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_device_property_returns_the_clients_device(self, client_cls):
+    @_shared
+    async def test_device_property_returns_the_clients_device(self, link):
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
-        self.assertIs(coordinator.device, client_cls.return_value.device)
+        self.assertIs(coordinator.device, link.device)
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_async_write_calls_device_write(self, client_cls):
-        client_cls.return_value.device.write = AsyncMock()
+    @_shared
+    async def test_async_write_calls_device_write(self, link):
+        link.device.write = AsyncMock()
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         await coordinator.async_write("b_soc_low", 42)
 
-        client_cls.return_value.device.write.assert_awaited_once_with("b_soc_low", 42)
+        link.device.write.assert_awaited_once_with("b_soc_low", 42)
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_write_waits_for_an_in_flight_poll_to_finish(self, client_cls):
+    @_shared
+    async def test_write_waits_for_an_in_flight_poll_to_finish(self, link):
         # Confirmed on real hardware: a write landing while the periodic
         # poll is mid-flight can come back as ModbusProtocolError("Expected
         # response to match request") - not because the device rejects the
@@ -172,10 +216,10 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         async def slow_read():
             read_started.set()
             await release_read.wait()
-            return []
+            return {}
 
-        client_cls.return_value.read = slow_read
-        client_cls.return_value.device.write = AsyncMock()
+        link.read = slow_read
+        link.device.write = AsyncMock()
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         update_task = asyncio.ensure_future(coordinator._async_update_data())
@@ -183,34 +227,25 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
 
         write_task = asyncio.ensure_future(coordinator.async_write("ac_o_switch", 1))
         await asyncio.sleep(0)
-        self.assertFalse(client_cls.return_value.device.write.called)
+        self.assertFalse(link.device.write.called)
 
         release_read.set()
         await update_task
         await write_task
 
-        client_cls.return_value.device.write.assert_awaited_once_with("ac_o_switch", 1)
-
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_aclose_closes_the_underlying_client(self, client_cls):
-        client_cls.return_value.aclose = AsyncMock()
-        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
-
-        await coordinator.aclose()
-
-        client_cls.return_value.aclose.assert_awaited_once()
+        link.device.write.assert_awaited_once_with("ac_o_switch", 1)
 
 
 class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
     """The data area every cycle, the settings block on its own slower one."""
 
-    def _coordinator(self, client_cls, get_device):
-        # The real Balco 260 profile as the client's device, so the split runs
+    def _coordinator(self, link):
+        # The real Balco 260 profile as the readings device, so the split runs
         # on genuine addresses; the two components it builds are doubles, so
         # nothing here can reach for a connection.
         device = Balco260(None)
-        client_cls.return_value.device = device
-        client_cls.return_value.read = AsyncMock(return_value=[_result("b_soc_total", 80)])
+        link.device = device
+        link.read = AsyncMock(return_value={"b_soc_total": 80})
         schema = MagicMock()
         schema.write = AsyncMock()
         settings = MagicMock()
@@ -219,7 +254,7 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         settings.get_field.side_effect = lambda name: (
             MagicMock() if name == "ac_o_switch" else None
         )
-        get_device.side_effect = [schema, settings]
+        link.extra_devices = [schema, settings]
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
         return coordinator, device, schema, settings
 
@@ -234,10 +269,9 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         grace = (POLL_FAILURES_TOLERATED + 1) * READINGS_SCAN_INTERVAL.total_seconds()
         self.assertEqual(grace, 90)
 
-    @patch("custom_components.bluetti_modbus.coordinator.get_device")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_the_settings_block_leaves_the_every_cycle_read(self, client_cls, get_device):
-        coordinator, device, schema, settings = self._coordinator(client_cls, get_device)
+    @_shared
+    async def test_the_settings_block_leaves_the_every_cycle_read(self, link):
+        coordinator, device, schema, settings = self._coordinator(link)
 
         self.assertEqual(coordinator.update_interval, READINGS_SCAN_INTERVAL)
         # What every cycle reads: no field from 57001 up is left in it.
@@ -251,10 +285,9 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         self.assertIs(coordinator.device, schema)
         schema.restrict_fields.assert_not_called()
 
-    @patch("custom_components.bluetti_modbus.coordinator.get_device")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_the_first_poll_reads_both_and_merges_them(self, client_cls, get_device):
-        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+    @_shared
+    async def test_the_first_poll_reads_both_and_merges_them(self, link):
+        coordinator, _device, _schema, settings = self._coordinator(link)
 
         result = await coordinator._async_update_data()
 
@@ -262,12 +295,11 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         settings.async_update_with_retry.assert_awaited_once()
 
     @patch("custom_components.bluetti_modbus.coordinator.time.monotonic")
-    @patch("custom_components.bluetti_modbus.coordinator.get_device")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @_shared
     async def test_settings_are_read_once_a_minute_and_kept_in_between(
-        self, client_cls, get_device, monotonic
+        self, link, monotonic
     ):
-        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+        coordinator, _device, _schema, settings = self._coordinator(link)
 
         monotonic.return_value = 1000.0
         await coordinator._async_update_data()
@@ -282,12 +314,11 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         await coordinator._async_update_data()
         self.assertEqual(settings.async_update_with_retry.await_count, 2)
 
-    @patch("custom_components.bluetti_modbus.coordinator.get_device")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @_shared
     async def test_a_failed_settings_read_keeps_the_poll_and_the_last_values(
-        self, client_cls, get_device
+        self, link
     ):
-        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+        coordinator, _device, _schema, settings = self._coordinator(link)
         await coordinator._async_update_data()
         settings.async_update_with_retry.side_effect = ModbusConnectionError("dropped")
         coordinator._settings_due_at = 0.0
@@ -299,12 +330,11 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(coordinator._settings_due_at, 0.0)
 
     @patch("custom_components.bluetti_modbus.coordinator.time.monotonic")
-    @patch("custom_components.bluetti_modbus.coordinator.get_device")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @_shared
     async def test_a_settings_write_brings_the_settings_read_forward(
-        self, client_cls, get_device, monotonic
+        self, link, monotonic
     ):
-        coordinator, _device, schema, settings = self._coordinator(client_cls, get_device)
+        coordinator, _device, schema, settings = self._coordinator(link)
         monotonic.return_value = 1000.0
         await coordinator._async_update_data()
 
@@ -320,16 +350,15 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["ac_o_switch"], 0)
 
     @patch("custom_components.bluetti_modbus.coordinator.time.monotonic")
-    @patch("custom_components.bluetti_modbus.coordinator.get_device")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @_shared
     async def test_a_poll_right_after_a_write_keeps_the_written_value(
-        self, client_cls, get_device, monotonic
+        self, link, monotonic
     ):
         # The device serves the old value for a moment after a write. A poll
         # landing in that moment must neither read the settings - it would
         # read the old value and keep it for a minute - nor merge the old
         # snapshot back in: the switch would snap back under the owner's hand.
-        coordinator, _device, _schema, settings = self._coordinator(client_cls, get_device)
+        coordinator, _device, _schema, settings = self._coordinator(link)
         monotonic.return_value = 1000.0
         await coordinator._async_update_data()
 
@@ -340,12 +369,11 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
         settings.async_update_with_retry.assert_awaited_once()
         self.assertEqual(result["ac_o_switch"], 0)
 
-    @patch("custom_components.bluetti_modbus.coordinator.get_device")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @_shared
     async def test_a_data_area_write_leaves_the_settings_schedule_alone(
-        self, client_cls, get_device
+        self, link
     ):
-        coordinator, _device, _schema, _settings = self._coordinator(client_cls, get_device)
+        coordinator, _device, _schema, _settings = self._coordinator(link)
         await coordinator._async_update_data()
         due = coordinator._settings_due_at
 
@@ -353,18 +381,17 @@ class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(coordinator._settings_due_at, due)
 
-    @patch("custom_components.bluetti_modbus.coordinator.get_device")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_a_profile_without_settings_is_not_split(self, client_cls, get_device):
+    @_shared
+    async def test_a_profile_without_settings_is_not_split(self, link):
         # An S Meter declares nothing from 57001 up: nothing to split, and the
-        # client's own device stays the schema exactly as before.
-        client_cls.return_value.device = SMeter(None)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        # readings device stays the schema exactly as before.
+        link.device = SMeter(None)
+        link.read = AsyncMock(return_value={})
 
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
-        get_device.assert_not_called()
-        self.assertIs(coordinator.device, client_cls.return_value.device)
+        self.assertEqual(link.extra_devices, [])
+        self.assertIs(coordinator.device, link.device)
         self.assertEqual(await coordinator._async_update_data(), {})
 
 
@@ -372,10 +399,10 @@ class TestReadRawRegisters(unittest.IsolatedAsyncioTestCase):
     """The undecoded register words behind a diagnostics dump - see
     PollingCoordinator.async_read_raw_registers()."""
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_returns_the_devices_raw_map(self, client_cls):
+    @_shared
+    async def test_returns_the_devices_raw_map(self, link):
         raw = {"holding": {50001: 1, 50002: 432}}
-        client_cls.return_value.device.async_read_raw = AsyncMock(return_value=raw)
+        link.device.async_read_raw = AsyncMock(return_value=raw)
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         result = await coordinator.async_read_raw_registers()
@@ -383,18 +410,18 @@ class TestReadRawRegisters(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, {"device": raw})
         # notify=False: a diagnostics read must not fire update listeners
         # as if it were a poll.
-        client_cls.return_value.device.async_read_raw.assert_awaited_once_with(notify=False)
+        link.device.async_read_raw.assert_awaited_once_with(notify=False)
 
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @_shared
     async def test_includes_the_aggregate_summary_once_a_poll_has_built_it(
-        self, client_cls, aggregate_fn
+        self, link, aggregate_fn
     ):
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.device.async_read_raw = AsyncMock(
+        link.device = MagicMock(spec=Balco260)
+        link.device.async_read_raw = AsyncMock(
             return_value={"holding": {50001: 1}}
         )
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.read = AsyncMock(return_value={})
         aggregate = aggregate_fn.return_value
         aggregate.async_update_with_retry = AsyncMock()
         aggregate.values = {}
@@ -419,8 +446,8 @@ class TestReadRawRegisters(unittest.IsolatedAsyncioTestCase):
         )
         aggregate.async_read_raw.assert_awaited_once_with(notify=False)
 
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_waits_for_an_in_flight_poll_to_finish(self, client_cls):
+    @_shared
+    async def test_waits_for_an_in_flight_poll_to_finish(self, link):
         # Same reason as async_write: this device's Modbus TCP stack is
         # fragile under overlapping requests on one connection, so a
         # diagnostics read must queue behind the poll, not race it.
@@ -430,10 +457,10 @@ class TestReadRawRegisters(unittest.IsolatedAsyncioTestCase):
         async def slow_read():
             read_started.set()
             await release_read.wait()
-            return []
+            return {}
 
-        client_cls.return_value.read = slow_read
-        client_cls.return_value.device.async_read_raw = AsyncMock(return_value={})
+        link.read = slow_read
+        link.device.async_read_raw = AsyncMock(return_value={})
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         update_task = asyncio.ensure_future(coordinator._async_update_data())
@@ -441,13 +468,13 @@ class TestReadRawRegisters(unittest.IsolatedAsyncioTestCase):
 
         raw_task = asyncio.ensure_future(coordinator.async_read_raw_registers())
         await asyncio.sleep(0)
-        self.assertFalse(client_cls.return_value.device.async_read_raw.called)
+        self.assertFalse(link.device.async_read_raw.called)
 
         release_read.set()
         await update_task
         await raw_task
 
-        client_cls.return_value.device.async_read_raw.assert_awaited_once()
+        link.device.async_read_raw.assert_awaited_once()
 
 
 class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
@@ -456,18 +483,18 @@ class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
     coordinator.py and bluetti_modbus_lib.aggregate_pack_summary()."""
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", False)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @_shared
     async def test_aggregate_summary_is_read_and_merged_into_result(
-        self, client_cls, aggregate_fn
+        self, link, aggregate_fn
     ):
         # Gate patched off so this stays about the aggregate summary alone
         # (with 4 packs reported, the per-pack reads would otherwise run).
-        client_cls.return_value.device = MagicMock(spec=Balco260)
+        link.device = MagicMock(spec=Balco260)
         # The main read's own (wrong, slave-1) value - overwritten below by
         # the aggregate summary's (correct, slave-250) value.
-        client_cls.return_value.read = AsyncMock(
-            return_value=[_result("d_num_battery_packs", 0)]
+        link.read = AsyncMock(
+            return_value={"d_num_battery_packs": 0}
         )
         summary = MagicMock()
         summary.async_update_with_retry = AsyncMock()
@@ -477,18 +504,18 @@ class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
 
         result = await coordinator._async_update_data()
 
-        aggregate_fn.assert_called_once_with(client_cls.return_value.conn)
+        aggregate_fn.assert_called_once_with(link.units[250])
         summary.async_update_with_retry.assert_awaited_once()
         self.assertEqual(result["d_num_battery_packs"], 4)
         self.assertEqual(result["b_soc_total"], 100)
 
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @_shared
     async def test_reuses_the_same_aggregate_component_across_polls(
-        self, client_cls, aggregate_fn
+        self, link, aggregate_fn
     ):
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         summary = MagicMock()
         summary.async_update_with_retry = AsyncMock()
         summary.values = {}
@@ -498,32 +525,32 @@ class TestAggregatePackSummary(unittest.IsolatedAsyncioTestCase):
         await coordinator._async_update_data()
         await coordinator._async_update_data()
 
-        aggregate_fn.assert_called_once_with(client_cls.return_value.conn)
+        aggregate_fn.assert_called_once_with(link.units[250])
         self.assertEqual(summary.async_update_with_retry.await_count, 2)
 
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @_shared
     async def test_skips_aggregate_summary_for_non_balco260_devices(
-        self, client_cls, aggregate_fn
+        self, link, aggregate_fn
     ):
         # EP2000/S Meter's battery-pack behavior is unconfirmed on real
         # hardware - this integration's scope is Balco260 only.
-        client_cls.return_value.device = MagicMock(spec=SMeter)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=SMeter)
+        link.read = AsyncMock(return_value={})
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         await coordinator._async_update_data()
 
         aggregate_fn.assert_not_called()
 
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_skips_aggregate_summary_for_ac500(self, client_cls, aggregate_fn):
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @_shared
+    async def test_skips_aggregate_summary_for_ac500(self, link, aggregate_fn):
         # AC500's own d_num_battery_packs means "device maximum," not
         # Balco260's confirmed "actual installed count" (real-hardware
         # testing) - aggregate_pack_summary() stays Balco260-only for now.
-        client_cls.return_value.device = MagicMock(spec=AC500)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=AC500)
+        link.read = AsyncMock(return_value={})
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
         await coordinator._async_update_data()
@@ -543,16 +570,16 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         aggregate_fn.return_value = summary
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", False)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_the_gate_still_works_when_off(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
         # INDIVIDUAL_BC260_PACKS_CONFIRMED is True by default now (#55) -
         # proven by patching it back to False.
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         self._mock_aggregate(aggregate_fn, 4)
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
@@ -561,18 +588,18 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         battery_pack_fn.assert_not_called()
         self.assertEqual(result["d_num_battery_packs"], 4)
 
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_a_pack_that_is_not_reporting_publishes_nothing(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
         # Real hardware (2026-09-18, three packs): slot 41 answered its
         # serial number and zeros for everything else - a pack asleep or
         # off. Its values are not published, so its entities go unavailable
         # instead of showing 0 %, 0 V (and 3000 A for b_c's raw 0).
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         self._mock_aggregate(aggregate_fn, 3)
         silent = MagicMock()
         silent.async_update_with_retry = AsyncMock()
@@ -591,14 +618,14 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["pack_3_b_type"], "BC260")
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_reads_battery_packs_when_multiple_are_present(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         self._mock_aggregate(aggregate_fn, 2)
         pack2 = MagicMock()
         pack2.async_update_with_retry = AsyncMock()
@@ -609,20 +636,20 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         result = await coordinator._async_update_data()
 
         # Pack 2 is the first expansion pack, at slave 41 (pack_slave_id()).
-        battery_pack_fn.assert_called_once_with(client_cls.return_value.conn, 41)
+        battery_pack_fn.assert_called_once_with(link.units[41])
         pack2.async_update_with_retry.assert_awaited_once()
         self.assertEqual(result["pack_2_b_soc"], 77)
         self.assertNotIn("pack_1_b_soc", result)  # same slave as the main unit
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_reads_every_pack_from_2_to_num_packs(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         self._mock_aggregate(aggregate_fn, 3)
         pack = MagicMock()
         pack.async_update_with_retry = AsyncMock()
@@ -633,19 +660,19 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         await coordinator._async_update_data()
 
         self.assertEqual(
-            [c.args[1] for c in battery_pack_fn.call_args_list],
+            [c.args[0].unit_id for c in battery_pack_fn.call_args_list],
             [41, 42],
         )
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
-    async def test_caps_at_max_battery_packs(self, client_cls, battery_pack_fn, aggregate_fn):
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
+    async def test_caps_at_max_battery_packs(self, link, battery_pack_fn, aggregate_fn):
         # d_num_battery_packs reporting more than BLUETTI's own confirmed
         # maximum (5) must not be trusted past that cap.
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         self._mock_aggregate(aggregate_fn, 16)
         pack = MagicMock()
         pack.async_update_with_retry = AsyncMock()
@@ -656,19 +683,19 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         await coordinator._async_update_data()
 
         self.assertEqual(
-            [c.args[1] for c in battery_pack_fn.call_args_list],
+            [c.args[0].unit_id for c in battery_pack_fn.call_args_list],
             [41, 42, 43, 44],
         )
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_reuses_the_same_pack_component_across_polls(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         self._mock_aggregate(aggregate_fn, 2)
         pack = MagicMock()
         pack.async_update_with_retry = AsyncMock()
@@ -680,18 +707,18 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         await coordinator._async_update_data()
 
         # Pack 2 is the first expansion pack, at slave 41 (pack_slave_id()).
-        battery_pack_fn.assert_called_once_with(client_cls.return_value.conn, 41)
+        battery_pack_fn.assert_called_once_with(link.units[41])
         self.assertEqual(pack.async_update_with_retry.await_count, 2)
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_skips_packs_for_a_single_installed_pack(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         self._mock_aggregate(aggregate_fn, 1)
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
@@ -701,14 +728,14 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, {"d_num_battery_packs": 1})
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_skips_packs_for_zero_installed_packs(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         self._mock_aggregate(aggregate_fn, 0)
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
@@ -718,14 +745,14 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, {"d_num_battery_packs": 0})
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_skips_packs_when_d_num_battery_packs_is_missing(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
-        client_cls.return_value.device = MagicMock(spec=Balco260)
-        client_cls.return_value.read = AsyncMock(return_value=[])
+        link.device = MagicMock(spec=Balco260)
+        link.read = AsyncMock(return_value={})
         summary = MagicMock()
         summary.async_update_with_retry = AsyncMock()
         summary.values = {}
@@ -738,17 +765,17 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, {})
 
     @patch("custom_components.bluetti_modbus.coordinator.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
-    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary")
-    @patch("custom_components.bluetti_modbus.coordinator.battery_pack")
-    @patch("custom_components.bluetti_modbus.coordinator.BluettiModbusClient")
+    @patch("custom_components.bluetti_modbus.coordinator.aggregate_pack_summary_component")
+    @patch("custom_components.bluetti_modbus.coordinator.battery_pack_component")
+    @_shared
     async def test_skips_packs_for_non_balco260_devices(
-        self, client_cls, battery_pack_fn, aggregate_fn
+        self, link, battery_pack_fn, aggregate_fn
     ):
         # EP2000's battery-pack behavior is unconfirmed on real hardware -
         # this integration's scope is Balco260 only for this feature.
-        client_cls.return_value.device = MagicMock(spec=SMeter)
-        client_cls.return_value.read = AsyncMock(
-            return_value=[_result("d_num_battery_packs", 3)]
+        link.device = MagicMock(spec=SMeter)
+        link.read = AsyncMock(
+            return_value={"d_num_battery_packs": 3}
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
@@ -757,3 +784,29 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         battery_pack_fn.assert_not_called()
         aggregate_fn.assert_not_called()
         self.assertEqual(result, {"d_num_battery_packs": 3})
+
+
+class TestHomeAssistantsSharedConnection(unittest.IsolatedAsyncioTestCase):
+    """Against Home Assistant's own async_get_unit, not a double: the units
+    this entry holds are what Settings -> Connectivity -> Modbus lists."""
+
+    async def test_the_entry_is_listed_on_the_devices_connection_until_it_unloads(self):
+        from homeassistant.components.modbus.connection import async_get_connection_info
+
+        hass = MagicMock()
+        hass.data = {}
+        entry = MagicMock()
+        entry.entry_id = "entry"
+        on_unload = []
+        entry.async_on_unload.side_effect = on_unload.append
+
+        PollingCoordinator(hass, entry, _config())
+
+        [info] = async_get_connection_info(hass)
+        self.assertEqual(info.endpoint, ("tcp", "10.2.1.60", 502))
+        self.assertEqual(info.units, {"entry": [1]})
+
+        for release in on_unload:
+            await release()
+        self.assertEqual(async_get_connection_info(hass), [])
+
