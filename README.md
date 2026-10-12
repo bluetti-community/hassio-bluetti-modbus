@@ -66,7 +66,13 @@ Have a different BLUETTI model? Register data is welcome - see
 <details>
 <summary><b>Per-device notes</b></summary>
 
-**Balco 260** - the battery and each BC260 expansion pack get their own sub-device.
+**Balco 260**
+- The battery and each BC260 expansion pack get their own sub-device.
+- With an energy meter paired in the BLUETTI app (a Shelly Pro 3EM, for example), the
+  grid phase count and the grid phase entities report the meter's readings, i.e. the
+  whole household's grid connection, not the Balco's own port. A three-phase meter on
+  a single-phase installation reports three phases, with the same voltage on each and
+  no current on phases 2-3: those entities can be disabled.
 
 **FridgePower**
 - The SoC limits refuse writes on this model and stay read-only; the AC output switch
