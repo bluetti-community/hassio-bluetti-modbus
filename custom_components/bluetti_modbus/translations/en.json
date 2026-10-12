@@ -773,6 +773,12 @@
       },
       "g_o_switch": {
         "name": "Grid Feed-in Switch"
+      },
+      "ac_eco_switch": {
+        "name": "AC ECO Switch"
+      },
+      "ac_power_lifting_switch": {
+        "name": "AC Power Lifting Switch"
       }
     }
   }

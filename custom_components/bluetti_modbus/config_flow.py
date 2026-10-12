@@ -28,6 +28,7 @@ from modbus_connection.exceptions import ModbusError
 
 from .const import (
     AC200L_CONFIRMED,
+    AC240_CONFIRMED,
     AC500_CONFIRMED,
     BALCO500_CONFIRMED,
     BALCOTRANS_CONFIRMED,
@@ -200,6 +201,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             *(
                                 [SelectOptionDict(value="ac200l", label="AC200L")]
                                 if AC200L_CONFIRMED
+                                else []
+                            ),
+                            *(
+                                [SelectOptionDict(value="ac240", label="AC240")]
+                                if AC240_CONFIRMED
                                 else []
                             ),
                             *(

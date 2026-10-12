@@ -204,6 +204,25 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         labels = {o["value"]: o["label"] for o in options}
         self.assertEqual(labels.get("ep2000"), "EP2000")
 
+    async def test_ac240_not_offered_unless_confirmed(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("ac240", values)
+
+    @patch("custom_components.bluetti_modbus.config_flow.AC240_CONFIRMED", True)
+    async def test_ac240_offered_once_confirmed(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        labels = {o["value"]: o["label"] for o in options}
+        self.assertEqual(labels.get("ac240"), "AC240")
+
     @patch("custom_components.bluetti_modbus.config_flow.PA030_CONFIRMED", False)
     async def test_pa030_not_offered_unless_confirmed(self):
         flow = _flow()

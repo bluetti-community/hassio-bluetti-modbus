@@ -59,7 +59,7 @@ from .vendor.bluetti_modbus_lib import MAX_BATTERY_PACKS, PACK_INFO_FIELDS, get_
 # Apex 300 - bluetti-registers#49), so the AC500-specific sensor exceptions
 # below hold for all four. Not AC500_FIELDS_NOT_SHOWN, though: the EP500P's
 # g_i_switch is a working grid charging switch.
-_AC_FAMILY = ("ac500", "ac200l", "ep500p", "pa030")
+_AC_FAMILY = ("ac500", "ac200l", "ac240", "ep500p", "pa030")
 
 # The PV type exception below is the one member of that set the Apex 300
 # does not share: on it both strings read DcPv, with two DC inputs declared,
@@ -508,6 +508,12 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
             # actually overrides a real device_class.
             self._attr_device_class = SensorDeviceClass.ENUM
             self._attr_options = options
+        elif device_class is SensorDeviceClass.POWER and unit_of_measurement == "VA":
+            # field_metadata.py names a power field's class by its name, and
+            # on some models (the AC240's grid and AC output) the same field
+            # is apparent power: VA is not a unit Home Assistant accepts
+            # under POWER.
+            self._attr_device_class = SensorDeviceClass.APPARENT_POWER
         elif device_class is not None:
             self._attr_device_class = device_class
         if options is None and display_precision is not None:

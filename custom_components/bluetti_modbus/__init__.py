@@ -19,13 +19,17 @@ from .const import (
     DATA_COORDINATOR,
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
-    FIELDS_SHOWN_VIA_SWITCH,
     MANUFACTURER,
 )
 from .coordinator import PollingCoordinator
 from .types import FullDeviceConfig as FullDeviceConfig
 from .types.initial_device_config import CONF_TYPE
 from .vendor.bluetti_modbus_lib import PACK_INFO_FIELDS
+
+# The switch fields the 6 -> 7 migration retires as sensors: the ones that
+# existed when switches were introduced. Frozen here, so a switch added for a
+# later device never changes what an old migration does.
+_V6_RETIRED_SWITCH_SENSORS = ("ac_o_switch", "dc_o_switch", "g_i_switch", "g_o_switch")
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -435,7 +439,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if version == 6:
         if config is not None and config.dev_type in ("balco260", "ep2000"):
-            for field_name in FIELDS_SHOWN_VIA_SWITCH:
+            for field_name in _V6_RETIRED_SWITCH_SENSORS:
                 unique_id = get_unique_id(f"{entry.title} {field_name}")
                 entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
                 if entity_id is not None:

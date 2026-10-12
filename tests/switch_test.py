@@ -170,12 +170,11 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # get_field() reports it writable), not about which switches a real
         # Balco260 specifically has, hence the blanket writable=True mock
         # matching every name in that set, dc_o_switch (AC500-only) included.
-        self.assertEqual(len(added), 4)
+        from custom_components.bluetti_modbus.const import FIELDS_SHOWN_VIA_SWITCH
+
+        self.assertEqual(len(added), len(FIELDS_SHOWN_VIA_SWITCH))
         self.assertTrue(all(isinstance(e, BluettiSwitchEntity) for e in added))
-        self.assertEqual(
-            {e._field_name for e in added},
-            {"ac_o_switch", "dc_o_switch", "g_i_switch", "g_o_switch"},
-        )
+        self.assertEqual({e._field_name for e in added}, FIELDS_SHOWN_VIA_SWITCH)
 
     @patch("custom_components.bluetti_modbus.switch.dev_info")
     @patch("custom_components.bluetti_modbus.switch.FullDeviceConfig")

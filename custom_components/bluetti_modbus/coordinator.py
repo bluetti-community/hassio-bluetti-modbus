@@ -19,6 +19,7 @@ from .const import INDIVIDUAL_BC260_PACKS_CONFIRMED
 from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
     AC200L,
+    AC240,
     AC500,
     AGGREGATE_SLAVE_ID,
     EP500P,
@@ -40,7 +41,17 @@ from .vendor.bluetti_modbus_lib import (
 
 # Every profile the library can build - what get_device() returns, minus None.
 BluettiProfile = (
-    AC200L | AC500 | FP | PA030 | Balco260 | Balco500 | Balcotrans | EP2000 | EP500P | SMeter
+    AC200L
+    | AC240
+    | AC500
+    | FP
+    | PA030
+    | Balco260
+    | Balco500
+    | Balcotrans
+    | EP2000
+    | EP500P
+    | SMeter
 )
 
 # Failed polls in a row a coordinator rides out on its last values before
