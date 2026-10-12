@@ -10,12 +10,37 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR** — a new device type, new entities, a new option.
 - **PATCH** — a fix, a vendored library bump that changes nothing visible.
 
-A gated device's test build is a prerelease, `MAJOR.MINOR.PATCH-beta.N`, cut
-from a `<device>-beta` branch with the device's flag enabled there only.
-
 The version in `custom_components/bluetti_modbus/manifest.json` is bumped in
-the same commit as the change it ships, never in a commit of its own, and the
-release tag is that exact version with no `v` prefix.
+the same commit as the change it ships, and the release tag is that exact
+version with no `v` prefix. The one commit of its own is the final release of
+a beta series (below).
+
+## Prereleases
+
+A prerelease is `MAJOR.MINOR.PATCH-beta.N`: newer than every earlier release,
+older than `MAJOR.MINOR.PATCH`. It is published as a GitHub prerelease, which
+HACS offers only to someone who enables beta versions for the repository.
+
+**A change on `main` that needs a test on hardware before it ships** (a new
+connection layer, a rising Home Assistant minimum):
+
+1. The pull request bumps the manifest to `X.Y.Z-beta.1`. It is merged, and
+   `X.Y.Z-beta.1` is tagged on that commit of `main`.
+2. A fix during the test is another pull request on `main`, bumping to
+   `X.Y.Z-beta.2`, tagged the same way.
+3. Once the test passes, one commit on `main` changes the manifest to `X.Y.Z`
+   and nothing else, and `X.Y.Z` is tagged on it.
+
+Every beta of a version is then an ancestor of that version, and its release
+comes after them in the list. Never tag `X.Y.Z` on a commit older than its
+betas.
+
+**A gated device** (`<MODEL>_CONFIRMED = False` on `main`): the test build is
+cut from a `<device>-beta` branch with the flag enabled there only, and that
+branch is never merged. Confirmation flips the flag on `main` in a normal
+release. A stable release from `main` while such a beta is out is newer than
+the beta for HACS, so the beta is re-cut on top of it as the next version's
+`-beta.1`.
 
 ## Release notes
 
