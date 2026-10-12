@@ -121,6 +121,16 @@ PA030_CONFIRMED = True
 # (hassio-bluetti-modbus#145).
 EP2000_CONFIRMED = True
 
+# AC240 (bluetti-modbus 0.51.0+, bluetti-registers 0.0.61): a portable
+# station absent from BLUETTI's official register list. A full
+# single-register scan of a real unit read the AC500 register set one field
+# at a time, with grid and AC output powers in VA, and its owner wrote and
+# read back the AC and DC output, AC ECO, power lifting and grid charging
+# switches (grid charging only in the "Custom UPS" charging mode;
+# bluetti-registers#65). Not yet confirmed in Home Assistant. Same mechanism
+# as BALCO500_CONFIRMED.
+AC240_CONFIRMED = False
+
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: every
 # profile that carries that block - the Balco 260 and Balco 500, the
@@ -128,13 +138,14 @@ EP2000_CONFIRMED = True
 # Apex 300, whose block is the unit's own battery (not its expansions). A
 # profile with those fields but missing here would have them skipped from the
 # main device and shown nowhere; a test checks the two never drift apart.
-BUILT_IN_BATTERY_DEV_TYPES = ("balco260", "balco500", "ep2000", "fp", "pa030")
+BUILT_IN_BATTERY_DEV_TYPES = ("ac240", "balco260", "balco500", "ep2000", "fp", "pa030")
 
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would
 # show the raw stored string ("smeter") instead of "S Meter".
 DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
     "ac200l": "AC200L",
+    "ac240": "AC240",
     "ac500": "AC500",
     "balco260": "Balco 260",
     "balco500": "Balco 500",
@@ -220,7 +231,15 @@ FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
 # FIELDS_SHOWN_VIA_NUMBER below - sensor.py falls back to its normal
 # read-only handling for a device where a name here isn't writable, so
 # nothing is lost there.
-FIELDS_SHOWN_VIA_SWITCH = {"ac_o_switch", "dc_o_switch", "g_i_switch", "g_o_switch"}
+FIELDS_SHOWN_VIA_SWITCH = {
+    "ac_o_switch",
+    "dc_o_switch",
+    "g_i_switch",
+    "g_o_switch",
+    # AC240 only so far (bluetti-registers#65).
+    "ac_eco_switch",
+    "ac_power_lifting_switch",
+}
 
 # d_ver_arm/d_ver_dsp/d_iot_ver/d_serial (Balco260/EP2000 only - S Meter's
 # address range doesn't include these): the main unit's own identity, not

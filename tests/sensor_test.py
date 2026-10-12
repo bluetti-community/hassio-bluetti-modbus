@@ -150,6 +150,18 @@ class TestBluettiSensorInit(unittest.TestCase):
         self.assertEqual(sensor._attr_state_class, SensorStateClass.MEASUREMENT)
         self.assertEqual(sensor._attr_entity_category, EntityCategory.DIAGNOSTIC)
 
+    def test_a_power_field_in_va_is_apparent_power(self):
+        # field_metadata.py classes a field by its name; the AC240 serves its
+        # grid and AC output powers in VA, which Home Assistant refuses under
+        # POWER.
+        sensor = _sensor(device_class=SensorDeviceClass.POWER, unit_of_measurement="VA")
+        self.assertEqual(sensor._attr_device_class, SensorDeviceClass.APPARENT_POWER)
+        self.assertEqual(sensor._attr_native_unit_of_measurement, "VA")
+
+    def test_a_power_field_in_w_stays_power(self):
+        sensor = _sensor(device_class=SensorDeviceClass.POWER, unit_of_measurement="W")
+        self.assertEqual(sensor._attr_device_class, SensorDeviceClass.POWER)
+
     def test_options_sets_enum_device_class_and_options(self):
         # ENUM is mutually exclusive with a numeric device_class
         # (homeassistant/components/sensor/__init__.py rejects the

@@ -328,7 +328,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 "sensor.my_device_g_i_switch",
                 "sensor.my_device_g_o_switch",
                 # dc_o_switch is AC500-only hardware, but the migration code
-                # iterates FIELDS_SHOWN_VIA_SWITCH regardless of dev_type (see
+                # iterates its frozen switch list regardless of dev_type (see
                 # __init__.py) and this test's registry mock resolves every
                 # entity_id unconditionally, so it shows up here too.
                 "sensor.my_device_dc_o_switch",
@@ -397,7 +397,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
                 "sensor.my_device_g_i_switch",
                 "sensor.my_device_g_o_switch",
                 # dc_o_switch is AC500-only hardware, but the migration code
-                # iterates FIELDS_SHOWN_VIA_SWITCH regardless of dev_type (see
+                # iterates its frozen switch list regardless of dev_type (see
                 # __init__.py) and this test's registry mock resolves every
                 # entity_id unconditionally, so it shows up here too.
                 "sensor.my_device_dc_o_switch",
