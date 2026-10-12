@@ -21,8 +21,9 @@ A prerelease is `MAJOR.MINOR.PATCH-beta.N`: newer than every earlier release,
 older than `MAJOR.MINOR.PATCH`. It is published as a GitHub prerelease, which
 HACS offers only to someone who enables beta versions for the repository.
 
-**A change on `main` that needs a test on hardware before it ships** (a new
-connection layer, a rising Home Assistant minimum):
+Every change that needs a test on hardware before it ships (a new device, a
+new connection layer, a rising Home Assistant minimum) goes through betas on
+`main`:
 
 1. The pull request bumps the manifest to `X.Y.Z-beta.1`. It is merged, and
    `X.Y.Z-beta.1` is tagged on that commit of `main`.
@@ -33,14 +34,13 @@ connection layer, a rising Home Assistant minimum):
 
 Every beta of a version is then an ancestor of that version, and its release
 comes after them in the list. Never tag `X.Y.Z` on a commit older than its
-betas.
+betas, and never ship a stable release before the betas of the change it
+carries. No stable release leaves `main` while its betas are being tested.
 
-**A gated device** (`<MODEL>_CONFIRMED = False` on `main`): the test build is
-cut from a `<device>-beta` branch with the flag enabled there only, and that
-branch is never merged. Confirmation flips the flag on `main` in a normal
-release. A stable release from `main` while such a beta is out is newer than
-the beta for HACS, so the beta is re-cut on top of it as the next version's
-`-beta.1`.
+A new device is offered on `main` from its first beta: its
+`<MODEL>_CONFIRMED` flag is set to `True` in the same pull request as the
+`-beta.1` bump. The flag stays `False` only for a device that is in the
+code but not yet offered for a test.
 
 ## Release notes
 
