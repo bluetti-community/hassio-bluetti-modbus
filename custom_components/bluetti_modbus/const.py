@@ -127,9 +127,9 @@ EP2000_CONFIRMED = True
 # at a time, with grid and AC output powers in VA, and its owner wrote and
 # read back the AC and DC output, AC ECO, power lifting and grid charging
 # switches (grid charging only in the "Custom UPS" charging mode;
-# bluetti-registers#65). Not yet confirmed in Home Assistant. Same mechanism
-# as BALCO500_CONFIRMED.
-AC240_CONFIRMED = False
+# bluetti-registers#65). Offered from the 3.1.0 betas, for its owner's test
+# in Home Assistant; not yet confirmed there.
+AC240_CONFIRMED = True
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: every
