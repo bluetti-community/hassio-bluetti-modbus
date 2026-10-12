@@ -125,8 +125,9 @@ Assistant will stop reaching it.
 
 > [!NOTE]
 > Modbus TCP is only available on some models and firmware versions. If you cannot
-> find these settings, your device does not support it yet. On an Apex 300 the page
-> is served on the unit's own Wi-Fi access point; an EP2000 has no switch on its page
+> find these settings, your device does not support it yet. On an Apex 300, IoT
+> 8026.17 serves the page on your home network; on 8026.14 it is reachable only
+> through the unit's own Wi-Fi access point. An EP2000 has no switch on its page
 > (see [Supported devices](#supported-devices-)).
 
 ## Installation ⚙️
