@@ -129,7 +129,7 @@ EP2000_CONFIRMED = True
 # switches (grid charging only in the "Custom UPS" charging mode;
 # bluetti-registers#65). Not yet confirmed in Home Assistant. Same mechanism
 # as BALCO500_CONFIRMED.
-AC240_CONFIRMED = False
+AC240_CONFIRMED = True  # True HERE ONLY: the ac240-beta prerelease
 
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: every

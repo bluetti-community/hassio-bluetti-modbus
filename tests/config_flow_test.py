@@ -204,6 +204,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         labels = {o["value"]: o["label"] for o in options}
         self.assertEqual(labels.get("ep2000"), "EP2000")
 
+    @patch("custom_components.bluetti_modbus.config_flow.AC240_CONFIRMED", False)
     async def test_ac240_not_offered_unless_confirmed(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
