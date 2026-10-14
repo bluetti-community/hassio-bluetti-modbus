@@ -210,6 +210,19 @@ AC500_FIELDS_NOT_SHOWN = {"g_i_switch"}
 # g_i_switch above.
 FP_FIELDS_NOT_SHOWN = {"g_o_switch"}
 
+# AC240: d_iot_serial (53007) serves the unit's own serial, the same as
+# d_serial, not the communication board's serial the BLUETTI app shows, and
+# d_num_battery_packs (51001) reads 5 on a unit with only its built-in
+# battery - the most it takes (one plus four B210), not a count
+# (bluetti-registers#65). Neither is shown.
+AC240_FIELDS_NOT_SHOWN = {"d_iot_serial", "d_num_battery_packs"}
+
+# Devices whose built-in battery block (PACK_INFO_FIELDS) is a window on
+# the pack the BLUETTI app last showed: it reads all zeros until the app
+# opens that pack, then fills (AC240, bluetti-registers#65). While it is
+# empty its values are no reading, not 0 %, 0 V and "BMS v0.00".
+PACK_WINDOW_DEV_TYPES = ("ac240",)
+
 # b_soc_low/b_soc_high (57016/57017): battery empty/full SOC thresholds,
 # 0-100% - genuinely user-configurable settings, not readings. Routed to
 # number.py instead of sensor.py, but only where bluetti_modbus_lib actually

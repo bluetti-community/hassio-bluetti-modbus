@@ -32,6 +32,7 @@ from . import (
 )
 from . import device_info as dev_info
 from .const import (
+    AC240_FIELDS_NOT_SHOWN,
     AC500_FIELDS_NOT_SHOWN,
     BUILT_IN_BATTERY_DEV_TYPES,
     CONF_SLOTS_BEYOND_COUNT_PENDING,
@@ -246,6 +247,8 @@ async def async_setup_entry(
         if config.dev_type == "ac500" and f in AC500_FIELDS_NOT_SHOWN:
             continue
         if config.dev_type == "fp" and f in FP_FIELDS_NOT_SHOWN:
+            continue
+        if config.dev_type == "ac240" and f in AC240_FIELDS_NOT_SHOWN:
             continue
         if f in FIELDS_SHOWN_VIA_BINARY_SENSOR:
             continue

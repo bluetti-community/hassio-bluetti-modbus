@@ -236,6 +236,41 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         link.device.write.assert_awaited_once_with("ac_o_switch", 1)
 
 
+_EMPTY_WINDOW = {"b_ver_1": "0.00", "b_v": 0.0, "b_soc": 0, "b_soh": 0, "b_soc_total": 98}
+_FILLED_WINDOW = {"b_ver_1": "1035.04", "b_v": 53.6, "b_soc": 99, "b_soh": 86, "b_soc_total": 99}
+
+
+class TestEmptyPackWindow(unittest.IsolatedAsyncioTestCase):
+    """An AC240's pack block reads all zeros until the BLUETTI app opens it."""
+
+    async def _poll(self, link, dev_type, values):
+        link.read = AsyncMock(return_value=dict(values))
+        config = _config()
+        config.dev_type = dev_type
+        return await PollingCoordinator(MagicMock(), MagicMock(), config)._async_update_data()
+
+    @_shared
+    async def test_an_empty_window_is_no_reading(self, link):
+        result = await self._poll(link, "ac240", _EMPTY_WINDOW)
+
+        self.assertEqual(
+            result,
+            {"b_ver_1": None, "b_v": None, "b_soc": None, "b_soh": None, "b_soc_total": 98},
+        )
+
+    @_shared
+    async def test_a_filled_window_is_kept(self, link):
+        result = await self._poll(link, "ac240", _FILLED_WINDOW)
+
+        self.assertEqual(result, _FILLED_WINDOW)
+
+    @_shared
+    async def test_other_devices_keep_their_zeros(self, link):
+        result = await self._poll(link, "ep2000", _EMPTY_WINDOW)
+
+        self.assertEqual(result, _EMPTY_WINDOW)
+
+
 class TestReadingsAndSettingsSplit(unittest.IsolatedAsyncioTestCase):
     """The data area every cycle, the settings block on its own slower one."""
 
