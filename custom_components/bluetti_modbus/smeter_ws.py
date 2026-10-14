@@ -50,6 +50,7 @@ class SmeterWsInfo(NamedTuple):
 
     firmware_version: str | None
     modbus_tcp_enabled: bool | None
+    modbus_tcp_encrypted: bool | None = None
 
 
 async def async_query_smeter(hass: HomeAssistant, host: str, port: int) -> SmeterWsInfo:
@@ -84,6 +85,7 @@ async def _async_read_info(ws: aiohttp.ClientWebSocketResponse) -> SmeterWsInfo:
     """Ask an open S Meter WebSocket for its config and version."""
     firmware_version: str | None = None
     modbus_tcp_enabled: bool | None = None
+    modbus_tcp_encrypted: bool | None = None
     await ws.send_json({"type": "getConfig", "data": {}})
     await ws.send_json({"type": "getVersion", "data": {}})
 
@@ -93,7 +95,9 @@ async def _async_read_info(ws: aiohttp.ClientWebSocketResponse) -> SmeterWsInfo:
         payload = msg.json()
         msg_type = payload.get("type")
         if msg_type == "getConfigRsp":
-            modbus_tcp_enabled = payload["data"]["modbus_tcp"]["enable"]
+            modbus_tcp = payload["data"]["modbus_tcp"]
+            modbus_tcp_enabled = modbus_tcp["enable"]
+            modbus_tcp_encrypted = modbus_tcp.get("crypt_enable")
         elif msg_type == "getVersionRsp":
             firmwares = payload["data"]["firmwares"]
             if firmwares:
@@ -101,4 +105,4 @@ async def _async_read_info(ws: aiohttp.ClientWebSocketResponse) -> SmeterWsInfo:
         if firmware_version is not None and modbus_tcp_enabled is not None:
             break
 
-    return SmeterWsInfo(firmware_version, modbus_tcp_enabled)
+    return SmeterWsInfo(firmware_version, modbus_tcp_enabled, modbus_tcp_encrypted)

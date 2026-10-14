@@ -10,7 +10,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Verbindung zum Gerät fehlgeschlagen: {error}",
+      "cannot_connect": "Verbindung zum Gerät fehlgeschlagen: {error}. Prüfen, ob Modbus TCP in den Web-Einstellungen des Geräts aktiviert ist; ist diese Seite in einem Browser geöffnet, sie vor dem erneuten Versuch schließen, da sie diese Prüfung sonst am Lesen der Einstellung hindern kann.",
       "modbus_tcp_disabled": "Modbus TCP ist auf diesem Gerät deaktiviert - in den Web-Einstellungen des Geräts aktivieren und erneut versuchen",
       "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt - \"Crypt Enable\" in den Web-Einstellungen des Geräts ausschalten und erneut versuchen"
     },

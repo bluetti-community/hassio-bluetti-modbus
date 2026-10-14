@@ -42,7 +42,7 @@ from .const import (
 from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
 from .vendor.bluetti_modbus_lib import get_device, read_values
-from .web_page import WEB_PAGE_LOGIN_DEV_TYPES, async_query_modbus_setting
+from .web_page import WEB_PAGE_DEV_TYPES, async_query_modbus_setting
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,13 +74,10 @@ async def _async_failure_reason(
     """Why a Modbus probe of this device failed, as far as its web page tells.
 
     "modbus_tcp_disabled" or "modbus_tcp_encrypted" when the device's own
-    web page says so (see smeter_ws.py and web_page.py), "cannot_connect"
-    otherwise - including every device type whose page is not queried.
+    web page says so (see web_page.py), "cannot_connect" otherwise -
+    including every device type whose page is not queried.
     """
-    if dev_type == "smeter":
-        if (await async_query_smeter(hass, host, web_port)).modbus_tcp_enabled is False:
-            return "modbus_tcp_disabled"
-    elif dev_type in WEB_PAGE_LOGIN_DEV_TYPES:
+    if dev_type in WEB_PAGE_DEV_TYPES:
         setting = await async_query_modbus_setting(hass, host, web_port)
         if setting.enabled is False:
             return "modbus_tcp_disabled"
@@ -348,8 +345,9 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         here. It is used, though, for a best-effort query (see smeter_ws.py)
         against the same device's own undocumented WebSocket API - real
         hardware confirms it answers there unauthenticated. A
-        confirmed-disabled Modbus TCP setting aborts early with a specific
-        reason instead of the connectivity check's own generic one; any
+        confirmed-disabled or encrypted Modbus TCP setting aborts early with
+        a specific reason instead of the connectivity check's own generic
+        one; any
         other outcome (including the query itself failing or timing out)
         never blocks this flow - see async_query_smeter's own docstring for
         why.
@@ -369,6 +367,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         ws_info = await async_query_smeter(self.hass, host, discovery_info.port or 80)
         if ws_info.modbus_tcp_enabled is False:
             return self.async_abort(reason="modbus_tcp_disabled")
+        if ws_info.modbus_tcp_encrypted is True:
+            return self.async_abort(reason="modbus_tcp_encrypted")
 
         try:
             await _async_probe(self.hass, host, 502, "smeter")

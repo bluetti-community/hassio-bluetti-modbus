@@ -1,16 +1,27 @@
-"""Best-effort read of the Modbus TCP setting from a Balco-family web page.
+"""Best-effort read of the Modbus TCP setting from a device's own web page.
 
-The Balco 260, Balco 500, Balco Transfer Hub and FridgePower share one IoT
-module whose local web page talks to the device over a WebSocket at /ws. A
-"login" message with the page's default credentials (user "admin", blank
-password) answers with a token in result.token, and "getConfig" with that
-token answers with data.modbus_tcp (enable, crypt_enable, port). Confirmed
-on a Balco 260 (IoT V500120120) and on a FridgePower
-(https://github.com/freakdesign/bluetti-fridgepower-local).
+The web page of the Balco 260, Balco 500, Balco Transfer Hub, FridgePower
+and S Meter talks to the device over a WebSocket at /ws, and "getConfig"
+answers with data.modbus_tcp (enable, crypt_enable, port). Devices differ
+in what they ask first:
+
+- S Meter: answers getConfig without any login.
+- Balco 260 (IoT V500120120): answers getConfig without a token, but with
+  no modbus_tcp block; after "login" with the page's default credentials
+  (user "admin", blank password) it answers with a token in result.token,
+  and getConfig sent with that token carries modbus_tcp.
+- FridgePower: accepts the same login and then answers other requests
+  without a token (https://github.com/freakdesign/bluetti-fridgepower-local).
+
+So getConfig is sent at once, the login alongside it, and getConfig again
+after the login, with the token when one comes back. The first answer that
+carries modbus_tcp is the result. The Balco 500 and the Transfer Hub are
+untested. A Balco 260 accepts only one WebSocket client at a time, so an
+open web page makes this query fail.
 
 The API is unofficial: every failure, including a login refused because the
 owner set a password, is reported as "nothing learned" and never raised.
-Only the modbus_tcp block is read; the rest of getConfig carries Wi-Fi and
+Only the modbus_tcp block is read; the rest of getConfig can carry Wi-Fi and
 Bluetooth secrets and is neither kept nor logged, and neither is the token.
 """
 
@@ -18,7 +29,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import aiohttp
 from homeassistant.core import HomeAssistant
@@ -28,8 +39,8 @@ _LOGGER = logging.getLogger(__name__)
 
 _TIMEOUT_SECONDS = 5
 
-# Device types whose web page is the shared Balco-family one above.
-WEB_PAGE_LOGIN_DEV_TYPES = frozenset({"balco260", "balco500", "balcotrans", "fp"})
+# Device types whose web page is asked when a Modbus probe fails.
+WEB_PAGE_DEV_TYPES = frozenset({"balco260", "balco500", "balcotrans", "fp", "smeter"})
 
 
 class ModbusTcpSetting(NamedTuple):
@@ -55,8 +66,10 @@ async def async_query_modbus_setting(
 
 
 async def _async_read_setting(ws: aiohttp.ClientWebSocketResponse) -> ModbusTcpSetting:
-    """Log in, then ask for the configuration and keep its modbus_tcp block."""
+    """Ask for the configuration with and without a login; keep modbus_tcp."""
+    await ws.send_json({"type": "getConfig", "data": {}})
     await ws.send_json({"type": "login", "data": {"username": "admin", "password": ""}})
+    login_refused = False
     async for msg in ws:
         if msg.type != aiohttp.WSMsgType.TEXT:
             continue
@@ -65,10 +78,20 @@ async def _async_read_setting(ws: aiohttp.ClientWebSocketResponse) -> ModbusTcpS
         if msg_type == "loginRsp":
             result = payload["result"]
             if result["errCode"] != 0:
-                return ModbusTcpSetting(None, None)
-            await ws.send_json({"type": "getConfig", "data": {}, "token": result["token"]})
+                login_refused = True
+                continue
+            request: dict[str, Any] = {"type": "getConfig", "data": {}}
+            if (token := result.get("token")) is not None:
+                request["token"] = token
+            await ws.send_json(request)
         elif msg_type == "getConfigRsp":
-            modbus_tcp = payload["data"]["modbus_tcp"]
+            modbus_tcp = (payload.get("data") or {}).get("modbus_tcp")
+            if modbus_tcp is None:
+                # Not allowed without a login: wait for the one after it,
+                # unless the login was refused too.
+                if login_refused:
+                    break
+                continue
             enabled = modbus_tcp["enable"]
             encrypted = modbus_tcp.get("crypt_enable")
             if not isinstance(enabled, bool) or not isinstance(encrypted, bool | None):
