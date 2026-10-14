@@ -42,6 +42,7 @@ from .const import (
 from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
 from .vendor.bluetti_modbus_lib import get_device, read_values
+from .web_page import WEB_PAGE_LOGIN_DEV_TYPES, async_query_modbus_setting
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,6 +66,27 @@ async def _async_probe(hass: HomeAssistant, host: str, port: int, dev_type: str)
         if device is None:
             raise ValueError(f"Unsupported device type: {dev_type!r}")
         return await read_values(device)
+
+
+async def _async_failure_reason(
+    hass: HomeAssistant, host: str, dev_type: str, web_port: int = 80
+) -> str:
+    """Why a Modbus probe of this device failed, as far as its web page tells.
+
+    "modbus_tcp_disabled" or "modbus_tcp_encrypted" when the device's own
+    web page says so (see smeter_ws.py and web_page.py), "cannot_connect"
+    otherwise - including every device type whose page is not queried.
+    """
+    if dev_type == "smeter":
+        if (await async_query_smeter(hass, host, web_port)).modbus_tcp_enabled is False:
+            return "modbus_tcp_disabled"
+    elif dev_type in WEB_PAGE_LOGIN_DEV_TYPES:
+        setting = await async_query_modbus_setting(hass, host, web_port)
+        if setting.enabled is False:
+            return "modbus_tcp_disabled"
+        if setting.encrypted is True:
+            return "modbus_tcp_encrypted"
+    return "cannot_connect"
 
 
 class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -116,7 +138,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # simply finds nothing there, no dev_type check needed here.
                 serial = values.get("d_serial")
             except PROBE_ERRORS as err:
-                errors["base"] = "cannot_connect"
+                errors["base"] = await _async_failure_reason(self.hass, address, dev_type)
                 description_placeholders["error"] = str(err)
 
             if not errors:
@@ -325,8 +347,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         the Modbus connectivity check below - Modbus TCP is always port 502
         here. It is used, though, for a best-effort query (see smeter_ws.py)
         against the same device's own undocumented WebSocket API - real
-        hardware confirms it answers there unauthenticated, unlike
-        Balco260's own equivalent (see _async_step_zeroconf_balco260). A
+        hardware confirms it answers there unauthenticated. A
         confirmed-disabled Modbus TCP setting aborts early with a specific
         reason instead of the connectivity check's own generic one; any
         other outcome (including the query itself failing or timing out)
@@ -377,19 +398,12 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         that string actually comes from - a real value, just answering a
         different question than "what does zeroconf discovery match on").
 
-        That WebSocket capture's own device_info/getVersionRsp (serial
-        "1234567890123", firmware "arm:V500110112,dsp:V500140110,
-        bms:V500080110" for the Balco260 itself) turned out to be
-        redundant, though, not a gap to fill the way it was for S Meter:
-        Balco260 already declares a real d_serial Modbus register (see
-        _modbus_identity()'s own docstring in __init__.py) plus
-        d_ver_arm/d_ver_dsp/d_iot_ver, all already read live on every poll
-        via the manual flow's own identical Modbus-based path below - a
-        one-time WebSocket snapshot at add time would only ever be able to
-        go stale by comparison. So this reuses that same Modbus read
-        (already required here as the connectivity check itself) to learn
-        the serial too, rather than adding a second, authenticated
-        WebSocket round trip for information already covered better.
+        The serial and firmware versions come from the Modbus read that
+        already serves as the connectivity check (d_serial, d_ver_arm,
+        d_ver_dsp, d_iot_ver, read live on every poll). The web page is
+        only asked when that read fails, for the Modbus TCP setting (see
+        web_page.py), so a disabled or encrypted Modbus TCP aborts with its
+        own reason instead of the generic one.
         """
         host = discovery_info.host
 
@@ -400,7 +414,11 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             values = await _async_probe(self.hass, host, 502, "balco260")
             serial = values.get("d_serial")
         except PROBE_ERRORS:
-            return self.async_abort(reason="cannot_connect")
+            return self.async_abort(
+                reason=await _async_failure_reason(
+                    self.hass, host, "balco260", discovery_info.port or 80
+                )
+            )
 
         await self.async_set_unique_id(
             str(serial) if serial is not None else host, raise_on_progress=False

@@ -11,12 +11,20 @@ from modbus_connection.mock import MockModbusConnection
 
 from custom_components.bluetti_modbus.config_flow import BluettiConfigFlow, _async_probe
 from custom_components.bluetti_modbus.smeter_ws import SmeterWsInfo
+from custom_components.bluetti_modbus.web_page import ModbusTcpSetting
 
 
 def _patched_ws_query(firmware_version=None, modbus_tcp_enabled=None):
     return patch(
         "custom_components.bluetti_modbus.config_flow.async_query_smeter",
         AsyncMock(return_value=SmeterWsInfo(firmware_version, modbus_tcp_enabled)),
+    )
+
+
+def _patched_web_page(enabled=None, encrypted=None):
+    return patch(
+        "custom_components.bluetti_modbus.config_flow.async_query_modbus_setting",
+        AsyncMock(return_value=ModbusTcpSetting(enabled, encrypted)),
     )
 
 
@@ -389,6 +397,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         with (
             _patched_probe(read_side_effect=ModbusConnectionError("no route to host")),
+            _patched_web_page(),
             patch.object(flow, "async_show_form", return_value="form") as show_form,
             patch.object(flow, "async_create_entry") as create_entry,
         ):
@@ -408,6 +417,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         with (
             _patched_probe(read_side_effect=TimeoutError("timed out")),
+            _patched_web_page(),
             patch.object(flow, "async_show_form", return_value="form") as show_form,
             patch.object(flow, "async_create_entry") as create_entry,
         ):
@@ -418,6 +428,71 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         create_entry.assert_not_called()
         self.assertEqual(result, "form")
         self.assertEqual(show_form.call_args.kwargs["errors"]["base"], "cannot_connect")
+
+    async def _failed_user_step(self, dev_type, web_page=None, smeter_query=None):
+        flow = _flow()
+        with (
+            _patched_probe(read_side_effect=ModbusConnectionError("no route to host")),
+            web_page or _patched_web_page(),
+            smeter_query or _patched_ws_query(),
+            patch.object(flow, "async_show_form", return_value="form") as show_form,
+        ):
+            await flow.async_step_user({"address": "10.2.1.60", "port": 502, "type": dev_type})
+        return show_form.call_args.kwargs["errors"]["base"]
+
+    async def test_a_balco_family_device_says_when_its_page_reports_modbus_disabled(self):
+        for dev_type in ("balco260", "balco500", "balcotrans", "fp"):
+            with self.subTest(dev_type=dev_type):
+                error = await self._failed_user_step(
+                    dev_type, web_page=_patched_web_page(enabled=False, encrypted=False)
+                )
+                self.assertEqual(error, "modbus_tcp_disabled")
+
+    async def test_a_balco_family_device_says_when_its_page_reports_modbus_encrypted(self):
+        error = await self._failed_user_step(
+            "fp", web_page=_patched_web_page(enabled=True, encrypted=True)
+        )
+        self.assertEqual(error, "modbus_tcp_encrypted")
+
+    async def test_an_enabled_unencrypted_setting_keeps_the_generic_error(self):
+        error = await self._failed_user_step(
+            "balco260", web_page=_patched_web_page(enabled=True, encrypted=False)
+        )
+        self.assertEqual(error, "cannot_connect")
+
+    async def test_the_page_is_asked_on_its_own_port_not_the_modbus_one(self):
+        with _patched_web_page() as web_page:
+            await self._failed_user_step("balco260", web_page=web_page)
+        web_page.assert_awaited_once()
+        self.assertEqual(web_page.await_args.args[1:], ("10.2.1.60", 80))
+
+    async def test_an_s_meter_says_when_its_page_reports_modbus_disabled(self):
+        error = await self._failed_user_step(
+            "smeter", smeter_query=_patched_ws_query(modbus_tcp_enabled=False)
+        )
+        self.assertEqual(error, "modbus_tcp_disabled")
+
+    async def test_other_device_types_never_query_a_web_page(self):
+        with _patched_web_page() as web_page, _patched_ws_query() as smeter_query:
+            error = await self._failed_user_step(
+                "ac500", web_page=web_page, smeter_query=smeter_query
+            )
+        self.assertEqual(error, "cannot_connect")
+        web_page.assert_not_awaited()
+        smeter_query.assert_not_awaited()
+
+    async def test_a_working_probe_never_queries_a_web_page(self):
+        flow = _flow()
+        with (
+            _patched_probe(device_values={"d_serial": 1234567890123}),
+            _patched_web_page() as web_page,
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_create_entry", return_value="entry"),
+        ):
+            await flow.async_step_user({"address": "10.2.1.60", "port": 502, "type": "fp"})
+        web_page.assert_not_awaited()
 
 
 class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
@@ -692,11 +767,9 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
 
         probe.assert_awaited_once_with(flow.hass, "10.2.1.128", 502, "balco260")
 
-    async def test_does_not_query_the_websocket(self):
-        # No independently confirmed value over what a live Modbus read
-        # already provides (see _async_step_zeroconf_balco260's own
-        # docstring) - and it would need authentication S Meter's own
-        # equivalent doesn't, which this flow has no way to provide.
+    async def test_a_working_probe_queries_no_web_page(self):
+        # Everything this flow needs comes from the Modbus read; the page is
+        # only asked when that read fails.
         flow = _flow()
         flow.context = {}
         with (
@@ -705,6 +778,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
                 "custom_components.bluetti_modbus.config_flow.async_query_smeter",
                 new=AsyncMock(),
             ) as query_ws,
+            _patched_web_page() as web_page,
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
@@ -713,11 +787,31 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             await flow.async_step_zeroconf(_balco260_discovery_info())
 
         query_ws.assert_not_awaited()
+        web_page.assert_not_awaited()
+
+    async def test_aborts_with_the_reason_its_page_reports(self):
+        for setting, reason in (
+            (ModbusTcpSetting(False, False), "modbus_tcp_disabled"),
+            (ModbusTcpSetting(True, True), "modbus_tcp_encrypted"),
+        ):
+            with self.subTest(reason=reason):
+                flow = _flow()
+                with (
+                    _patched_probe(read_side_effect=ModbusConnectionError("no route")),
+                    _patched_web_page(*setting) as web_page,
+                    patch.object(flow, "_async_abort_entries_match"),
+                    patch.object(flow, "async_abort", return_value="aborted") as async_abort,
+                ):
+                    await flow.async_step_zeroconf(_balco260_discovery_info())
+
+                async_abort.assert_called_once_with(reason=reason)
+                self.assertEqual(web_page.await_args.args[1:], ("10.2.1.128", 80))
 
     async def test_aborts_when_modbus_does_not_respond(self):
         flow = _flow()
         with (
             _patched_probe(read_side_effect=ModbusConnectionError("no route")),
+            _patched_web_page(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
@@ -899,6 +993,7 @@ class TestProbe(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         with (
             _patched_probe(read_side_effect=HomeAssistantError("in use")),
+            _patched_web_page(),
             patch.object(flow, "async_show_form", return_value="form") as show_form,
         ):
             await flow.async_step_user(

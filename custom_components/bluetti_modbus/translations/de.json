@@ -10,10 +10,14 @@
       }
     },
     "error": {
-      "cannot_connect": "Verbindung zum Gerät fehlgeschlagen: {error}"
+      "cannot_connect": "Verbindung zum Gerät fehlgeschlagen: {error}",
+      "modbus_tcp_disabled": "Modbus TCP ist auf diesem Gerät deaktiviert - in den Web-Einstellungen des Geräts aktivieren und erneut versuchen",
+      "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt - \"Crypt Enable\" in den Web-Einstellungen des Geräts ausschalten und erneut versuchen"
     },
     "abort": {
-      "no_unconfigured_devices": "Keine Geräte gefunden"
+      "no_unconfigured_devices": "Keine Geräte gefunden",
+      "modbus_tcp_disabled": "Modbus TCP ist auf diesem Gerät deaktiviert - in den Web-Einstellungen des Geräts aktivieren und erneut versuchen",
+      "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt - \"Crypt Enable\" in den Web-Einstellungen des Geräts ausschalten und erneut versuchen"
     }
   },
   "entity": {
