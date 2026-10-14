@@ -15,7 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from modbus_connection import ModbusTcpParams, ModbusUnit
 from modbus_connection.exceptions import ModbusError
 
-from .const import INDIVIDUAL_BC260_PACKS_CONFIRMED
+from .const import INDIVIDUAL_BC260_PACKS_CONFIRMED, PACK_WINDOW_DEV_TYPES
 from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
     AC200L,
@@ -27,6 +27,7 @@ from .vendor.bluetti_modbus_lib import (
     FP,
     MAX_BATTERY_PACKS,
     PA030,
+    PACK_INFO_FIELDS,
     Balco260,
     Balco500,
     Balcotrans,
@@ -267,6 +268,7 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 await self._async_read_settings_if_due()
                 result = {**self._settings_values, **result}
                 await self._async_update_battery_packs(result)
+            self._clear_empty_pack_window(result)
         except ModbusError as err:
             # The library already retried the transient failures this
             # device is known for; reaching here means the whole poll
@@ -289,6 +291,19 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._failed_polls = 0
         return result
+
+    def _clear_empty_pack_window(self, result: dict[str, Any]) -> None:
+        """No reading, rather than zeros, from an empty pack window.
+
+        See PACK_WINDOW_DEV_TYPES: such a block reads all zeros until the
+        BLUETTI app opens the pack. pack_is_reporting() tells a filled
+        block from an empty one, as it does for an expansion slot.
+        """
+        if self.config.dev_type not in PACK_WINDOW_DEV_TYPES or pack_is_reporting(result):
+            return
+        for name in PACK_INFO_FIELDS:
+            if name in result:
+                result[name] = None
 
     async def _async_read_settings_if_due(self) -> None:
         """Read the settings block when its own interval has come round.
