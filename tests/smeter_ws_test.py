@@ -77,6 +77,27 @@ class TestAsyncQuerySmeter(unittest.IsolatedAsyncioTestCase):
         ws.send_json.assert_any_await({"type": "getVersion", "data": {}})
         session.ws_connect.assert_called_once_with("ws://10.2.1.80:80/ws")
 
+    async def test_reports_an_encrypted_setting(self):
+        ws = _FakeWs(
+            [
+                _FakeMessage(
+                    aiohttp.WSMsgType.TEXT,
+                    {
+                        "type": "getConfigRsp",
+                        "data": {"modbus_tcp": {"enable": True, "crypt_enable": True}},
+                    },
+                ),
+            ]
+        )
+        session = _session(_FakeWsConnect(ws))
+        with patch(
+            "custom_components.bluetti_modbus.smeter_ws.aiohttp_client.async_get_clientsession",
+            return_value=session,
+        ):
+            result = await async_query_smeter(MagicMock(), "10.2.1.80", 80)
+
+        self.assertEqual(result, SmeterWsInfo(None, True, True))
+
     async def test_ignores_non_text_messages(self):
         ws = _FakeWs(
             [

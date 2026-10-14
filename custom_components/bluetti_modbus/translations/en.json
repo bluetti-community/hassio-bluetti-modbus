@@ -14,7 +14,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to the device: {error}",
+      "cannot_connect": "Failed to connect to the device: {error}. Check that Modbus TCP is enabled in the device's own web settings; if that page is open in a browser, close it before trying again, since it can keep this check from reading the setting.",
       "modbus_tcp_disabled": "Modbus TCP is disabled on this device - enable it in the device's own web settings, then try again",
       "modbus_tcp_encrypted": "Modbus TCP is encrypted on this device - turn off \"Crypt Enable\" in the device's own web settings, then try again"
     },

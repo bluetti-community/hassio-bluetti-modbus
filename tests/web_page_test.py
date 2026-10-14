@@ -10,6 +10,9 @@ from custom_components.bluetti_modbus.web_page import (
 
 _SESSION = "custom_components.bluetti_modbus.web_page.aiohttp_client.async_get_clientsession"
 
+_GET_CONFIG = {"type": "getConfig", "data": {}}
+_LOGIN = {"type": "login", "data": {"username": "admin", "password": ""}}
+
 
 class _FakeMessage:
     def __init__(self, type_, data):
@@ -21,17 +24,18 @@ class _FakeMessage:
 
 
 class _FakeWs:
-    """Answers each message the integration sends with the next canned replies."""
+    """Queues, after the n-th message the integration sends, replies[n]."""
 
-    def __init__(self, replies_after_send):
-        self._replies_after_send = list(replies_after_send)
+    def __init__(self, replies):
+        self._replies = list(replies)
         self._pending = []
         self.sent = []
 
     async def send_json(self, message):
+        index = len(self.sent)
         self.sent.append(message)
-        if self._replies_after_send:
-            self._pending.extend(self._replies_after_send.pop(0))
+        if index < len(self._replies):
+            self._pending.extend(self._replies[index])
 
     def __aiter__(self):
         return self._iter()
@@ -59,19 +63,21 @@ def _text(data):
     return _FakeMessage(aiohttp.WSMsgType.TEXT, data)
 
 
-def _login_ok():
-    return _text(
-        {"type": "loginRsp", "result": {"errCode": 0, "message": "Success", "token": "t0k"}}
-    )
+def _login(err_code=0, token=None):
+    result = {"errCode": err_code, "message": "Success" if err_code == 0 else "Fail"}
+    if token is not None:
+        result["token"] = token
+    return _text({"type": "loginRsp", "result": result})
 
 
-def _config(modbus_tcp):
-    return _text(
-        {
-            "type": "getConfigRsp",
-            "data": {"wifiAp": {"password": "secret"}, "modbus_tcp": modbus_tcp},
-        }
-    )
+def _config(modbus_tcp=None):
+    data = {"wifiAp": {"password": "secret"}}
+    if modbus_tcp is not None:
+        data["modbus_tcp"] = modbus_tcp
+    return _text({"type": "getConfigRsp", "data": data})
+
+
+_ON = {"enable": True, "crypt_enable": False, "port": 502}
 
 
 async def _query(ws=None, connect_error=None):
@@ -83,24 +89,31 @@ async def _query(ws=None, connect_error=None):
 
 
 class TestAsyncQueryModbusSetting(unittest.IsolatedAsyncioTestCase):
-    async def test_logs_in_then_reads_the_modbus_tcp_block(self):
-        ws = _FakeWs(
-            [
-                [_login_ok()],
-                [_config({"enable": True, "crypt_enable": False, "port": 502})],
-            ]
-        )
+    async def test_a_page_that_needs_no_login_answers_the_first_request(self):
+        # S Meter: getConfig answers at once, before any login.
+        ws = _FakeWs([[_config(_ON)]])
         result, session = await _query(ws)
 
         self.assertEqual(result, ModbusTcpSetting(True, False))
         session.ws_connect.assert_called_once_with("ws://10.2.1.128:80/ws")
-        self.assertEqual(
-            ws.sent,
-            [
-                {"type": "login", "data": {"username": "admin", "password": ""}},
-                {"type": "getConfig", "data": {}, "token": "t0k"},
-            ],
-        )
+        self.assertEqual(ws.sent, [_GET_CONFIG, _LOGIN])
+
+    async def test_a_page_that_needs_a_token_answers_after_the_login(self):
+        # Balco 260: getConfig without a token carries no modbus_tcp block;
+        # the token from result.token unlocks it.
+        ws = _FakeWs([[_config()], [_login(token="t0k")], [_config(_ON)]])
+        result, _ = await _query(ws)
+
+        self.assertEqual(result, ModbusTcpSetting(True, False))
+        self.assertEqual(ws.sent, [_GET_CONFIG, _LOGIN, {**_GET_CONFIG, "token": "t0k"}])
+
+    async def test_a_login_without_a_token_asks_again_without_one(self):
+        # FridgePower: the login opens a session, with no token returned.
+        ws = _FakeWs([[], [_login()], [_config(_ON)]])
+        result, _ = await _query(ws)
+
+        self.assertEqual(result, ModbusTcpSetting(True, False))
+        self.assertEqual(ws.sent, [_GET_CONFIG, _LOGIN, _GET_CONFIG])
 
     async def test_reports_a_disabled_or_encrypted_setting(self):
         for modbus_tcp, expected in (
@@ -108,35 +121,34 @@ class TestAsyncQueryModbusSetting(unittest.IsolatedAsyncioTestCase):
             ({"enable": True, "crypt_enable": True}, ModbusTcpSetting(True, True)),
         ):
             with self.subTest(modbus_tcp=modbus_tcp):
-                ws = _FakeWs([[_login_ok()], [_config(modbus_tcp)]])
-                result, _ = await _query(ws)
+                result, _ = await _query(_FakeWs([[_config(modbus_tcp)]]))
                 self.assertEqual(result, expected)
 
     async def test_a_missing_crypt_setting_is_unknown_not_a_failure(self):
-        ws = _FakeWs([[_login_ok()], [_config({"enable": True})]])
-        result, _ = await _query(ws)
+        result, _ = await _query(_FakeWs([[_config({"enable": True})]]))
 
         self.assertEqual(result, ModbusTcpSetting(True, None))
 
-    async def test_a_refused_login_learns_nothing_and_asks_nothing_more(self):
+    async def test_a_refused_login_learns_nothing_whatever_the_order(self):
         # The owner set a password: the default credentials are refused.
-        ws = _FakeWs(
-            [[_text({"type": "loginRsp", "result": {"errCode": 1, "message": "Fail"}})]]
-        )
-        result, _ = await _query(ws)
-
-        self.assertEqual(result, ModbusTcpSetting(None, None))
-        self.assertEqual(len(ws.sent), 1)
+        for replies in (
+            [[_login(err_code=1), _config()]],
+            [[_config()], [_login(err_code=1)]],
+        ):
+            with self.subTest(replies=[[m._data["type"] for m in r] for r in replies]):
+                ws = _FakeWs(replies)
+                result, _ = await _query(ws)
+                self.assertEqual(result, ModbusTcpSetting(None, None))
+                self.assertEqual(ws.sent, [_GET_CONFIG, _LOGIN])
 
     async def test_ignores_non_text_and_unrelated_messages(self):
         ws = _FakeWs(
             [
                 [
                     _FakeMessage(aiohttp.WSMsgType.BINARY, b"\x00"),
-                    _text({"type": "pong", "data": {}}),
-                    _login_ok(),
-                ],
-                [_config({"enable": True, "crypt_enable": False})],
+                    _text({"type": "monitorInfo", "data": {}}),
+                    _config(_ON),
+                ]
             ]
         )
         result, _ = await _query(ws)
@@ -144,25 +156,27 @@ class TestAsyncQueryModbusSetting(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, ModbusTcpSetting(True, False))
 
     async def test_a_closed_connection_without_an_answer_learns_nothing(self):
-        ws = _FakeWs([[_login_ok()]])
-        result, _ = await _query(ws)
+        result, _ = await _query(_FakeWs([[_config()], [_login(token="t0k")]]))
 
         self.assertEqual(result, ModbusTcpSetting(None, None))
 
     async def test_an_unexpected_shape_learns_nothing(self):
-        for reply in (
-            _text({"type": "loginRsp"}),
-            _text({"type": "loginRsp", "result": {"errCode": 0}}),
-            _config({"enable": "yes"}),
-            _config({"enable": True, "crypt_enable": 1}),
+        for replies in (
+            [[_text({"type": "loginRsp"})]],
+            [[_text({"type": "loginRsp", "result": {}})]],
+            [[_config({"enable": "yes"})]],
+            [[_config({"enable": True, "crypt_enable": 1})]],
+            [[_config({"crypt_enable": False})]],
         ):
-            with self.subTest(reply=reply._data):
-                if reply._data["type"] == "getConfigRsp":
-                    ws = _FakeWs([[_login_ok()], [reply]])
-                else:
-                    ws = _FakeWs([[reply]])
-                result, _ = await _query(ws)
+            with self.subTest(replies=[m._data for m in replies[0]]):
+                result, _ = await _query(_FakeWs(replies))
                 self.assertEqual(result, ModbusTcpSetting(None, None))
+
+    async def test_a_reply_without_data_counts_as_one_without_modbus_tcp(self):
+        ws = _FakeWs([[_text({"type": "getConfigRsp"})], [_login(token="t")], [_config(_ON)]])
+        result, _ = await _query(ws)
+
+        self.assertEqual(result, ModbusTcpSetting(True, False))
 
     async def test_a_connection_failure_learns_nothing(self):
         result, _ = await _query(connect_error=aiohttp.ClientConnectionError("refused"))
@@ -182,7 +196,9 @@ class TestAsyncQueryModbusSetting(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, ModbusTcpSetting(None, None))
 
     async def test_the_token_and_the_rest_of_the_configuration_are_not_logged(self):
-        ws = _FakeWs([[_login_ok()], [_config({"enable": True, "crypt_enable": "x"})]])
+        ws = _FakeWs(
+            [[_config()], [_login(token="t0k")], [_config({"enable": True, "crypt_enable": "x"})]]
+        )
         with self.assertLogs("custom_components.bluetti_modbus.web_page", "DEBUG") as logs:
             await _query(ws)
 

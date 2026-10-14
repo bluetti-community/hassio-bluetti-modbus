@@ -14,10 +14,12 @@ from custom_components.bluetti_modbus.smeter_ws import SmeterWsInfo
 from custom_components.bluetti_modbus.web_page import ModbusTcpSetting
 
 
-def _patched_ws_query(firmware_version=None, modbus_tcp_enabled=None):
+def _patched_ws_query(firmware_version=None, modbus_tcp_enabled=None, modbus_tcp_encrypted=None):
     return patch(
         "custom_components.bluetti_modbus.config_flow.async_query_smeter",
-        AsyncMock(return_value=SmeterWsInfo(firmware_version, modbus_tcp_enabled)),
+        AsyncMock(
+            return_value=SmeterWsInfo(firmware_version, modbus_tcp_enabled, modbus_tcp_encrypted)
+        ),
     )
 
 
@@ -466,11 +468,16 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         web_page.assert_awaited_once()
         self.assertEqual(web_page.await_args.args[1:], ("10.2.1.60", 80))
 
-    async def test_an_s_meter_says_when_its_page_reports_modbus_disabled(self):
-        error = await self._failed_user_step(
-            "smeter", smeter_query=_patched_ws_query(modbus_tcp_enabled=False)
-        )
-        self.assertEqual(error, "modbus_tcp_disabled")
+    async def test_an_s_meter_says_when_its_page_reports_modbus_disabled_or_encrypted(self):
+        for setting, reason in (
+            ((False, False), "modbus_tcp_disabled"),
+            ((True, True), "modbus_tcp_encrypted"),
+        ):
+            with self.subTest(reason=reason):
+                error = await self._failed_user_step(
+                    "smeter", web_page=_patched_web_page(*setting)
+                )
+                self.assertEqual(error, reason)
 
     async def test_other_device_types_never_query_a_web_page(self):
         with _patched_web_page() as web_page, _patched_ws_query() as smeter_query:
@@ -603,6 +610,22 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             result = await flow.async_step_zeroconf(_discovery_info())
 
         async_abort.assert_called_once_with(reason="modbus_tcp_disabled")
+        probe.assert_not_awaited()
+        self.assertEqual(result, "aborted")
+
+    async def test_aborts_early_when_modbus_tcp_is_confirmed_encrypted(self):
+        flow = _flow()
+        with (
+            _patched_probe() as probe,
+            _patched_ws_query(modbus_tcp_enabled=True, modbus_tcp_encrypted=True),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_abort", return_value="aborted") as async_abort,
+        ):
+            result = await flow.async_step_zeroconf(_discovery_info())
+
+        async_abort.assert_called_once_with(reason="modbus_tcp_encrypted")
         probe.assert_not_awaited()
         self.assertEqual(result, "aborted")
 
