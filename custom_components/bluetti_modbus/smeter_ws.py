@@ -1,9 +1,7 @@
 """Best-effort queries against the S Meter's own undocumented WebSocket API.
 
-Real hardware (browser devtools, both a real S Meter and a real Balco260)
-confirms both devices expose this over their own local web UI - S Meter
-needs no authentication at all, Balco260 requires a token this integration
-has no way to obtain and isn't implemented here.
+The S Meter answers on its own local web UI without authentication. The
+Balco family's page needs a login first; see web_page.py.
 
 Confirmed against real S Meters' own captures: connecting to
 "ws://<host>:<port>/ws" (firmware 300510106) or ".../8" (earlier firmware)
