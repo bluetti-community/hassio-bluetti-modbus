@@ -1,11 +1,14 @@
 """Best-effort read of the Modbus TCP setting from a device's own web page.
 
-The web page of the Balco 260, Balco 500, Balco Transfer Hub, FridgePower
-and S Meter talks to the device over a WebSocket at /ws, and "getConfig"
-answers with data.modbus_tcp (enable, crypt_enable, port). Devices differ
-in what they ask first:
+The web page of the Balco 260, Balco 500, Balco Transfer Hub, FridgePower,
+S Meter, AC240, AC200L and EP500Pro talks to the device over a WebSocket at
+/ws, and "getConfig" answers with data.modbus_tcp (enable, crypt_enable,
+port; the AC family's page has no crypt_enable). Devices differ in what
+they ask first:
 
-- S Meter: answers getConfig without any login.
+- S Meter, AC240 and EP500Pro (IoT V9041.17): answer getConfig without any
+  login, even with a password set for the device.
+- AC200L: answers getConfig after a login that returns no token.
 - Balco 260 (IoT V500120120): answers getConfig without a token, but with
   no modbus_tcp block; after "login" with the page's default credentials
   (user "admin", blank password) it answers with a token in result.token,
@@ -16,7 +19,7 @@ in what they ask first:
 So getConfig is sent at once, the login alongside it, and getConfig again
 after the login, with the token when one comes back. The first answer that
 carries modbus_tcp is the result. The Balco 500 and the Transfer Hub are
-untested. A Balco 260 accepts only one WebSocket client at a time, so an
+untested; the AC500 is left out until its page is. A Balco 260 accepts only one WebSocket client at a time, so an
 open web page makes this query fail.
 
 The API is unofficial: every failure, including a login refused because the
@@ -40,7 +43,9 @@ _LOGGER = logging.getLogger(__name__)
 _TIMEOUT_SECONDS = 5
 
 # Device types whose web page is asked when a Modbus probe fails.
-WEB_PAGE_DEV_TYPES = frozenset({"balco260", "balco500", "balcotrans", "fp", "smeter"})
+WEB_PAGE_DEV_TYPES = frozenset(
+    {"ac200l", "ac240", "balco260", "balco500", "balcotrans", "ep500p", "fp", "smeter"}
+)
 
 
 class ModbusTcpSetting(NamedTuple):

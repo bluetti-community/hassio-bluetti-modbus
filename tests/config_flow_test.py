@@ -456,6 +456,15 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(error, "modbus_tcp_encrypted")
 
+    async def test_an_ac_family_device_says_when_its_page_reports_modbus_disabled(self):
+        # The AC family's page has no crypt_enable: only "disabled" can show.
+        for dev_type in ("ac200l", "ac240", "ep500p"):
+            with self.subTest(dev_type=dev_type):
+                error = await self._failed_user_step(
+                    dev_type, web_page=_patched_web_page(enabled=False, encrypted=None)
+                )
+                self.assertEqual(error, "modbus_tcp_disabled")
+
     async def test_an_enabled_unencrypted_setting_keeps_the_generic_error(self):
         error = await self._failed_user_step(
             "balco260", web_page=_patched_web_page(enabled=True, encrypted=False)
