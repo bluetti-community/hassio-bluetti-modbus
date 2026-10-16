@@ -6,21 +6,24 @@ S Meter, AC240, AC200L and EP500Pro talks to the device over a WebSocket at
 port; the AC family's page has no crypt_enable). Devices differ in what
 they ask first:
 
-- S Meter, AC240 and EP500Pro (IoT V9041.17): answer getConfig without any
-  login, even with a password set for the device.
-- AC200L: answers getConfig after a login that returns no token.
+- S Meter: answers getConfig without any login.
+- AC240, EP500Pro and AC200L (IoT V9041.17): answer getConfig without any
+  login; the AC240 and the EP500Pro do so with a password set for the
+  device too. An AC200L also answers after a login that returns no token.
 - Balco 260 (IoT V500120120): answers getConfig without a token, but with
   no modbus_tcp block; after "login" with the page's default credentials
   (user "admin", blank password) it answers with a token in result.token,
   and getConfig sent with that token carries modbus_tcp.
+- Balco Transfer Hub (IoT V30052.01.17): answers getConfig after the login,
+  crypt_enable included.
 - FridgePower: accepts the same login and then answers other requests
   without a token (https://github.com/freakdesign/bluetti-fridgepower-local).
 
 So getConfig is sent at once, the login alongside it, and getConfig again
 after the login, with the token when one comes back. The first answer that
-carries modbus_tcp is the result. The Balco 500 and the Transfer Hub are
-untested; the AC500 is left out until its page is. A Balco 260 accepts only one WebSocket client at a time, so an
-open web page makes this query fail.
+carries modbus_tcp is the result. The Balco 500 is untested; the AC500 is
+left out until its page is. A Balco 260 refused a second WebSocket client
+while its own web page was open, so an open page can make this query fail.
 
 The API is unofficial: every failure, including a login refused because the
 owner set a password, is reported as "nothing learned" and never raised.
