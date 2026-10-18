@@ -1,15 +1,16 @@
 """Best-effort read of the Modbus TCP setting from a device's own web page.
 
 The web page of the Balco 260, Balco 500, Balco Transfer Hub, FridgePower,
-S Meter, AC240, AC200L and EP500Pro talks to the device over a WebSocket at
+S Meter, AC500, AC240, AC200L and EP500Pro talks to the device over a WebSocket at
 /ws, and "getConfig" answers with data.modbus_tcp (enable, crypt_enable,
 port; the AC family's page has no crypt_enable). Devices differ in what
 they ask first:
 
 - S Meter: answers getConfig without any login.
-- AC240, EP500Pro and AC200L (IoT V9041.17): answer getConfig without any
-  login; the AC240 and the EP500Pro do so with a password set for the
-  device too. An AC200L also answers after a login that returns no token.
+- AC500, AC240, EP500Pro and AC200L (IoT V9041.17): answer getConfig
+  without any login; the AC500, the AC240 and the EP500Pro do so with a
+  password set for the device too. An AC200L also answers after a login
+  that returns no token.
 - Balco 260 (IoT V500120120): answers getConfig without a token, but with
   no modbus_tcp block; after "login" with the page's default credentials
   (user "admin", blank password) it answers with a token in result.token,
@@ -21,9 +22,9 @@ they ask first:
 
 So getConfig is sent at once, the login alongside it, and getConfig again
 after the login, with the token when one comes back. The first answer that
-carries modbus_tcp is the result. The Balco 500 is untested; the AC500 is
-left out until its page is. A Balco 260 refused a second WebSocket client
-while its own web page was open, so an open page can make this query fail.
+carries modbus_tcp is the result. The Balco 500 is untested. A Balco 260
+refused a second WebSocket client while its own web page was open, so an
+open page can make this query fail.
 
 The API is unofficial: every failure, including a login refused because the
 owner set a password, is reported as "nothing learned" and never raised.
@@ -47,7 +48,17 @@ _TIMEOUT_SECONDS = 5
 
 # Device types whose web page is asked when a Modbus probe fails.
 WEB_PAGE_DEV_TYPES = frozenset(
-    {"ac200l", "ac240", "balco260", "balco500", "balcotrans", "ep500p", "fp", "smeter"}
+    {
+        "ac200l",
+        "ac240",
+        "ac500",
+        "balco260",
+        "balco500",
+        "balcotrans",
+        "ep500p",
+        "fp",
+        "smeter",
+    }
 )
 
 

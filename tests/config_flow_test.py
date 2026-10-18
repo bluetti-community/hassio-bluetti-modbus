@@ -458,7 +458,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
 
     async def test_an_ac_family_device_says_when_its_page_reports_modbus_disabled(self):
         # The AC family's page has no crypt_enable: only "disabled" can show.
-        for dev_type in ("ac200l", "ac240", "ep500p"):
+        for dev_type in ("ac200l", "ac240", "ac500", "ep500p"):
             with self.subTest(dev_type=dev_type):
                 error = await self._failed_user_step(
                     dev_type, web_page=_patched_web_page(enabled=False, encrypted=None)
@@ -491,7 +491,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
     async def test_other_device_types_never_query_a_web_page(self):
         with _patched_web_page() as web_page, _patched_ws_query() as smeter_query:
             error = await self._failed_user_step(
-                "ac500", web_page=web_page, smeter_query=smeter_query
+                "ep2000", web_page=web_page, smeter_query=smeter_query
             )
         self.assertEqual(error, "cannot_connect")
         web_page.assert_not_awaited()
