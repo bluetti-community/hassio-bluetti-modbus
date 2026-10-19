@@ -52,7 +52,7 @@ documentation and verified against real hardware.
 | **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
 | **Apex 300** | Manual (IP) | AC output, DC output | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/49) |
-| **EP2000** | Manual (IP) | Read-only | [3 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
+| **EP2000** | Manual (IP) | Read-only | [4 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
 
 Every field the device reports is shown as a reading; the controls listed are the
@@ -94,9 +94,11 @@ with the AC200L profile.
 
 **EP2000**
 - Modbus TCP is opened by the BLUETTI app's **VPP** option (VPP tile on the home
-  page → Join VPP → Voltello, port 502); the web page has no switch for it. A
-  virtual power plant can let an aggregator charge and discharge the battery, so
-  know what your provider's option authorises before enabling it.
+  page → Join VPP → a provider, port 502); the web page has no switch for it. The
+  providers listed differ by region, and if the tile is missing, updating the
+  BLUETTI app can bring it (it appeared with app 3.1.5 on one unit). A virtual
+  power plant can let an aggregator charge and discharge the battery, so know
+  what your provider's option authorises before enabling it.
 - The grid entities measure the EP2000's own grid port, not the house's connection
   to the grid: with AC-coupled solar (a separate PV inverter on the AC side), that
   solar's output shows there. The app's Grid figure comes from the system's meter,
