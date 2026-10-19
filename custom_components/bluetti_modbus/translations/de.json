@@ -7,6 +7,14 @@
           "port": "Port",
           "type": "Gerätetyp"
         }
+      },
+      "reconfigure": {
+        "title": "Adresse des Geräts ändern",
+        "description": "Das Gerät wird unter der neuen Adresse geprüft, bevor der Eintrag dorthin wechselt.",
+        "data": {
+          "address": "IP-Adresse",
+          "port": "Port"
+        }
       }
     },
     "error": {
@@ -17,7 +25,9 @@
     "abort": {
       "no_unconfigured_devices": "Keine Geräte gefunden",
       "modbus_tcp_disabled": "Modbus TCP ist auf diesem Gerät deaktiviert - in den Web-Einstellungen des Geräts aktivieren und erneut versuchen",
-      "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt - \"Crypt Enable\" in den Web-Einstellungen des Geräts ausschalten und erneut versuchen"
+      "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt - \"Crypt Enable\" in den Web-Einstellungen des Geräts ausschalten und erneut versuchen",
+      "wrong_device": "Unter dieser Adresse antwortet ein anderes Gerät: seine Seriennummer ist nicht die dieses Eintrags",
+      "reconfigure_successful": "Die Adresse des Geräts wurde aktualisiert"
     }
   },
   "entity": {

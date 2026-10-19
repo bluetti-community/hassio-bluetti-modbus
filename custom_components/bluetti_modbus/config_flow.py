@@ -282,6 +282,68 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders=description_placeholders,
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Change the address or port of an existing entry.
+
+        The device type stays: a different model is a different entry. The
+        device is probed at the new address first; an entry keyed on a
+        serial number only moves there when the same unit answers. An entry
+        still keyed on its address (a unit with no serial, or one set up
+        before serials) takes the serial now when one is read, else the new
+        address - the old address would no longer match anything.
+        """
+        entry = self._get_reconfigure_entry()
+        dev_type = entry.data[CONF_TYPE]
+        errors: dict[str, str] = {}
+        description_placeholders: dict[str, str] = {}
+
+        if user_input is not None:
+            address = user_input[CONF_ADDRESS]
+            port = user_input[CONF_PORT]
+            if address != entry.data[CONF_ADDRESS]:
+                self._async_abort_entries_match({CONF_ADDRESS: address})
+            try:
+                values = await _async_probe(self.hass, address, port, dev_type)
+            except PROBE_ERRORS as err:
+                errors["base"] = await _async_failure_reason(self.hass, address, dev_type)
+                description_placeholders["error"] = str(err)
+            else:
+                serial = values.get("d_serial")
+                keyed_on_address = entry.unique_id in (None, entry.data[CONF_ADDRESS])
+                if not keyed_on_address:
+                    if serial is not None and str(serial) != entry.unique_id:
+                        return self.async_abort(reason="wrong_device")
+                    unique_id = entry.unique_id
+                else:
+                    unique_id = str(serial) if serial is not None else address
+                return self.async_update_reload_and_abort(
+                    entry,
+                    unique_id=unique_id,
+                    data_updates={CONF_ADDRESS: address, CONF_PORT: port},
+                )
+
+        data_schema = probatio.Schema(
+            {
+                probatio.Required(CONF_ADDRESS): TextSelector(),
+                probatio.Required(CONF_PORT): probatio.All(
+                    NumberSelector(
+                        NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)
+                    ),
+                    probatio.Coerce(int),
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                data_schema, user_input or entry.data
+            ),
+            errors=errors,
+            description_placeholders=description_placeholders,
+        )
+
     async def async_step_zeroconf(
         self, discovery_info: ZeroconfServiceInfo
     ) -> ConfigFlowResult:
