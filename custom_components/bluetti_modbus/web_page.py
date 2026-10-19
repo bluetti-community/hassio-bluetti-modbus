@@ -17,14 +17,16 @@ they ask first:
   and getConfig sent with that token carries modbus_tcp.
 - Balco Transfer Hub (IoT V30052.01.17): answers getConfig after the login,
   crypt_enable included.
+- Balco 500 (IoT 50013.02.09): answers getConfig without any login,
+  crypt_enable included.
 - FridgePower: accepts the same login and then answers other requests
   without a token (https://github.com/freakdesign/bluetti-fridgepower-local).
 
 So getConfig is sent at once, the login alongside it, and getConfig again
 after the login, with the token when one comes back. The first answer that
-carries modbus_tcp is the result. The Balco 500 is untested. A Balco 260
-refused a second WebSocket client while its own web page was open, so an
-open page can make this query fail.
+carries modbus_tcp is the result. A Balco 260 refused a second WebSocket
+client while its own web page was open, so an open page can make this
+query fail.
 
 The API is unofficial: every failure, including a login refused because the
 owner set a password, is reported as "nothing learned" and never raised.

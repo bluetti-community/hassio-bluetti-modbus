@@ -116,10 +116,10 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         values = {o["value"] for o in options}
         self.assertNotIn("ac500", values)
 
-    async def test_balco500_not_offered_by_default(self):
-        # BALCO500_CONFIRMED is False by default - see its own comment in
-        # const.py. Unlike AC500, no community member has real Balco 500
-        # hardware at all yet.
+    @patch("custom_components.bluetti_modbus.config_flow.BALCO500_CONFIRMED", False)
+    async def test_balco500_not_offered_if_unconfirmed(self):
+        # The flag mechanism itself still works, even though
+        # BALCO500_CONFIRMED is True by default now.
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
@@ -255,8 +255,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         labels = {o["value"]: o["label"] for o in options}
         self.assertEqual(labels.get("pa030"), "Apex 300")
 
-    @patch("custom_components.bluetti_modbus.config_flow.BALCO500_CONFIRMED", True)
-    async def test_balco500_offered_once_confirmed(self):
+    async def test_balco500_offered_by_default(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()
