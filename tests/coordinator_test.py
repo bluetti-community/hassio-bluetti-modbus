@@ -134,8 +134,14 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         )
         coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
 
-        with self.assertRaises(UpdateFailed):
+        with self.assertRaises(UpdateFailed) as raised:
             await coordinator._async_update_data()
+
+        self.assertEqual(raised.exception.translation_domain, "bluetti_modbus")
+        self.assertEqual(raised.exception.translation_key, "communication_error")
+        self.assertEqual(
+            raised.exception.translation_placeholders, {"error": "no route to host"}
+        )
 
     @_shared
     async def test_a_failed_poll_keeps_the_last_values(self, link):
@@ -253,8 +259,8 @@ class TestSameDevice(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(UpdateFailed) as raised:
             await coordinator._async_update_data()
 
-        self.assertIn("10.2.1.60", str(raised.exception))
-        self.assertNotIn("9999999999999", str(raised.exception))
+        self.assertEqual(raised.exception.translation_key, "wrong_device")
+        self.assertEqual(raised.exception.translation_placeholders, {"address": "10.2.1.60"})
 
     @_shared
     async def test_the_entrys_own_serial_passes(self, link):

@@ -794,5 +794,16 @@
         "name": "AC Power Lifting Switch"
       }
     }
+  },
+  "exceptions": {
+    "communication_error": {
+      "message": "Error communicating with the device: {error}"
+    },
+    "wrong_device": {
+      "message": "A device with another serial number answers at {address}; the entities stay unavailable until this entry's own device answers there"
+    },
+    "write_failed": {
+      "message": "Failed to write to {device} {field}: {error}"
+    }
   }
 }

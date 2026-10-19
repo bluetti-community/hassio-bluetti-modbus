@@ -88,8 +88,11 @@ class TestAsyncSetNativeValue(unittest.IsolatedAsyncioTestCase):
             side_effect=ModbusProtocolError("write_register(57016, 42): Expected response to match request")
         )
 
-        with self.assertRaises(HomeAssistantError):
+        with self.assertRaises(HomeAssistantError) as raised:
             await number.async_set_native_value(42.0)
+
+        self.assertEqual(raised.exception.translation_key, "write_failed")
+        self.assertIn("Expected response", raised.exception.translation_placeholders["error"])
 
         # Not applied - the device never confirmed the write.
         self.assertIsNone(number.native_value)
