@@ -18,7 +18,6 @@ from custom_components.bluetti_modbus import (
 )
 from custom_components.bluetti_modbus.const import (
     CONF_SLOTS_BEYOND_COUNT_PENDING,
-    DATA_COORDINATOR,
     DOMAIN,
 )
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import PACK_INFO_FIELDS
@@ -33,14 +32,13 @@ class TestAsyncUnloadEntry(unittest.IsolatedAsyncioTestCase):
         coordinator.async_shutdown = AsyncMock()
 
         hass = MagicMock()
-        hass.data = {DOMAIN: {"test_entry": {DATA_COORDINATOR: coordinator}}}
+        entry.runtime_data = coordinator
         hass.config_entries.async_unload_platforms = AsyncMock(return_value=True)
 
         result = await async_unload_entry(hass, entry)
 
         self.assertTrue(result)
         coordinator.async_shutdown.assert_awaited_once()
-        self.assertNotIn("test_entry", hass.data[DOMAIN])
 
     async def test_unload_failure_leaves_data_and_coordinator_untouched(self):
         entry = MagicMock()
@@ -50,14 +48,13 @@ class TestAsyncUnloadEntry(unittest.IsolatedAsyncioTestCase):
         coordinator.async_shutdown = AsyncMock()
 
         hass = MagicMock()
-        hass.data = {DOMAIN: {"test_entry": {DATA_COORDINATOR: coordinator}}}
+        entry.runtime_data = coordinator
         hass.config_entries.async_unload_platforms = AsyncMock(return_value=False)
 
         result = await async_unload_entry(hass, entry)
 
         self.assertFalse(result)
         coordinator.async_shutdown.assert_not_awaited()
-        self.assertIn("test_entry", hass.data[DOMAIN])
 
 
 class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
@@ -89,7 +86,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         coordinator.async_config_entry_first_refresh.assert_awaited_once()
         hass.config_entries.async_forward_entry_setups.assert_awaited_once()
-        self.assertIs(hass.data[DOMAIN]["entry1"][DATA_COORDINATOR], coordinator)
+        self.assertIs(entry.runtime_data, coordinator)
         # The main device is registered explicitly, before platform setup -
         # S Meter's per-phase sub-devices (see phase_device_info()) need it
         # already present to resolve via_device_id against.

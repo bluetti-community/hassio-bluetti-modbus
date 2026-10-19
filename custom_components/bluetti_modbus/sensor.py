@@ -37,7 +37,6 @@ from .const import (
     BALCO500_FIELDS_NOT_SHOWN,
     BUILT_IN_BATTERY_DEV_TYPES,
     CONF_SLOTS_BEYOND_COUNT_PENDING,
-    DATA_COORDINATOR,
     DOMAIN,
     FIELDS_NOT_SHOWN,
     FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO,
@@ -182,13 +181,17 @@ def _display_precision(field: object) -> int | None:
     return None
 
 
+# Read-only: the coordinator does every read.
+PARALLEL_UPDATES = 0
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Setup sensor entities."""
 
     config = FullDeviceConfig.from_dict(entry.data)
-    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator = entry.runtime_data
 
     if config is None or not isinstance(coordinator, PollingCoordinator):
         logging.getLogger(__name__).error("No coordinator found")

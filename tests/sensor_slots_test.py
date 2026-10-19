@@ -80,8 +80,7 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = data
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
-        entry = MagicMock(entry_id="entry1")
+        entry = MagicMock(entry_id="entry1", runtime_data=coordinator)
         entry.data = dict(entry_data or _ENTRY_DATA)
         bluetti_device = MagicMock()
         bluetti_device.get_sensors.return_value = list(sensors)

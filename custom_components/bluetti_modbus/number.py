@@ -15,7 +15,7 @@ from modbus_connection.exceptions import ModbusError
 
 from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
-from .const import DATA_COORDINATOR, DOMAIN, FIELDS_SHOWN_VIA_NUMBER
+from .const import FIELDS_SHOWN_VIA_NUMBER
 from .coordinator import PollingCoordinator
 
 # b_soc_low/b_soc_high (57016/57017): min/max, matching bluetti-registers'
@@ -32,13 +32,17 @@ _FIELD_BOUNDS: dict[str, tuple[int, int]] = {
 }
 
 
+# One write at a time: the device takes one Modbus request at a time.
+PARALLEL_UPDATES = 1
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Setup number entities."""
 
     config = FullDeviceConfig.from_dict(entry.data)
-    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator = entry.runtime_data
 
     if config is None or not isinstance(coordinator, PollingCoordinator):
         logging.getLogger(__name__).error("No coordinator found")

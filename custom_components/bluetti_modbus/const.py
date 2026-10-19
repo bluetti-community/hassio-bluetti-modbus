@@ -9,7 +9,6 @@ CONF_OPTIONS = "options"
 # once it has disabled the entities beyond the counts the unit reports.
 CONF_SLOTS_BEYOND_COUNT_PENDING = "slots_beyond_count_pending"
 
-DATA_COORDINATOR = "coordinator"
 
 # AC500 support (bluetti-modbus 0.15.0+) is community-confirmed against real
 # hardware, not yet BLUETTI-support-confirmed like Balco260/S Meter - see

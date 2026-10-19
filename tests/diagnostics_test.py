@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 from modbus_connection.exceptions import ModbusTimeoutError
 
-from custom_components.bluetti_modbus.const import DATA_COORDINATOR, DOMAIN
 from custom_components.bluetti_modbus.diagnostics import (
     async_get_config_entry_diagnostics,
 )
@@ -35,7 +34,7 @@ class TestAsyncGetConfigEntryDiagnostics(unittest.IsolatedAsyncioTestCase):
         coordinator.async_read_raw_registers = AsyncMock(return_value={})
         coordinator.device.field_names.return_value = []
         hass = MagicMock()
-        hass.data = {DOMAIN: {"entry1": {DATA_COORDINATOR: coordinator}}}
+        entry.runtime_data = coordinator
 
         diagnostics = await async_get_config_entry_diagnostics(hass, entry)
 
@@ -80,7 +79,7 @@ class TestAsyncGetConfigEntryDiagnostics(unittest.IsolatedAsyncioTestCase):
         coordinator.async_read_raw_registers = AsyncMock(return_value={})
         coordinator.device.field_names.return_value = []
         hass = MagicMock()
-        hass.data = {DOMAIN: {"entry1": {DATA_COORDINATOR: coordinator}}}
+        entry.runtime_data = coordinator
 
         diagnostics = await async_get_config_entry_diagnostics(hass, entry)
 
@@ -103,10 +102,10 @@ class TestRawRegisters(unittest.IsolatedAsyncioTestCase):
     """The undecoded register words in a dump - see diagnostics.py's
     _raw_registers()."""
 
-    def _hass(self, coordinator: MagicMock) -> MagicMock:
-        hass = MagicMock()
-        hass.data = {DOMAIN: {"entry1": {DATA_COORDINATOR: coordinator}}}
-        return hass
+    def _entry(self, coordinator: MagicMock) -> MagicMock:
+        entry = _entry()
+        entry.runtime_data = coordinator
+        return entry
 
     async def test_redacts_every_word_a_serial_field_occupies(self):
         # d_serial is 4 registers wide on Balco260 (uint64 at 50206) - the
@@ -137,7 +136,7 @@ class TestRawRegisters(unittest.IsolatedAsyncioTestCase):
             }
         )
 
-        diagnostics = await async_get_config_entry_diagnostics(self._hass(coordinator), _entry())
+        diagnostics = await async_get_config_entry_diagnostics(MagicMock(), self._entry(coordinator))
 
         raw = diagnostics["raw_registers"]
         self.assertEqual(raw["device"]["holding"][50001], 1)
@@ -158,7 +157,7 @@ class TestRawRegisters(unittest.IsolatedAsyncioTestCase):
             return_value={"device": {"holding": {53001: 42}}}
         )
 
-        diagnostics = await async_get_config_entry_diagnostics(self._hass(coordinator), _entry())
+        diagnostics = await async_get_config_entry_diagnostics(MagicMock(), self._entry(coordinator))
 
         self.assertEqual(diagnostics["raw_registers"]["device"]["holding"][53001], 42)
 
@@ -173,7 +172,7 @@ class TestRawRegisters(unittest.IsolatedAsyncioTestCase):
             side_effect=ModbusTimeoutError("no reply")
         )
 
-        diagnostics = await async_get_config_entry_diagnostics(self._hass(coordinator), _entry())
+        diagnostics = await async_get_config_entry_diagnostics(MagicMock(), self._entry(coordinator))
 
         self.assertEqual(diagnostics["coordinator"]["data"], {"b_soc": 71})
         self.assertEqual(

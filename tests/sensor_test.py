@@ -407,8 +407,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -450,8 +450,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -492,8 +492,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -530,8 +530,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -566,8 +566,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -600,8 +600,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -645,8 +645,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -694,8 +694,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -732,10 +732,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
             coordinator.data = {}
             hass = MagicMock()
-            hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
             added = []
 
-            await async_setup_entry(hass, MagicMock(entry_id="entry1"), added.extend)
+            await async_setup_entry(hass, MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend)
 
             keys = {s._response_key for s in added}
             self.assertEqual("g_o_switch" in keys, shown, dev_type)
@@ -775,10 +774,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
             coordinator.data = {}
             hass = MagicMock()
-            hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
             added = []
 
-            await async_setup_entry(hass, MagicMock(entry_id="entry1"), added.extend)
+            await async_setup_entry(hass, MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend)
 
             keys = {s._response_key for s in added}
             self.assertEqual("d_iot_serial" in keys, shown, dev_type)
@@ -823,10 +821,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
             coordinator.data = {}
             hass = MagicMock()
-            hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
             added = []
 
-            await async_setup_entry(hass, MagicMock(entry_id="entry1"), added.extend)
+            await async_setup_entry(hass, MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend)
 
             keys = {s._response_key for s in added}
             for name in hidden:
@@ -866,8 +863,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -921,10 +918,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
             coordinator.data = {}
             hass = MagicMock()
-            hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
             added = []
 
-            await async_setup_entry(hass, MagicMock(entry_id="entry1"), added.extend)
+            await async_setup_entry(hass, MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend)
 
             by_key = {s._response_key: s for s in added}
             self.assertEqual(
@@ -971,10 +967,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
             coordinator.data = {}
             hass = MagicMock()
-            hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
             added = []
 
-            await async_setup_entry(hass, MagicMock(entry_id="entry1"), added.extend)
+            await async_setup_entry(hass, MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend)
 
             by_key = {s._response_key: s for s in added}
             self.assertEqual(
@@ -1011,8 +1006,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1056,8 +1051,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1105,8 +1100,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1147,8 +1142,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1195,8 +1190,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {"d_num_battery_packs": 2}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1233,8 +1228,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {"d_num_battery_packs": 4}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1263,8 +1258,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {"d_num_battery_packs": 1}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1300,8 +1295,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {"d_num_battery_packs": 0}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1317,8 +1312,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         config_cls.from_dict.return_value = MagicMock(dev_type="balco260", address="10.2.1.60")
 
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": MagicMock()}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = MagicMock()
         async_add_entities = MagicMock()
 
         await async_setup_entry(hass, entry, async_add_entities)
@@ -1358,8 +1353,8 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}  # no BC260 packs - the battery still gets sensors
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1403,8 +1398,8 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1431,8 +1426,8 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
@@ -1491,8 +1486,8 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.data = {}
         hass = MagicMock()
-        hass.data = {"bluetti_modbus": {"entry1": {"coordinator": coordinator}}}
         entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
         added = []
 
         await async_setup_entry(hass, entry, added.extend)
