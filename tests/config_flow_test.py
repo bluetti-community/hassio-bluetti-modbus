@@ -1033,3 +1033,119 @@ class TestProbe(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(show_form.call_args.kwargs["errors"]["base"], "cannot_connect")
 
+
+
+class TestConfigFlowReconfigureStep(unittest.IsolatedAsyncioTestCase):
+    def _flow(self, entry):
+        flow = _flow()
+        flow.hass = MagicMock()
+        patcher = patch.object(flow, "_get_reconfigure_entry", return_value=entry)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return flow
+
+    def _entry(self, unique_id="1234567890123", address="10.2.1.60", dev_type="balco260"):
+        return MagicMock(
+            unique_id=unique_id,
+            data={"address": address, "port": 502, "name": "n", "type": dev_type},
+        )
+
+    async def _submit(self, flow, address="10.2.1.61", port=502, values=None, error=None):
+        with (
+            _patched_probe(read_side_effect=error, device_values=values) as probe,
+            patch.object(flow, "_async_abort_entries_match") as abort_match,
+            patch.object(
+                flow, "async_update_reload_and_abort", return_value="updated"
+            ) as update,
+            patch.object(flow, "async_abort", return_value="aborted") as abort,
+            patch.object(flow, "async_show_form", return_value="form") as show_form,
+            patch(
+                "custom_components.bluetti_modbus.config_flow._async_failure_reason",
+                new=AsyncMock(return_value="cannot_connect"),
+            ),
+        ):
+            result = await flow.async_step_reconfigure({"address": address, "port": port})
+        return result, probe, abort_match, update, abort, show_form
+
+    async def test_no_input_shows_the_current_address_and_port(self):
+        entry = self._entry()
+        flow = self._flow(entry)
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_reconfigure()
+
+        kwargs = show_form.call_args.kwargs
+        self.assertEqual(kwargs["step_id"], "reconfigure")
+        suggested = {
+            str(k): k.description["suggested_value"] for k in kwargs["data_schema"].schema
+        }
+        self.assertEqual(suggested, {"address": "10.2.1.60", "port": 502})
+
+    async def test_the_same_unit_at_a_new_address_moves_the_entry(self):
+        entry = self._entry()
+        flow = self._flow(entry)
+
+        result, probe, abort_match, update, _, _ = await self._submit(
+            flow, values={"d_serial": 1234567890123}
+        )
+
+        self.assertEqual(result, "updated")
+        probe.assert_awaited_once_with(flow.hass, "10.2.1.61", 502, "balco260")
+        abort_match.assert_called_once_with({"address": "10.2.1.61"})
+        update.assert_called_once_with(
+            entry,
+            unique_id="1234567890123",
+            data_updates={"address": "10.2.1.61", "port": 502},
+        )
+
+    async def test_another_unit_at_the_new_address_aborts(self):
+        flow = self._flow(self._entry())
+
+        result, _, _, update, abort, _ = await self._submit(
+            flow, values={"d_serial": 9999999999999}
+        )
+
+        self.assertEqual(result, "aborted")
+        abort.assert_called_once_with(reason="wrong_device")
+        update.assert_not_called()
+
+    async def test_an_entry_keyed_on_its_address_takes_the_serial(self):
+        entry = self._entry(unique_id="10.2.1.60")
+        flow = self._flow(entry)
+
+        _, _, _, update, _, _ = await self._submit(flow, values={"d_serial": 1234567890123})
+
+        self.assertEqual(update.call_args.kwargs["unique_id"], "1234567890123")
+
+    async def test_a_unit_without_a_serial_follows_its_new_address(self):
+        entry = self._entry(unique_id="10.2.1.60", dev_type="smeter")
+        flow = self._flow(entry)
+
+        _, _, _, update, _, _ = await self._submit(flow, values={})
+
+        self.assertEqual(update.call_args.kwargs["unique_id"], "10.2.1.61")
+
+    async def test_a_port_change_alone_skips_the_duplicate_check(self):
+        flow = self._flow(self._entry())
+
+        _, _, abort_match, update, _, _ = await self._submit(
+            flow, address="10.2.1.60", port=1502, values={"d_serial": 1234567890123}
+        )
+
+        abort_match.assert_not_called()
+        self.assertEqual(
+            update.call_args.kwargs["data_updates"], {"address": "10.2.1.60", "port": 1502}
+        )
+
+    async def test_an_unreachable_address_shows_the_form_with_the_reason(self):
+        flow = self._flow(self._entry())
+
+        result, _, _, update, _, show_form = await self._submit(
+            flow, error=ModbusConnectionError("no route to host")
+        )
+
+        self.assertEqual(result, "form")
+        update.assert_not_called()
+        self.assertEqual(show_form.call_args.kwargs["errors"], {"base": "cannot_connect"})
+        self.assertEqual(
+            show_form.call_args.kwargs["description_placeholders"], {"error": "no route to host"}
+        )
