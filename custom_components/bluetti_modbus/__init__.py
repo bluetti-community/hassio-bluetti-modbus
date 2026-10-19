@@ -128,7 +128,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
-_CURRENT_VERSION = 23
+_CURRENT_VERSION = 24
 
 # The built-in battery's b_ver_2-4 sensors, retired by the 20 -> 21 step.
 _BATTERY_FIRMWARE_SLOT_SUFFIXES = ("battery_b_ver_2", "battery_b_ver_3", "battery_b_ver_4")
@@ -661,6 +661,17 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ):
                     registry.async_remove(entity_entry.entity_id)
         version = 23
+
+    if version == 23:
+        # The EP2000's grid feed-in switch took a write on a real unit
+        # (bluetti-registers#42): the read-only sensor gives way to the switch.
+        if config is not None and config.dev_type == "ep2000":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.domain == "sensor" and entity_entry.unique_id.endswith(
+                    "_g_o_switch"
+                ):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 24
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:

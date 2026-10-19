@@ -36,13 +36,10 @@ AC500_CONFIRMED = True
 # Balco 500 (bluetti-modbus 0.19.0+) reuses Balco260's own register set -
 # BLUETTI's own official register spec files both under the same generic
 # "BalcoXX" tab, not a Balco260-specific one (see bluetti-community/
-# bluetti-registers#27). Unlike AC500, no community member has a physical
-# unit yet at all, so this isn't just BLUETTI-support-unconfirmed the way
-# AC500 is - it's entirely untested against real hardware. Same mechanism
-# as AC500_CONFIRMED above: config_flow.py only offers "balco500" in its
-# dropdown while this is True, decoupled from release/version mechanics.
-# Flip to True once someone can actually test it on a real Balco 500.
-BALCO500_CONFIRMED = False
+# bluetti-registers#27). Read on a real unit (bluetti-registers#68) and
+# offered from this beta on. Same mechanism as AC500_CONFIRMED above:
+# config_flow.py only offers "balco500" in its dropdown while this is True.
+BALCO500_CONFIRMED = True
 
 # AC200L (bluetti-modbus 0.22.1+, bluetti-registers 0.0.43): a
 # portable power station absent from BLUETTI's official register list,
@@ -216,6 +213,20 @@ FP_FIELDS_NOT_SHOWN = {"g_o_switch"}
 # battery - the most it takes (one plus four B210), not a count
 # (bluetti-registers#65). Neither is shown.
 AC240_FIELDS_NOT_SHOWN = {"d_iot_serial", "d_num_battery_packs"}
+
+# Balco 500: the totals block reads 0 for the pack count, total SoC, total
+# SoH and the total times on a real unit, while the pack block holds the
+# real values (bluetti-registers#68), so those totals are not shown. The
+# pack temperature (51224) reads 65 there, most likely degrees C plus 40 as
+# on the EP2000; not shown until that is confirmed.
+BALCO500_FIELDS_NOT_SHOWN = {
+    "d_num_battery_packs",
+    "b_soc_total",
+    "b_soh_total",
+    "b_time_to_empty_total",
+    "b_time_to_full_total",
+    "b_t_avg",
+}
 
 # Devices whose built-in battery block (PACK_INFO_FIELDS) is a window on
 # the pack the BLUETTI app last showed: it reads all zeros until the app
