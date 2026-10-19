@@ -9,7 +9,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from modbus_connection.exceptions import ModbusError
 
-from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import PollingCoordinator
 
 # address is the device's local network IP - a diagnostics dump is meant to
@@ -87,9 +86,9 @@ async def async_get_config_entry_diagnostics(
     config entry - unlike some integrations, there's no multi-device
     aliasing to do here, just this one entry's own data. Only ever called
     while the entry is loaded (HA only offers the download button then), so
-    DATA_COORDINATOR is always already set - see async_setup_entry().
+    entry.runtime_data is always already set - see async_setup_entry().
     """
-    coordinator: PollingCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator: PollingCoordinator = entry.runtime_data
     data = coordinator.data if isinstance(coordinator.data, dict) else {}
 
     return {

@@ -17,8 +17,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
-from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import PollingCoordinator
+
+# Read-only: the coordinator does every read.
+PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
@@ -27,7 +29,7 @@ async def async_setup_entry(
     """Setup binary sensor entities."""
 
     config = FullDeviceConfig.from_dict(entry.data)
-    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator = entry.runtime_data
 
     if config is None or not isinstance(coordinator, PollingCoordinator):
         logging.getLogger(__name__).error("No coordinator found")

@@ -19,8 +19,11 @@ from modbus_connection.exceptions import ModbusError
 
 from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
-from .const import DATA_COORDINATOR, DOMAIN, FIELDS_SHOWN_VIA_SWITCH
+from .const import FIELDS_SHOWN_VIA_SWITCH
 from .coordinator import PollingCoordinator
+
+# One write at a time: the device takes one Modbus request at a time.
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(
@@ -29,7 +32,7 @@ async def async_setup_entry(
     """Setup switch entities."""
 
     config = FullDeviceConfig.from_dict(entry.data)
-    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator = entry.runtime_data
 
     if config is None or not isinstance(coordinator, PollingCoordinator):
         logging.getLogger(__name__).error("No coordinator found")

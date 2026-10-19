@@ -16,7 +16,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from .const import (
     BUILT_IN_BATTERY_DEV_TYPES,
     CONF_SLOTS_BEYOND_COUNT_PENDING,
-    DATA_COORDINATOR,
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
     MANUFACTURER,
@@ -51,10 +50,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     logger.debug("Init BLUETTI Modbus Integration")
 
-    # Create data structure
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN].setdefault(entry.entry_id, {})
-
     # Create coordinator for polling
     logger.debug("Creating coordinator")
     coordinator = PollingCoordinator(
@@ -63,7 +58,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         config,
     )
     await coordinator.async_config_entry_first_refresh()
-    hass.data[DOMAIN][entry.entry_id].setdefault(DATA_COORDINATOR, coordinator)
+    entry.runtime_data = coordinator
 
     _reconcile_config_entry_unique_id(hass, entry, coordinator)
 
@@ -691,8 +686,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unloaded:
-        data = hass.data[DOMAIN].pop(entry.entry_id)
-        coordinator: PollingCoordinator = data[DATA_COORDINATOR]
+        coordinator: PollingCoordinator = entry.runtime_data
         # Home Assistant releases this entry's hold on the shared Modbus
         # connection itself once the unload completes (see the coordinator).
         await coordinator.async_shutdown()
