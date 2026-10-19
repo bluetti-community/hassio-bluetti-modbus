@@ -289,8 +289,33 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 return self.data
             raise UpdateFailed(str(err)) from err
 
+        self._check_same_device(result)
         self._failed_polls = 0
         return result
+
+    def _check_same_device(self, result: dict[str, Any]) -> None:
+        """Fail the poll when another unit answers at this entry's address.
+
+        An entry keyed on a serial number must keep reading that serial: a
+        router can hand the address to another unit, and that unit's values
+        would otherwise go into this one's history. An entry still keyed on
+        its address (a unit with no serial, or one set up before serials)
+        has nothing to compare against. Not ridden out like a failed read:
+        the next poll checks again, and the entities come back once the
+        right unit answers.
+        """
+        entry = self.config_entry
+        serial = result.get("d_serial")
+        if entry is None or serial is None:
+            return
+        unique_id = entry.unique_id
+        if not isinstance(unique_id, str) or unique_id == self.config.address:
+            return
+        if str(serial) != unique_id:
+            raise UpdateFailed(
+                f"A device with another serial number answers at {self.config.address}; "
+                "the entities stay unavailable until this entry's own device answers there"
+            )
 
     def _clear_empty_pack_window(self, result: dict[str, Any]) -> None:
         """No reading, rather than zeros, from an empty pack window.

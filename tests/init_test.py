@@ -157,7 +157,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
 class TestReconcileConfigEntryUniqueId(unittest.TestCase):
     def _coordinator(self, *, dev_type="balco260", data=None):
-        return MagicMock(config=MagicMock(dev_type=dev_type), data=data or {})
+        return MagicMock(
+            config=MagicMock(dev_type=dev_type, address="10.2.1.60"), data=data or {}
+        )
 
     def test_renames_unique_id_from_address_to_serial(self):
         hass = MagicMock()
@@ -169,6 +171,17 @@ class TestReconcileConfigEntryUniqueId(unittest.TestCase):
         hass.config_entries.async_update_entry.assert_called_once_with(
             entry, unique_id="1234567890123"
         )
+
+    def test_an_entry_keyed_on_a_serial_keeps_it_when_another_unit_answers(self):
+        # The coordinator fails that poll instead (_check_same_device); the
+        # entry must not adopt the other unit's serial.
+        hass = MagicMock()
+        entry = MagicMock(unique_id="1234567890123")
+        coordinator = self._coordinator(data={"d_serial": 9999999999999})
+
+        _reconcile_config_entry_unique_id(hass, entry, coordinator)
+
+        hass.config_entries.async_update_entry.assert_not_called()
 
     def test_is_a_no_op_once_already_reconciled(self):
         hass = MagicMock()
