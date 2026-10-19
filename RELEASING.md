@@ -37,6 +37,15 @@ comes after them in the list. Never tag `X.Y.Z` on a commit older than its
 betas, and never ship a stable release before the betas of the change it
 carries. No stable release leaves `main` while its betas are being tested.
 
+GitHub lists releases by day, then by tag name as text, and HACS offers the
+first prerelease in that list. On one day, `-beta.9` therefore comes before
+`-beta.10` (`9` sorts after `1`), and HACS keeps offering `-beta.9`. Never
+publish a one-digit and a two-digit beta of a version on the same day: once
+`-beta.9` is out, the next beta waits for the next day (UTC), or the next
+prerelease is `X.Y.Z-rc.1`, which sorts after every `beta` both as text and
+as a version. No leading zeros (`-beta.09`): semantic versioning forbids
+them.
+
 A new device is offered on `main` from its first beta: its
 `<MODEL>_CONFIRMED` flag is set to `True` in the same pull request as the
 `-beta.1` bump. The flag stays `False` only for a device that is in the
