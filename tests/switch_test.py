@@ -100,8 +100,11 @@ class TestAsyncTurnOnOff(unittest.IsolatedAsyncioTestCase):
             side_effect=ModbusProtocolError("write_register(57009, 0): Expected response to match request")
         )
 
-        with self.assertRaises(HomeAssistantError):
+        with self.assertRaises(HomeAssistantError) as raised:
             await switch.async_turn_off()
+
+        self.assertEqual(raised.exception.translation_key, "write_failed")
+        self.assertIn("Expected response", raised.exception.translation_placeholders["error"])
 
         # Not applied - the device never confirmed the write.
         self.assertIsNone(switch.is_on)

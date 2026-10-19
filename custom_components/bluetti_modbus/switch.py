@@ -19,7 +19,7 @@ from modbus_connection.exceptions import ModbusError
 
 from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
-from .const import FIELDS_SHOWN_VIA_SWITCH
+from .const import DOMAIN, FIELDS_SHOWN_VIA_SWITCH
 from .coordinator import PollingCoordinator
 
 # One write at a time: the device takes one Modbus request at a time.
@@ -119,7 +119,13 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
             # own service-call handling expects an entity to raise instead,
             # to show the user a readable message.
             raise HomeAssistantError(
-                f"Failed to write to {self._device_name} {self._field_name}: {err}"
+                translation_domain=DOMAIN,
+                translation_key="write_failed",
+                translation_placeholders={
+                    "device": str(self._device_name),
+                    "field": self._field_name,
+                    "error": str(err),
+                },
             ) from err
         # Optimistic - the coordinator keeps the written value and confirms
         # it against the device on the first poll after the device has

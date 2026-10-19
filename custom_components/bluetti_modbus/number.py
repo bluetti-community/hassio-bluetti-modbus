@@ -15,7 +15,7 @@ from modbus_connection.exceptions import ModbusError
 
 from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
-from .const import FIELDS_SHOWN_VIA_NUMBER
+from .const import DOMAIN, FIELDS_SHOWN_VIA_NUMBER
 from .coordinator import PollingCoordinator
 
 # b_soc_low/b_soc_high (57016/57017): min/max, matching bluetti-registers'
@@ -115,7 +115,13 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
             # "unknown_error" toast in the frontend instead of a readable
             # message.
             raise HomeAssistantError(
-                f"Failed to write to {self._device_name} {self._field_name}: {err}"
+                translation_domain=DOMAIN,
+                translation_key="write_failed",
+                translation_placeholders={
+                    "device": str(self._device_name),
+                    "field": self._field_name,
+                    "error": str(err),
+                },
             ) from err
         # Optimistic - the coordinator keeps the written value and confirms
         # it against the device on the first poll after the device has

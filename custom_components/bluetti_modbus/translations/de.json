@@ -201,5 +201,16 @@
         "name": "MPPT 2 Eingangstyp"
       }
     }
+  },
+  "exceptions": {
+    "communication_error": {
+      "message": "Fehler bei der Kommunikation mit dem Gerät: {error}"
+    },
+    "wrong_device": {
+      "message": "Unter {address} antwortet ein Gerät mit einer anderen Seriennummer; die Entitäten bleiben nicht verfügbar, bis das Gerät dieses Eintrags dort antwortet"
+    },
+    "write_failed": {
+      "message": "Schreiben auf {device} {field} fehlgeschlagen: {error}"
+    }
   }
 }

@@ -15,7 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from modbus_connection import ModbusTcpParams, ModbusUnit
 from modbus_connection.exceptions import ModbusError
 
-from .const import INDIVIDUAL_BC260_PACKS_CONFIRMED, PACK_WINDOW_DEV_TYPES
+from .const import DOMAIN, INDIVIDUAL_BC260_PACKS_CONFIRMED, PACK_WINDOW_DEV_TYPES
 from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
     AC200L,
@@ -287,7 +287,11 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     err,
                 )
                 return self.data
-            raise UpdateFailed(str(err)) from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="communication_error",
+                translation_placeholders={"error": str(err)},
+            ) from err
 
         self._check_same_device(result)
         self._failed_polls = 0
@@ -313,8 +317,9 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return
         if str(serial) != unique_id:
             raise UpdateFailed(
-                f"A device with another serial number answers at {self.config.address}; "
-                "the entities stay unavailable until this entry's own device answers there"
+                translation_domain=DOMAIN,
+                translation_key="wrong_device",
+                translation_placeholders={"address": self.config.address},
             )
 
     def _clear_empty_pack_window(self, result: dict[str, Any]) -> None:
