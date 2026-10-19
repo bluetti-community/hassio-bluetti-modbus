@@ -119,3 +119,65 @@ async def _async_read_setting(ws: aiohttp.ClientWebSocketResponse) -> ModbusTcpS
                 raise TypeError("unexpected modbus_tcp shape")
             return ModbusTcpSetting(enabled, encrypted)
     return ModbusTcpSetting(None, None)
+
+
+class NetworkStatus(NamedTuple):
+    """The device's own network status; None where it was not learned."""
+
+    rssi: int | None
+    cloud_enabled: bool | None
+    cloud_connected: bool | None
+
+
+NO_NETWORK_STATUS = NetworkStatus(None, None, None)
+
+
+async def async_query_network_status(
+    hass: HomeAssistant, host: str, port: int = 80
+) -> NetworkStatus:
+    """Read the Wi-Fi signal and the cloud link from the web page. Never raises.
+
+    The page asks "getNetworkStatus" after its login and gets
+    "networkStatusRsp", whose data carries rssi (dBm), mqtt_enabled and
+    mqtt_connected (the link to BLUETTI's cloud), confirmed on a Balco 260.
+    Only those three are kept: the same answer holds the network's addresses
+    and the access point's name.
+    """
+    try:
+        session = aiohttp_client.async_get_clientsession(hass)
+        async with asyncio.timeout(_TIMEOUT_SECONDS):
+            async with session.ws_connect(f"ws://{host}:{port}/ws") as ws:
+                return await _async_read_network_status(ws)
+    except (TimeoutError, aiohttp.ClientError, ValueError, KeyError, TypeError) as err:
+        _LOGGER.debug("Best-effort network status query failed: %s", type(err).__name__)
+    return NO_NETWORK_STATUS
+
+
+async def _async_read_network_status(ws: aiohttp.ClientWebSocketResponse) -> NetworkStatus:
+    """Log in, ask for the network status, keep the signal and the cloud link."""
+    await ws.send_json({"type": "login", "data": {"username": "admin", "password": ""}})
+    async for msg in ws:
+        if msg.type != aiohttp.WSMsgType.TEXT:
+            continue
+        payload = msg.json()
+        msg_type = payload.get("type")
+        if msg_type == "loginRsp":
+            result = payload["result"]
+            if result["errCode"] != 0:
+                break
+            request: dict[str, Any] = {"type": "getNetworkStatus", "data": {}}
+            if (token := result.get("token")) is not None:
+                request["token"] = token
+            await ws.send_json(request)
+        elif msg_type == "networkStatusRsp":
+            data = payload.get("data") or {}
+            rssi = data.get("rssi")
+            enabled = data.get("mqtt_enabled")
+            connected = data.get("mqtt_connected")
+            return NetworkStatus(
+                rssi if isinstance(rssi, int) and not isinstance(rssi, bool) else None,
+                enabled if isinstance(enabled, bool) else None,
+                connected if isinstance(connected, bool) else None,
+            )
+    return NO_NETWORK_STATUS
+

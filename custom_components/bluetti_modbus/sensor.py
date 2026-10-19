@@ -13,10 +13,11 @@ from typing import Any
 from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
+    SensorEntity,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
+from homeassistant.const import SIGNAL_STRENGTH_DECIBELS_MILLIWATT, EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -50,6 +51,7 @@ from .const import (
 )
 from .coordinator import PollingCoordinator
 from .field_metadata import metadata_for
+from .network import NetworkStatusCoordinator
 from .vendor.bluetti_modbus_lib import MAX_BATTERY_PACKS, PACK_INFO_FIELDS, get_device
 
 # field name -> phase, the reverse of SMETER_PHASE_FIELDS's phase -> fields.
@@ -420,6 +422,42 @@ async def async_setup_entry(
         _disable_registered_beyond_count(hass, entry, sensors_beyond_count)
 
     async_add_entities(sensors_to_add)
+
+    network = getattr(coordinator, "network", None)
+    if isinstance(network, NetworkStatusCoordinator):
+        async_add_entities(
+            [
+                BluettiWifiSignalSensor(
+                    network,
+                    device_info,
+                    _unique_id_for(coordinator, device_info, "wifi_rssi", "sensor"),
+                )
+            ]
+        )
+
+
+class BluettiWifiSignalSensor(CoordinatorEntity[NetworkStatusCoordinator], SensorEntity):
+    """The device's Wi-Fi signal strength, from its own web page."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "wifi_rssi"
+    _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
+    _attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self, coordinator: NetworkStatusCoordinator, device_info: DeviceInfo, unique_id: str
+    ) -> None:
+        """Init the sensor."""
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = unique_id
+
+    @property
+    def native_value(self) -> int | None:
+        """The signal, in dBm, or unknown when the page did not say."""
+        return self.coordinator.data.rssi if self.coordinator.data else None
 
 
 def _disable_registered_beyond_count(

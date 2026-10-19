@@ -199,6 +199,14 @@
       },
       "mppt_2_i_type": {
         "name": "MPPT 2 Eingangstyp"
+      },
+      "wifi_rssi": {
+        "name": "WLAN-Signal"
+      }
+    },
+    "binary_sensor": {
+      "cloud_connected": {
+        "name": "BLUETTI-Cloud-Verbindung"
       }
     }
   },
