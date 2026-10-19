@@ -119,13 +119,15 @@ def _reconcile_config_entry_unique_id(
     """
     if coordinator.config.dev_type == "smeter":
         return
+    # Only from the address: an entry already keyed on a serial keeps it, and
+    # another unit answering there fails the poll instead (coordinator.py's
+    # _check_same_device()).
+    if entry.unique_id not in (None, coordinator.config.address):
+        return
     serial = (coordinator.data or {}).get("d_serial")
     if serial is None:
         return
-    new_unique_id = str(serial)
-    if entry.unique_id == new_unique_id:
-        return
-    hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
+    hass.config_entries.async_update_entry(entry, unique_id=str(serial))
 
 
 _CURRENT_VERSION = 24

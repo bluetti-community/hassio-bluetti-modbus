@@ -240,6 +240,56 @@ _EMPTY_WINDOW = {"b_ver_1": "0.00", "b_v": 0.0, "b_soc": 0, "b_soh": 0, "b_soc_t
 _FILLED_WINDOW = {"b_ver_1": "1035.04", "b_v": 53.6, "b_soc": 99, "b_soh": 86, "b_soc_total": 99}
 
 
+class TestSameDevice(unittest.IsolatedAsyncioTestCase):
+    @_shared
+    async def test_another_serial_at_the_address_fails_the_poll(self, link):
+        # Not ridden out on the last values: those belong to the right unit,
+        # and every poll checks again.
+        link.read = AsyncMock(return_value={"d_serial": 9999999999999, "b_soc": 40})
+        entry = MagicMock(unique_id="1234567890123")
+        coordinator = PollingCoordinator(MagicMock(), entry, _config())
+        coordinator.data = {"d_serial": 1234567890123, "b_soc": 89}
+
+        with self.assertRaises(UpdateFailed) as raised:
+            await coordinator._async_update_data()
+
+        self.assertIn("10.2.1.60", str(raised.exception))
+        self.assertNotIn("9999999999999", str(raised.exception))
+
+    @_shared
+    async def test_the_entrys_own_serial_passes(self, link):
+        link.read = AsyncMock(return_value={"d_serial": 1234567890123, "b_soc": 40})
+        coordinator = PollingCoordinator(
+            MagicMock(), MagicMock(unique_id="1234567890123"), _config()
+        )
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result["b_soc"], 40)
+
+    @_shared
+    async def test_an_entry_keyed_on_its_address_is_not_checked(self, link):
+        # Set up before serials, or a unit without one: nothing to compare.
+        link.read = AsyncMock(return_value={"d_serial": 9999999999999})
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(unique_id="10.2.1.60"), _config())
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result["d_serial"], 9999999999999)
+
+    @_shared
+    async def test_a_poll_without_a_serial_is_not_checked(self, link):
+        # The S Meter serves no serial number over Modbus.
+        link.read = AsyncMock(return_value={"b_soc": 40})
+        coordinator = PollingCoordinator(
+            MagicMock(), MagicMock(unique_id="1234567890123"), _config()
+        )
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result, {"b_soc": 40})
+
+
 class TestEmptyPackWindow(unittest.IsolatedAsyncioTestCase):
     """An AC240's pack block reads all zeros until the BLUETTI app opens it."""
 
