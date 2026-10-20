@@ -127,6 +127,8 @@ class NetworkStatus(NamedTuple):
     rssi: int | None
     cloud_enabled: bool | None
     cloud_connected: bool | None
+    # Why nothing was learned, for the log; None when the page answered.
+    failure: str | None = None
 
 
 NO_NETWORK_STATUS = NetworkStatus(None, None, None)
@@ -149,8 +151,9 @@ async def async_query_network_status(
             async with session.ws_connect(f"ws://{host}:{port}/ws") as ws:
                 return await _async_read_network_status(ws)
     except (TimeoutError, aiohttp.ClientError, ValueError, KeyError, TypeError) as err:
-        _LOGGER.debug("Best-effort network status query failed: %s", type(err).__name__)
-    return NO_NETWORK_STATUS
+        # The error's type only: a message could quote the device's reply.
+        failure = type(err).__name__
+    return NO_NETWORK_STATUS._replace(failure=failure)
 
 
 async def _async_read_network_status(ws: aiohttp.ClientWebSocketResponse) -> NetworkStatus:
@@ -164,7 +167,7 @@ async def _async_read_network_status(ws: aiohttp.ClientWebSocketResponse) -> Net
         if msg_type == "loginRsp":
             result = payload["result"]
             if result["errCode"] != 0:
-                break
+                return NO_NETWORK_STATUS._replace(failure="login refused")
             request: dict[str, Any] = {"type": "getNetworkStatus", "data": {}}
             if (token := result.get("token")) is not None:
                 request["token"] = token
@@ -179,5 +182,5 @@ async def _async_read_network_status(ws: aiohttp.ClientWebSocketResponse) -> Net
                 enabled if isinstance(enabled, bool) else None,
                 connected if isinstance(connected, bool) else None,
             )
-    return NO_NETWORK_STATUS
+    return NO_NETWORK_STATUS._replace(failure="no answer")
 

@@ -267,7 +267,7 @@ class TestAsyncQueryNetworkStatus(unittest.IsolatedAsyncioTestCase):
     async def test_a_refused_login_learns_nothing(self):
         result, _ = await _query_network(_FakeWs([[_login(err_code=1)]]))
 
-        self.assertEqual(result, NO_NETWORK_STATUS)
+        self.assertEqual(result, NO_NETWORK_STATUS._replace(failure="login refused"))
 
     async def test_unexpected_values_are_unknown(self):
         for data in ({}, {"rssi": True, "mqtt_enabled": 1, "mqtt_connected": "yes"}, None):
@@ -282,16 +282,16 @@ class TestAsyncQueryNetworkStatus(unittest.IsolatedAsyncioTestCase):
         )
         result, _ = await _query_network(ws)
 
-        self.assertEqual(result, NO_NETWORK_STATUS)
+        self.assertEqual(result, NO_NETWORK_STATUS._replace(failure="no answer"))
 
     async def test_a_connection_failure_learns_nothing(self):
         result, _ = await _query_network(
             connect_error=aiohttp.ClientConnectionError("refused")
         )
 
-        self.assertEqual(result, NO_NETWORK_STATUS)
+        self.assertEqual(result, NO_NETWORK_STATUS._replace(failure="ClientConnectionError"))
 
     async def test_an_unexpected_login_shape_learns_nothing(self):
         result, _ = await _query_network(_FakeWs([[_text({"type": "loginRsp"})]]))
 
-        self.assertEqual(result, NO_NETWORK_STATUS)
+        self.assertEqual(result, NO_NETWORK_STATUS._replace(failure="KeyError"))

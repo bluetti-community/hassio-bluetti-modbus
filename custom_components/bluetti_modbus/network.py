@@ -36,7 +36,24 @@ class NetworkStatusCoordinator(DataUpdateCoordinator[NetworkStatus]):
             update_interval=NETWORK_STATUS_SCAN_INTERVAL,
         )
         self._host = host
+        self._unanswered = False
 
     async def _async_update_data(self) -> NetworkStatus:
-        """Read the network status; unknown values when the page does not answer."""
-        return await async_query_network_status(self.hass, self._host)
+        """Read the network status; unknown values when the page does not answer.
+
+        Logged once when the page stops answering, with why, and once when
+        it answers again.
+        """
+        status = await async_query_network_status(self.hass, self._host)
+        if status.failure is not None:
+            if not self._unanswered:
+                self._unanswered = True
+                self.logger.info(
+                    "The device's web page does not answer the network status (%s): "
+                    "the Wi-Fi signal and the cloud connection are unknown until it does",
+                    status.failure,
+                )
+        elif self._unanswered:
+            self._unanswered = False
+            self.logger.info("The device's web page answers the network status again")
+        return status
