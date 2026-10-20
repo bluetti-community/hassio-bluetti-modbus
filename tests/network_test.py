@@ -43,6 +43,23 @@ class TestNetworkStatusCoordinator(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(coordinator.update_interval, NETWORK_STATUS_SCAN_INTERVAL)
 
 
+    async def test_logs_once_when_the_page_stops_answering_and_once_when_it_is_back(self):
+        failed = NO_NETWORK_STATUS._replace(failure="TimeoutError")
+        answers = [failed, failed, NetworkStatus(-70, True, True), NetworkStatus(-71, True, True)]
+        with patch(
+            "custom_components.bluetti_modbus.network.async_query_network_status",
+            new=AsyncMock(side_effect=answers),
+        ):
+            coordinator = NetworkStatusCoordinator(MagicMock(), MagicMock(), "10.2.1.128")
+            with self.assertLogs(coordinator.logger, "INFO") as logs:
+                for _ in answers:
+                    await coordinator._async_update_data()
+
+        self.assertEqual(len(logs.output), 2)
+        self.assertIn("does not answer the network status (TimeoutError)", logs.output[0])
+        self.assertIn("answers the network status again", logs.output[1])
+
+
 class TestEntities(unittest.TestCase):
     def test_the_signal_sensor_shows_the_rssi_in_dbm(self):
         sensor = BluettiWifiSignalSensor(_network(NetworkStatus(-75, True, True)), {}, "uid")
