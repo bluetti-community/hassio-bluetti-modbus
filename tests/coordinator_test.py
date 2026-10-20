@@ -284,6 +284,21 @@ class TestSameDevice(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["d_serial"], 9999999999999)
 
     @_shared
+    async def test_a_serial_read_as_zero_is_not_compared(self, link):
+        # An empty answer says nothing about which unit replied: no failed
+        # poll for it.
+        coordinator = PollingCoordinator(
+            MagicMock(), MagicMock(unique_id="1234567890123"), _config()
+        )
+        for blank in (0, ""):
+            with self.subTest(blank=blank):
+                link.read = AsyncMock(return_value={"d_serial": blank, "b_soc": 40})
+
+                result = await coordinator._async_update_data()
+
+                self.assertEqual(result["b_soc"], 40)
+
+    @_shared
     async def test_a_poll_without_a_serial_is_not_checked(self, link):
         # The S Meter serves no serial number over Modbus.
         link.read = AsyncMock(return_value={"b_soc": 40})

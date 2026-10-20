@@ -307,10 +307,15 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         has nothing to compare against. Not ridden out like a failed read:
         the next poll checks again, and the entities come back once the
         right unit answers.
+
+        A serial read as 0 or empty says nothing about which unit answered,
+        so it is not compared. The comparison relies on the serial decoding
+        the same way as when the entry was keyed on it: a library change to
+        how d_serial decodes needs a migration of the existing unique IDs.
         """
         entry = self.config_entry
         serial = result.get("d_serial")
-        if entry is None or serial is None:
+        if entry is None or not serial:
             return
         unique_id = entry.unique_id
         if not isinstance(unique_id, str) or unique_id == self.config.address:
