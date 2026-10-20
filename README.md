@@ -295,8 +295,11 @@ integration - documented here so you don't have to rediscover them.
   echoed address is the one on file for that register, with a warning naming it
   otherwise. Reported to BLUETTI.
 * **One connection at a time.** The device accepts very few simultaneous Modbus TCP
-  connections. If something else on your network already polls it, Home Assistant
-  may not get through.
+  connections (an EP2000 takes just one), and Home Assistant keeps its connection
+  open between polls. While it does, any other client (`bluetti-modread`, an energy
+  manager, another integration) is refused; if that client got there first, Home
+  Assistant is. Stop the other client first. For a one-off `bluetti-modread`,
+  disable the entry and restart Home Assistant, then enable it again afterwards.
 
 ## Troubleshooting 🐛
 
