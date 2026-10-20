@@ -4,8 +4,11 @@ from unittest.mock import MagicMock, patch
 import aiohttp
 
 from custom_components.bluetti_modbus.web_page import (
+    NO_NETWORK_STATUS,
     ModbusTcpSetting,
+    NetworkStatus,
     async_query_modbus_setting,
+    async_query_network_status,
 )
 
 _SESSION = "custom_components.bluetti_modbus.web_page.aiohttp_client.async_get_clientsession"
@@ -210,3 +213,85 @@ class TestAsyncQueryModbusSetting(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _network(data, err_code=0):
+    return _text(
+        {
+            "type": "networkStatusRsp",
+            "result": {"errCode": err_code, "message": "Success"},
+            "data": data,
+        }
+    )
+
+
+_STATUS = {
+    "ip": "10.2.1.128",
+    "rssi": -75,
+    "wifi_connected": True,
+    "ap_ssid": "Balco2602616210037358",
+    "mqtt_enabled": True,
+    "mqtt_connected": True,
+    "mqtt_step": 5,
+}
+
+
+async def _query_network(ws=None, connect_error=None):
+    session = MagicMock()
+    session.ws_connect = MagicMock(return_value=_FakeWsConnect(ws, connect_error))
+    with patch(_SESSION, return_value=session):
+        result = await async_query_network_status(MagicMock(), "10.2.1.128")
+    return result, session
+
+
+class TestAsyncQueryNetworkStatus(unittest.IsolatedAsyncioTestCase):
+    async def test_the_token_from_the_login_asks_for_the_network_status(self):
+        # Balco 260: the page logs in, then sends getNetworkStatus with the
+        # token and gets networkStatusRsp back.
+        ws = _FakeWs([[_login(token="t0k")], [_network(_STATUS)]])
+        result, session = await _query_network(ws)
+
+        self.assertEqual(result, NetworkStatus(-75, True, True))
+        session.ws_connect.assert_called_once_with("ws://10.2.1.128:80/ws")
+        self.assertEqual(
+            ws.sent, [_LOGIN, {"type": "getNetworkStatus", "data": {}, "token": "t0k"}]
+        )
+
+    async def test_a_login_without_a_token_asks_without_one(self):
+        ws = _FakeWs([[_login()], [_network({**_STATUS, "mqtt_connected": False})]])
+        result, _ = await _query_network(ws)
+
+        self.assertEqual(result, NetworkStatus(-75, True, False))
+        self.assertEqual(ws.sent, [_LOGIN, {"type": "getNetworkStatus", "data": {}}])
+
+    async def test_a_refused_login_learns_nothing(self):
+        result, _ = await _query_network(_FakeWs([[_login(err_code=1)]]))
+
+        self.assertEqual(result, NO_NETWORK_STATUS)
+
+    async def test_unexpected_values_are_unknown(self):
+        for data in ({}, {"rssi": True, "mqtt_enabled": 1, "mqtt_connected": "yes"}, None):
+            with self.subTest(data=data):
+                ws = _FakeWs([[_login(token="t")], [_network(data)]])
+                result, _ = await _query_network(ws)
+                self.assertEqual(result, NetworkStatus(None, None, None))
+
+    async def test_ignores_other_messages_and_learns_nothing_when_closed(self):
+        ws = _FakeWs(
+            [[_FakeMessage(aiohttp.WSMsgType.BINARY, b"\x00"), _config(_ON), _login(token="t")]]
+        )
+        result, _ = await _query_network(ws)
+
+        self.assertEqual(result, NO_NETWORK_STATUS)
+
+    async def test_a_connection_failure_learns_nothing(self):
+        result, _ = await _query_network(
+            connect_error=aiohttp.ClientConnectionError("refused")
+        )
+
+        self.assertEqual(result, NO_NETWORK_STATUS)
+
+    async def test_an_unexpected_login_shape_learns_nothing(self):
+        result, _ = await _query_network(_FakeWs([[_text({"type": "loginRsp"})]]))
+
+        self.assertEqual(result, NO_NETWORK_STATUS)

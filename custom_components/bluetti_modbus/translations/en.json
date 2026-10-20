@@ -759,11 +759,17 @@
       },
       "mppt_2_i_type": {
         "name": "MPPT 2 Input Type"
+      },
+      "wifi_rssi": {
+        "name": "Wi-Fi signal"
       }
     },
     "binary_sensor": {
       "d_status": {
         "name": "Online"
+      },
+      "cloud_connected": {
+        "name": "BLUETTI cloud connection"
       }
     },
     "number": {

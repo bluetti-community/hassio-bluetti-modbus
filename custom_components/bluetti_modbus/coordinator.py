@@ -16,6 +16,7 @@ from modbus_connection import ModbusTcpParams, ModbusUnit
 from modbus_connection.exceptions import ModbusError
 
 from .const import DOMAIN, INDIVIDUAL_BC260_PACKS_CONFIRMED, PACK_WINDOW_DEV_TYPES
+from .network import NetworkStatusCoordinator
 from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
     AC200L,
@@ -169,6 +170,9 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Failed polls since the last successful one - see
         # POLL_FAILURES_TOLERATED.
         self._failed_polls = 0
+        # The web page's network status, on the devices that serve it - set
+        # by async_setup_entry().
+        self.network: NetworkStatusCoordinator | None = None
 
     def _unit(self, unit_id: int) -> ModbusUnit:
         """Hold unit_id on this device's shared connection, until unload."""

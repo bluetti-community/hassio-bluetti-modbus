@@ -21,6 +21,7 @@ from .const import (
     MANUFACTURER,
 )
 from .coordinator import PollingCoordinator
+from .network import NETWORK_STATUS_DEV_TYPES, NetworkStatusCoordinator
 from .types import FullDeviceConfig as FullDeviceConfig
 from .types.initial_device_config import CONF_TYPE
 from .vendor.bluetti_modbus_lib import PACK_INFO_FIELDS
@@ -59,6 +60,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
+
+    if config.dev_type in NETWORK_STATUS_DEV_TYPES:
+        # Not a first refresh: an unanswered web page must not hold up setup.
+        coordinator.network = NetworkStatusCoordinator(hass, entry, config.address)
+        await coordinator.network.async_refresh()
 
     _reconcile_config_entry_unique_id(hass, entry, coordinator)
 
@@ -690,6 +696,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Home Assistant releases this entry's hold on the shared Modbus
         # connection itself once the unload completes (see the coordinator).
         await coordinator.async_shutdown()
+        network = getattr(coordinator, "network", None)
+        if isinstance(network, NetworkStatusCoordinator):
+            await network.async_shutdown()
 
     return unloaded
 
