@@ -51,8 +51,9 @@ documentation and verified against real hardware.
 | **AC500** | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
 | **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
+| **AC240** | Manual (IP) | AC output, DC output, grid charging, AC ECO, AC power lifting | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/176) |
 | **Apex 300** | Manual (IP) | AC output, DC output | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/49) |
-| **EP2000** | Manual (IP) | Read-only | [4 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
+| **EP2000** | Manual (IP) | Grid feed-in | [4 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
 
 Every field the device reports is shown as a reading; the controls listed are the
@@ -91,6 +92,12 @@ with the AC200L profile.
 - Energy and per-string PV fields are not yet seen non-zero on the EP500Pro and AC200L.
 - The AC200L and EP500Pro are absent from BLUETTI's official register list; they are
   supported from what real units return.
+
+**AC240**
+- The battery sub-device reads unknown until the BLUETTI app opens the battery page;
+  the unit fills those registers from then on.
+- No IoT serial or pack count entity: on this model the first holds the unit's own
+  serial and the second the most packs it takes, not the connected ones.
 
 **EP2000**
 - Modbus TCP is opened by the BLUETTI app's **VPP** option (VPP tile on the home
@@ -206,6 +213,15 @@ to find out what your device announces (an mDNS browse) and what its own web pag
 The device is contacted straight away, so a wrong address or a device with Modbus TCP
 still disabled fails immediately rather than after setup.
 
+### Changing a device's address
+
+If the device gets a new IP address, update the entry instead of re-adding it:
+**Settings** → **Devices & services** → **BLUETTI Modbus** → **⋮** on the entry →
+**Reconfigure**. The device is checked at the new address first, and the entry only
+moves there when the same unit answers.
+
+### Polling
+
 Polling is fixed and not configurable: the data area is read every 15 seconds and
 the settings block (output switches, grid charging, SOC thresholds - 57001 and up)
 every 60. Settings only change when you change them, so reading them less often is
@@ -231,7 +247,8 @@ set depends on your model.
 * **AC output** - power, per-phase voltage/current/power, lifetime output energy.
 * **Inverter** - status, type, per-inverter power/voltage/current, inverter totals.
 * **Diagnostics** - serial numbers, firmware versions, cell/pack/sensor counts,
-  protection and alarm registers.
+  protection and alarm registers. On a Balco 260, also the **Wi-Fi signal** (dBm),
+  read from the device's own web page every 5 minutes.
 * **S Meter** - per-phase voltage, current, active/reactive/apparent power and power
   factor on three **Phase A/B/C** sub-devices, with the totals and averages on the
   meter itself.
@@ -244,12 +261,17 @@ Only on the models whose writes are confirmed - see
 * **AC Output** / **DC Output** - turn that output on or off.
 * **Grid Charging** - allow or block charging from the grid.
 * **Grid Feed-in** - allow or block exporting to the grid.
+* **AC ECO** / **AC Power Lifting** - AC240.
 * **Min Discharge Limit (SoC Low)** (5-90%) and **Max Charge Limit (SoC High)**
   (0-100%) - Balco 260 only.
 
-### Binary sensors (S Meter)
+### Binary sensors
 
-* **Online** - whether the meter is reporting.
+* **Online** (S Meter) - whether the meter is reporting.
+* **BLUETTI cloud connection** and **Internet reachable** (Balco 260) - read from the
+  device's own web page every 5 minutes, with the Wi-Fi signal. **Wi-Fi connected**
+  and **Local network reachable** are there too but start disabled: the page is
+  reached through them, so they can only read on.
 
 ## Known limitations ⚠️
 
