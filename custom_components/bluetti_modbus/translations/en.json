@@ -770,6 +770,15 @@
       },
       "cloud_connected": {
         "name": "BLUETTI cloud connection"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi connected"
+      },
+      "lan_reachable": {
+        "name": "Local network reachable"
+      },
+      "wan_reachable": {
+        "name": "Internet reachable"
       }
     },
     "number": {

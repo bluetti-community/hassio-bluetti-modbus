@@ -229,7 +229,9 @@ _STATUS = {
     "ip": "10.2.1.128",
     "rssi": -75,
     "wifi_connected": True,
-    "ap_ssid": "Balco2602616210037358",
+    "lan_reachable": True,
+    "wan_reachable": False,
+    "ap_ssid": "Balco2601234567890123",
     "mqtt_enabled": True,
     "mqtt_connected": True,
     "mqtt_step": 5,
@@ -251,7 +253,7 @@ class TestAsyncQueryNetworkStatus(unittest.IsolatedAsyncioTestCase):
         ws = _FakeWs([[_login(token="t0k")], [_network(_STATUS)]])
         result, session = await _query_network(ws)
 
-        self.assertEqual(result, NetworkStatus(-75, True, True))
+        self.assertEqual(result, NetworkStatus(-75, True, True, True, True, False))
         session.ws_connect.assert_called_once_with("ws://10.2.1.128:80/ws")
         self.assertEqual(
             ws.sent, [_LOGIN, {"type": "getNetworkStatus", "data": {}, "token": "t0k"}]
@@ -261,7 +263,7 @@ class TestAsyncQueryNetworkStatus(unittest.IsolatedAsyncioTestCase):
         ws = _FakeWs([[_login()], [_network({**_STATUS, "mqtt_connected": False})]])
         result, _ = await _query_network(ws)
 
-        self.assertEqual(result, NetworkStatus(-75, True, False))
+        self.assertEqual(result, NetworkStatus(-75, True, False, True, True, False))
         self.assertEqual(ws.sent, [_LOGIN, {"type": "getNetworkStatus", "data": {}}])
 
     async def test_a_refused_login_learns_nothing(self):

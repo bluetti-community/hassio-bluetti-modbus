@@ -127,6 +127,9 @@ class NetworkStatus(NamedTuple):
     rssi: int | None
     cloud_enabled: bool | None
     cloud_connected: bool | None
+    wifi_connected: bool | None = None
+    lan_reachable: bool | None = None
+    wan_reachable: bool | None = None
     # Why nothing was learned, for the log; None when the page answered.
     failure: str | None = None
 
@@ -141,8 +144,9 @@ async def async_query_network_status(
 
     The page asks "getNetworkStatus" after its login and gets
     "networkStatusRsp", whose data carries rssi (dBm), mqtt_enabled and
-    mqtt_connected (the link to BLUETTI's cloud), confirmed on a Balco 260.
-    Only those three are kept: the same answer holds the network's addresses
+    mqtt_connected (the link to BLUETTI's cloud), wifi_connected,
+    lan_reachable and wan_reachable (the internet), confirmed on a Balco 260.
+    Only those six are kept: the same answer holds the network's addresses
     and the access point's name.
     """
     try:
@@ -175,12 +179,18 @@ async def _async_read_network_status(ws: aiohttp.ClientWebSocketResponse) -> Net
         elif msg_type == "networkStatusRsp":
             data = payload.get("data") or {}
             rssi = data.get("rssi")
-            enabled = data.get("mqtt_enabled")
-            connected = data.get("mqtt_connected")
             return NetworkStatus(
                 rssi if isinstance(rssi, int) and not isinstance(rssi, bool) else None,
-                enabled if isinstance(enabled, bool) else None,
-                connected if isinstance(connected, bool) else None,
+                _flag(data, "mqtt_enabled"),
+                _flag(data, "mqtt_connected"),
+                _flag(data, "wifi_connected"),
+                _flag(data, "lan_reachable"),
+                _flag(data, "wan_reachable"),
             )
     return NO_NETWORK_STATUS._replace(failure="no answer")
 
+
+def _flag(data: dict[str, Any], key: str) -> bool | None:
+    """A yes/no field of the answer, None when it is missing or not a bool."""
+    value = data.get(key)
+    return value if isinstance(value, bool) else None
