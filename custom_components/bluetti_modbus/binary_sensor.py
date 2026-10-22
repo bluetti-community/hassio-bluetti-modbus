@@ -56,7 +56,55 @@ async def async_setup_entry(
                 _unique_id_for(coordinator, device_info, "cloud_connected", "binary_sensor"),
             )
         )
+        entities.extend(
+            BluettiNetworkBinarySensor(
+                network,
+                device_info,
+                _unique_id_for(coordinator, device_info, field, "binary_sensor"),
+                field,
+            )
+            for field in NETWORK_FLAGS
+        )
     async_add_entities(entities)
+
+
+# The page's other yes/no network fields, each a diagnostic entity. Wi-Fi and
+# the local network can only read "on": the page itself is reached through
+# them, so they start disabled; the internet one can go off on its own.
+NETWORK_FLAGS = ("wifi_connected", "lan_reachable", "wan_reachable")
+_ENABLED_BY_DEFAULT = frozenset({"wan_reachable"})
+
+
+class BluettiNetworkBinarySensor(
+    CoordinatorEntity[NetworkStatusCoordinator], BinarySensorEntity
+):
+    """One yes/no field of the device's network status, from its web page."""
+
+    _attr_has_entity_name = True
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: NetworkStatusCoordinator,
+        device_info: DeviceInfo,
+        unique_id: str,
+        field: str,
+    ) -> None:
+        """Init the binary sensor."""
+        super().__init__(coordinator)
+        self._field = field
+        self._attr_device_info = device_info
+        self._attr_unique_id = unique_id
+        self._attr_translation_key = field
+        self._attr_entity_registry_enabled_default = field in _ENABLED_BY_DEFAULT
+
+    @property
+    def is_on(self) -> bool | None:
+        """The field's value, or unknown when the page did not say."""
+        data = self.coordinator.data
+        value: bool | None = getattr(data, self._field) if data else None
+        return value
 
 
 class BluettiCloudConnectionBinarySensor(

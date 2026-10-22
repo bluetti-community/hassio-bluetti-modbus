@@ -207,6 +207,15 @@
     "binary_sensor": {
       "cloud_connected": {
         "name": "BLUETTI-Cloud-Verbindung"
+      },
+      "wifi_connected": {
+        "name": "WLAN verbunden"
+      },
+      "lan_reachable": {
+        "name": "Lokales Netzwerk erreichbar"
+      },
+      "wan_reachable": {
+        "name": "Internet erreichbar"
       }
     }
   },

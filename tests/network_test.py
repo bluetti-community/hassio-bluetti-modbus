@@ -7,7 +7,9 @@ from homeassistant.const import EntityCategory
 
 from custom_components.bluetti_modbus import async_setup_entry, async_unload_entry
 from custom_components.bluetti_modbus.binary_sensor import (
+    NETWORK_FLAGS,
     BluettiCloudConnectionBinarySensor,
+    BluettiNetworkBinarySensor,
 )
 from custom_components.bluetti_modbus.binary_sensor import (
     async_setup_entry as binary_sensor_setup,
@@ -82,6 +84,31 @@ class TestEntities(unittest.TestCase):
         self.assertEqual(sensor.entity_category, EntityCategory.DIAGNOSTIC)
         self.assertEqual(sensor.translation_key, "cloud_connected")
 
+    def test_the_network_flags_show_their_field(self):
+        status = NetworkStatus(-75, True, True, True, True, False)
+        for field, expected in (
+            ("wifi_connected", True),
+            ("lan_reachable", True),
+            ("wan_reachable", False),
+        ):
+            with self.subTest(field=field):
+                sensor = BluettiNetworkBinarySensor(_network(status), {}, "uid", field)
+                self.assertIs(sensor.is_on, expected)
+                self.assertEqual(sensor.translation_key, field)
+                self.assertEqual(sensor.device_class, BinarySensorDeviceClass.CONNECTIVITY)
+                self.assertEqual(sensor.entity_category, EntityCategory.DIAGNOSTIC)
+                # Wi-Fi and the local network can only read "on" while the
+                # page answers: only the internet one starts enabled.
+                self.assertEqual(
+                    sensor.entity_registry_enabled_default, field == "wan_reachable"
+                )
+
+    def test_the_network_flags_are_unknown_before_any_answer(self):
+        for data in (None, NO_NETWORK_STATUS):
+            with self.subTest(data=data):
+                sensor = BluettiNetworkBinarySensor(_network(data), {}, "u", "wan_reachable")
+                self.assertIsNone(sensor.is_on)
+
     def test_both_are_unknown_before_any_answer(self):
         for data in (None, NO_NETWORK_STATUS):
             with self.subTest(data=data):
@@ -126,6 +153,8 @@ class TestPlatforms(unittest.IsolatedAsyncioTestCase):
                 await binary_sensor_setup(MagicMock(), entry, added.extend)
                 cloud = [e for e in added if isinstance(e, BluettiCloudConnectionBinarySensor)]
                 self.assertEqual(len(cloud), expected)
+                flags = [e for e in added if isinstance(e, BluettiNetworkBinarySensor)]
+                self.assertEqual(len(flags), expected * len(NETWORK_FLAGS))
 
 
 class TestSetupAndUnload(unittest.IsolatedAsyncioTestCase):
