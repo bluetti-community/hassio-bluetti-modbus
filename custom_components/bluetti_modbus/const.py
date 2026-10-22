@@ -35,12 +35,11 @@ AC500_CONFIRMED = True
 # Balco 500 (bluetti-modbus 0.19.0+) reuses Balco260's own register set -
 # BLUETTI's own official register spec files both under the same generic
 # "BalcoXX" tab, not a Balco260-specific one (see bluetti-community/
-# bluetti-registers#27). Read on a real unit (bluetti-registers#68), but
-# not yet set up in Home Assistant by its owner, so it stays out of 3.1.0
-# and comes back on the next beta line. Same mechanism as AC500_CONFIRMED
-# above: config_flow.py only offers "balco500" in its dropdown while this is
-# True; an entry already set up keeps working.
-BALCO500_CONFIRMED = False
+# bluetti-registers#27). Read on a real unit (bluetti-registers#68) and
+# offered on the 3.2.0 beta line for its owner's test in Home Assistant.
+# Same mechanism as AC500_CONFIRMED above: config_flow.py only offers
+# "balco500" in its dropdown while this is True.
+BALCO500_CONFIRMED = True
 
 # AC200L (bluetti-modbus 0.22.1+, bluetti-registers 0.0.43): a
 # portable power station absent from BLUETTI's official register list,
