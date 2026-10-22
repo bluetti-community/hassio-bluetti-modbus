@@ -100,10 +100,11 @@ with the AC200L profile.
   serial and the second the most packs it takes, not the connected ones.
 
 **EP2000**
-- Modbus TCP is opened by the BLUETTI app's **VPP** option (VPP tile on the home
-  page → Join VPP → a provider, port 502); the web page has no switch for it. The
-  providers listed differ by region, and if the tile is missing, updating the
-  BLUETTI app can bring it (it appeared with app 3.1.5 on one unit). A virtual
+- Modbus TCP is opened by the BLUETTI app's **VPP** option (the **Virtual Power
+  Plant - Join VPP** row on the unit's page, below the energy flow → a provider,
+  port 502); the web page has no switch for it. The providers listed differ by
+  region, and if the row is missing, updating the BLUETTI app can bring it (it
+  appeared with app 3.1.5 on one unit). A virtual
   power plant can let an aggregator charge and discharge the battery, so know
   what your provider's option authorises before enabling it.
 - The grid entities measure the EP2000's own grid port, not the house's connection
