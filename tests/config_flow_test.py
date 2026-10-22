@@ -463,6 +463,18 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
                 )
                 self.assertEqual(error, "modbus_tcp_disabled")
 
+    async def test_the_failed_address_goes_into_the_message(self):
+        flow = _flow()
+        with (
+            _patched_probe(read_side_effect=ModbusConnectionError("no route to host")),
+            _patched_web_page(enabled=False, encrypted=False),
+            patch.object(flow, "async_show_form", return_value="form") as show_form,
+        ):
+            await flow.async_step_user({"address": "10.2.1.60", "port": 502, "type": "balco260"})
+        self.assertEqual(
+            show_form.call_args.kwargs["description_placeholders"]["address"], "10.2.1.60"
+        )
+
     async def test_an_enabled_unencrypted_setting_keeps_the_generic_error(self):
         error = await self._failed_user_step(
             "balco260", web_page=_patched_web_page(enabled=True, encrypted=False)
@@ -616,7 +628,9 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
         ):
             result = await flow.async_step_zeroconf(_discovery_info())
 
-        async_abort.assert_called_once_with(reason="modbus_tcp_disabled")
+        async_abort.assert_called_once_with(
+            reason="modbus_tcp_disabled", description_placeholders={"address": "10.2.1.80"}
+        )
         probe.assert_not_awaited()
         self.assertEqual(result, "aborted")
 
@@ -632,7 +646,9 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
         ):
             result = await flow.async_step_zeroconf(_discovery_info())
 
-        async_abort.assert_called_once_with(reason="modbus_tcp_encrypted")
+        async_abort.assert_called_once_with(
+            reason="modbus_tcp_encrypted", description_placeholders={"address": "10.2.1.80"}
+        )
         probe.assert_not_awaited()
         self.assertEqual(result, "aborted")
 
@@ -834,7 +850,9 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
                 ):
                     await flow.async_step_zeroconf(_balco260_discovery_info())
 
-                async_abort.assert_called_once_with(reason=reason)
+                async_abort.assert_called_once_with(
+                    reason=reason, description_placeholders={"address": "10.2.1.128"}
+                )
                 self.assertEqual(web_page.await_args.args[1:], ("10.2.1.128", 80))
 
     async def test_aborts_when_modbus_does_not_respond(self):
@@ -849,7 +867,9 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         ):
             result = await flow.async_step_zeroconf(_balco260_discovery_info())
 
-        async_abort.assert_called_once_with(reason="cannot_connect")
+        async_abort.assert_called_once_with(
+            reason="cannot_connect", description_placeholders={"address": "10.2.1.128"}
+        )
         self.assertEqual(result, "aborted")
 
     async def test_aborts_for_an_address_already_configured_before_connecting(self):
@@ -1146,5 +1166,6 @@ class TestConfigFlowReconfigureStep(unittest.IsolatedAsyncioTestCase):
         update.assert_not_called()
         self.assertEqual(show_form.call_args.kwargs["errors"], {"base": "cannot_connect"})
         self.assertEqual(
-            show_form.call_args.kwargs["description_placeholders"], {"error": "no route to host"}
+            show_form.call_args.kwargs["description_placeholders"],
+            {"error": "no route to host", "address": "10.2.1.61"},
         )

@@ -137,6 +137,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except PROBE_ERRORS as err:
                 errors["base"] = await _async_failure_reason(self.hass, address, dev_type)
                 description_placeholders["error"] = str(err)
+                description_placeholders["address"] = address
 
             if not errors:
                 # Plain product name, matching how other integrations name a
@@ -309,6 +310,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except PROBE_ERRORS as err:
                 errors["base"] = await _async_failure_reason(self.hass, address, dev_type)
                 description_placeholders["error"] = str(err)
+                description_placeholders["address"] = address
             else:
                 serial = values.get("d_serial")
                 keyed_on_address = entry.unique_id in (None, entry.data[CONF_ADDRESS])
@@ -428,9 +430,13 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         ws_info = await async_query_smeter(self.hass, host, discovery_info.port or 80)
         if ws_info.modbus_tcp_enabled is False:
-            return self.async_abort(reason="modbus_tcp_disabled")
+            return self.async_abort(
+                reason="modbus_tcp_disabled", description_placeholders={"address": host}
+            )
         if ws_info.modbus_tcp_encrypted is True:
-            return self.async_abort(reason="modbus_tcp_encrypted")
+            return self.async_abort(
+                reason="modbus_tcp_encrypted", description_placeholders={"address": host}
+            )
 
         try:
             await _async_probe(self.hass, host, 502, "smeter")
@@ -479,7 +485,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(
                 reason=await _async_failure_reason(
                     self.hass, host, "balco260", discovery_info.port or 80
-                )
+                ),
+                description_placeholders={"address": host},
             )
 
         await self.async_set_unique_id(
