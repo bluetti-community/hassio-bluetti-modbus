@@ -266,6 +266,11 @@ Only on the models whose writes are confirmed - see
 * **Min Discharge Limit (SoC Low)** (5-90%) and **Max Charge Limit (SoC High)**
   (0-100%) - Balco 260 only.
 
+> [!CAUTION]
+> Don't switch the AC output off and on again within a few seconds, by hand or from an
+> automation. On a Balco 260, off and on 13 seconds apart under load was followed by an
+> inverter fault that switched the output off. No safe minimum interval is known yet.
+
 ### Binary sensors
 
 * **Online** (S Meter) - whether the meter is reporting.
