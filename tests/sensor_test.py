@@ -248,6 +248,24 @@ class TestHandleCoordinatorUpdate(unittest.TestCase):
         self.assertTrue(sensor.available)
         self.assertEqual(sensor.native_value, 84)
 
+    def test_a_zero_marked_unknown_reads_unknown_and_other_values_pass(self):
+        # A Balco 260's PV AC energy reads 0 for a single poll now and then:
+        # a total_increasing sensor would count it as a meter reset.
+        sensor = _sensor(response_key="pv_ac_e", zero_is_unknown=True)
+        sensor.coordinator.data = {"pv_ac_e": 0}
+        sensor._handle_coordinator_update()
+        self.assertTrue(sensor.available)
+        self.assertIsNone(sensor.native_value)
+        sensor.coordinator.data = {"pv_ac_e": 138.2}
+        sensor._handle_coordinator_update()
+        self.assertEqual(sensor.native_value, 138.2)
+
+    def test_a_zero_is_a_value_by_default(self):
+        sensor = _sensor(response_key="g_o_e_total")
+        sensor.coordinator.data = {"g_o_e_total": 0}
+        sensor._handle_coordinator_update()
+        self.assertEqual(sensor.native_value, 0)
+
     def test_enum_value_uses_its_snake_cased_name(self):
         # Not the raw PascalCase name - HA's hassfest requires translation
         # keys (and therefore the raw state values they translate) to match
@@ -782,6 +800,41 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             self.assertEqual("d_iot_serial" in keys, shown, dev_type)
             self.assertEqual("d_num_battery_packs" in keys, shown, dev_type)
             self.assertIn("d_num_inverters", keys, dev_type)
+
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_only_a_balco_260_pv_ac_energy_reads_a_zero_as_unknown(
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
+    ):
+        dev_info_fn.return_value = _device_info()
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
+
+        def _field(name):
+            f = MagicMock(address=50020, unit="kWh", writable=False)
+            f.name = name
+            return f
+
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = ["pv_ac_e", "pv_i_e_total"]
+        bluetti_device.get_field.side_effect = _field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        for dev_type, expected in (("balco260", True), ("balco500", False)):
+            config_cls.from_dict.return_value = MagicMock(dev_type=dev_type, address="10.2.1.60")
+            coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+            added = []
+
+            await async_setup_entry(
+                MagicMock(), MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend
+            )
+
+            flags = {s._response_key: s._zero_is_unknown for s in added}
+            self.assertEqual(flags["pv_ac_e"], expected, dev_type)
+            self.assertFalse(flags["pv_i_e_total"], dev_type)
 
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")

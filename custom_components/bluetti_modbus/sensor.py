@@ -88,6 +88,12 @@ _REAL_PACK_TEMPERATURE = ("ep2000",)
 # from import; the signed per-phase powers are the readings to use.
 _UNSIGNED_GRID_TOTAL = ("ep2000",)
 
+# Lifetime totals a device reads as 0 for a single poll now and then, the
+# next poll bringing the real total back: shown as unknown instead, since a
+# total_increasing sensor would count each 0 as a meter reset and add the
+# whole total to the statistics again when it returns.
+_ZERO_IS_UNKNOWN = {("balco260", "pv_ac_e")}
+
 # Numbered fields and the count the unit reports for their group: a number
 # above the count is a phase, inverter, PV input or firmware slot the unit
 # says it does not have, so its entity is created disabled. The registers are
@@ -350,6 +356,7 @@ async def async_setup_entry(
             enabled_by_default=metadata.enabled_by_default,
             logger=logger,
             translation_key=translation_key,
+            zero_is_unknown=(config.dev_type, field.name) in _ZERO_IS_UNKNOWN,
         )
         sensors_to_add.append(sensor)
         if beyond_count:
@@ -513,10 +520,12 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
         enabled_by_default: bool = True,
         display_precision: int | None = None,
         translation_key: str | None = None,
+        zero_is_unknown: bool = False,
     ) -> None:
         """Init sensor entity."""
         super().__init__(coordinator)
         self.coordinator = coordinator
+        self._zero_is_unknown = zero_is_unknown
         self._pack_num = pack_num
         self._cell_num = cell_num
         self._logger = logger or logging.getLogger(__name__)
@@ -722,6 +731,8 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
         elif isinstance(response_data, list):
             assert cell_num is not None
             self._attr_native_value = response_data[cell_num - 1]
+        elif self._zero_is_unknown and response_data == 0:
+            self._attr_native_value = None
         else:
             # Numeric
             self._attr_native_value = response_data
