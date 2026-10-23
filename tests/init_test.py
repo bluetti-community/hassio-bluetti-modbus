@@ -75,6 +75,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         entry = MagicMock()
         entry.entry_id = "entry1"
+        entry.unique_id = "10.2.1.60"
         entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
 
         hass = MagicMock()
@@ -1642,6 +1643,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 class TestDeviceInfo(unittest.TestCase):
     def test_returns_device_info_for_valid_entry(self):
         entry = MagicMock()
+        entry.unique_id = "10.2.1.60"
         entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
         entry.title = "My Balco260"
 
@@ -1651,6 +1653,19 @@ class TestDeviceInfo(unittest.TestCase):
         self.assertEqual(info["name"], "My Balco260")
         self.assertEqual(info["model"], "Balco 260")
         self.assertEqual(info["configuration_url"], "http://10.2.1.60")
+
+    def test_a_serial_keyed_entry_also_identifies_the_device_by_serial(self):
+        # The identifier Home Assistant's built-in bluetti_modbus gives it.
+        entry = MagicMock()
+        entry.unique_id = "1234567890123"
+        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
+        entry.title = "Balco 260"
+
+        info = device_info(entry)
+
+        self.assertEqual(
+            info["identifiers"], {(DOMAIN, "10.2.1.60"), (DOMAIN, "1234567890123")}
+        )
 
     def test_returns_none_for_invalid_entry(self):
         entry = MagicMock()
@@ -1978,7 +1993,19 @@ class TestUniqueIdFor(unittest.TestCase):
             coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
         )
 
-        self.assertEqual(result, "1234567890123_my_device_d_num_inverters")
+        # Home Assistant's built-in bluetti_modbus scheme: serial, then field.
+        self.assertEqual(result, "1234567890123_d_num_inverters")
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_a_serial_read_as_0_keeps_the_named_scheme(self, er_module):
+        er_module.async_get.return_value.async_get_entity_id.return_value = None
+        coordinator = self._coordinator(data={"d_serial": 0})
+
+        result = _unique_id_for(
+            coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
+        )
+
+        self.assertEqual(result, "0_my_device_d_num_inverters")
 
     @patch("custom_components.bluetti_modbus.er")
     def test_uses_the_battery_serial_for_a_pack_info_field_without_pack_num(
@@ -1996,7 +2023,13 @@ class TestUniqueIdFor(unittest.TestCase):
             coordinator, {"name": "My Device Battery"}, "b_soc", "sensor"
         )
 
-        self.assertEqual(result, "999_my_device_battery_b_soc")
+        # The built-in battery's fields go on the device serial too, as in
+        # Home Assistant's built-in integration; the renaming looks up the
+        # battery-serial name they had before.
+        self.assertEqual(result, "111_b_soc")
+        registry.async_get_entity_id.assert_any_call(
+            "sensor", DOMAIN, "999_my_device_battery_b_soc"
+        )
 
     @patch("custom_components.bluetti_modbus.er")
     def test_uses_the_pack_serial_when_pack_num_is_given(self, er_module):
@@ -2037,21 +2070,45 @@ class TestUniqueIdFor(unittest.TestCase):
         # disconnected entity_id.
         registry = MagicMock()
         er_module.async_get.return_value = registry
-        registry.async_get_entity_id.return_value = "sensor.my_device_d_num_inverters"
+        registered = {"entry1_my_device_d_num_inverters": "sensor.my_device_d_num_inverters"}
+        registry.async_get_entity_id.side_effect = lambda d, p, uid: registered.get(uid)
         coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
         result = _unique_id_for(
             coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
         )
 
-        self.assertEqual(result, "1234567890123_my_device_d_num_inverters")
-        registry.async_get_entity_id.assert_called_once_with(
-            "sensor", DOMAIN, "entry1_my_device_d_num_inverters"
-        )
+        self.assertEqual(result, "1234567890123_d_num_inverters")
         registry.async_update_entity.assert_called_once_with(
             "sensor.my_device_d_num_inverters",
-            new_unique_id="1234567890123_my_device_d_num_inverters",
+            new_unique_id="1234567890123_d_num_inverters",
         )
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_renames_a_named_scheme_registration_to_the_built_in_scheme(self, er_module):
+        # Every entity registered before: serial, device name, field.
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registered = {"1234567890123_my_device_d_num_inverters": "sensor.x"}
+        registry.async_get_entity_id.side_effect = lambda d, p, uid: registered.get(uid)
+        coordinator = self._coordinator(data={"d_serial": 1234567890123})
+
+        _unique_id_for(coordinator, {"name": "My Device"}, "d_num_inverters", "sensor")
+
+        registry.async_update_entity.assert_called_once_with(
+            "sensor.x", new_unique_id="1234567890123_d_num_inverters"
+        )
+
+    @patch("custom_components.bluetti_modbus.er")
+    def test_does_not_rename_onto_a_unique_id_already_taken(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        registry.async_get_entity_id.return_value = "sensor.taken"
+        coordinator = self._coordinator(data={"d_serial": 1234567890123})
+
+        _unique_id_for(coordinator, {"name": "My Device"}, "d_num_inverters", "sensor")
+
+        registry.async_update_entity.assert_not_called()
 
     @patch("custom_components.bluetti_modbus.er")
     def test_does_not_rename_anything_for_a_fresh_install_with_no_legacy_entity(

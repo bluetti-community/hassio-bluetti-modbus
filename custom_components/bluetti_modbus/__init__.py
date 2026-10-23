@@ -819,17 +819,32 @@ def _unique_id_for(
 
     name = device_info.get("name")
     suffix = f"{response_key} {cell_num}" if cell_num is not None else response_key
-    new_unique_id = get_unique_id(f"{identity} {name} {suffix}")
+    named_unique_id = get_unique_id(f"{identity} {name} {suffix}")
 
+    # The scheme Home Assistant's built-in bluetti_modbus uses, the device
+    # serial then the field: an entity keeps its entity_id and history when
+    # an entry moves between the two. Packs, cells and devices with no
+    # serial (an S Meter) keep the named scheme above.
+    d_serial = data.get("d_serial")
+    if pack_num is None and cell_num is None and d_serial not in (None, 0, ""):
+        new_unique_id = f"{d_serial}_{response_key}"
+    else:
+        new_unique_id = named_unique_id
+
+    legacy_unique_ids = [named_unique_id]
     if serial is not None:
-        legacy_unique_id = get_unique_id(
-            f"{coordinator.config_entry.entry_id} {name} {suffix}"
+        legacy_unique_ids.append(
+            get_unique_id(f"{coordinator.config_entry.entry_id} {name} {suffix}")
         )
-        if legacy_unique_id != new_unique_id:
-            registry = er.async_get(coordinator.hass)
-            entity_id = registry.async_get_entity_id(domain, DOMAIN, legacy_unique_id)
-            if entity_id is not None:
-                registry.async_update_entity(entity_id, new_unique_id=new_unique_id)
+    legacy_unique_ids = [uid for uid in legacy_unique_ids if uid != new_unique_id]
+    if legacy_unique_ids:
+        registry = er.async_get(coordinator.hass)
+        if registry.async_get_entity_id(domain, DOMAIN, new_unique_id) is None:
+            for legacy_unique_id in legacy_unique_ids:
+                entity_id = registry.async_get_entity_id(domain, DOMAIN, legacy_unique_id)
+                if entity_id is not None:
+                    registry.async_update_entity(entity_id, new_unique_id=new_unique_id)
+                    break
 
     return new_unique_id
 
@@ -851,8 +866,13 @@ def device_info(
     if config is None:
         return None
 
+    identifiers = {(DOMAIN, config.address)}
+    # The identifier Home Assistant's built-in bluetti_modbus gives the same
+    # unit, its serial: the device is found again when an entry moves.
+    if entry.unique_id not in (None, config.address):
+        identifiers.add((DOMAIN, str(entry.unique_id)))
     info = DeviceInfo(
-        identifiers={(DOMAIN, config.address)},
+        identifiers=identifiers,
         name=entry.title,
         manufacturer=MANUFACTURER,
         model=DEVICE_TYPE_DISPLAY_NAMES.get(config.dev_type, config.dev_type),
