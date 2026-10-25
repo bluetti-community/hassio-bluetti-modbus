@@ -51,7 +51,7 @@ documentation and verified against real hardware.
 | **AC500** | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
 | **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
-| **AC240** | Manual (IP) | AC output, DC output, grid charging, AC ECO, AC power lifting | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/176) |
+| **AC240**, **AC240P** | Manual (IP) | AC output, DC output, grid charging, AC ECO, AC power lifting | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/176) |
 | **Apex 300** | Manual (IP) | AC output, DC output | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/49) |
 | **EP2000** | Manual (IP) | Grid feed-in | [4 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
@@ -93,9 +93,10 @@ with the AC200L profile.
 - The AC200L and EP500Pro are absent from BLUETTI's official register list; they are
   supported from what real units return.
 
-**AC240**
-- The battery sub-device reads unknown until the BLUETTI app opens the battery page;
-  the unit fills those registers from then on.
+**AC240, AC240P** - an AC240P is added with the AC240 type.
+- The battery sub-device reads unknown except while the BLUETTI app shows the battery
+  page: the unit only fills those registers then.
+- On an AC240P, the DC Output switch also switches the USB ports.
 - No IoT serial or pack count entity: on this model the first holds the unit's own
   serial and the second the most packs it takes, not the connected ones.
 
