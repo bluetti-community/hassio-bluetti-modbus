@@ -11,11 +11,16 @@ from homeassistant.const import EntityCategory
 
 from custom_components.bluetti_modbus.const import FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO
 from custom_components.bluetti_modbus.sensor import (
+    BluettiCodesSensor,
     BluettiSensor,
     _display_precision,
     _enum_options,
     _snake_case,
     async_setup_entry,
+)
+from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+    InverterFault,
+    InverterWarning,
 )
 
 
@@ -482,12 +487,11 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
-    async def test_fault_and_warning_fields_get_no_entity_at_all(
+    async def test_fault_and_warning_fields_become_code_sensors(
         self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
     ):
-        # bluetti_modbus_lib's InverterFault/InverterWarning enums only
-        # declare their zero member, so a real fault code decodes to None
-        # and reaches HA as "unknown" - see const.py's FIELDS_NOT_SHOWN.
+        # Not plain sensors (const.py's FIELDS_NOT_SHOWN): one code sensor
+        # each, counting the active E codes.
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
         phase_device_info_fn.side_effect = lambda hass, entry, phase: {
@@ -517,8 +521,11 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         # Both would raise on get_field (not in the side_effect dict) if
-        # they weren't skipped before ever being looked up.
-        self.assertEqual([s._response_key for s in added], ["ac_o_p_total"])
+        # they weren't skipped by the plain-sensor loop.
+        plain = [s._response_key for s in added if isinstance(s, BluettiSensor)]
+        self.assertEqual(plain, ["ac_o_p_total"])
+        codes = [s._field_name for s in added if isinstance(s, BluettiCodesSensor)]
+        self.assertEqual(codes, ["d_inverter_fault", "d_inverter_warning"])
 
     @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
@@ -1547,3 +1554,44 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
 
         battery_device_info_fn.assert_not_called()
         self.assertEqual(added, [])
+
+
+class TestCodesSensor(unittest.TestCase):
+    def _sensor(self, field_name, data):
+        coordinator = MagicMock(config_entry=MagicMock(entry_id="e"), data=data)
+        return BluettiCodesSensor(coordinator, _device_info(), field_name, "uid")
+
+    def test_counts_the_active_codes_and_names_them(self):
+        # A Balco 260 that showed E012 in the BLUETTI app read 2048 in 50027.
+        sensor = self._sensor(
+            "d_inverter_fault", {"d_inverter_fault": InverterFault.E012 | InverterFault.E065}
+        )
+
+        self.assertEqual(sensor.native_value, 2)
+        self.assertEqual(
+            sensor.extra_state_attributes,
+            {
+                "codes": ["E012", "E065"],
+                "descriptions": ["Main relay failure", "DC output short circuit"],
+            },
+        )
+        self.assertEqual(sensor.translation_key, "d_inverter_fault")
+        self.assertEqual(sensor.entity_category, EntityCategory.DIAGNOSTIC)
+        self.assertEqual(sensor.unique_id, "uid")
+
+    def test_no_code_is_zero(self):
+        sensor = self._sensor(
+            "d_inverter_warning", {"d_inverter_warning": InverterWarning.NoWarning}
+        )
+
+        self.assertEqual(sensor.native_value, 0)
+        self.assertEqual(sensor.extra_state_attributes, {"codes": [], "descriptions": []})
+
+    def test_unknown_before_any_read(self):
+        for data in (None, {}):
+            with self.subTest(data=data):
+                sensor = self._sensor("d_inverter_warning", data)
+                self.assertIsNone(sensor.native_value)
+                self.assertEqual(
+                    sensor.extra_state_attributes, {"codes": [], "descriptions": []}
+                )

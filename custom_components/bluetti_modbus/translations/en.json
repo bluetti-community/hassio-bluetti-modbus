@@ -762,6 +762,12 @@
       },
       "wifi_rssi": {
         "name": "Wi-Fi signal"
+      },
+      "d_inverter_fault": {
+        "name": "Inverter faults"
+      },
+      "d_inverter_warning": {
+        "name": "Inverter warnings"
       }
     },
     "binary_sensor": {

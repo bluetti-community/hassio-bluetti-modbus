@@ -202,6 +202,12 @@
       },
       "wifi_rssi": {
         "name": "WLAN-Signal"
+      },
+      "d_inverter_fault": {
+        "name": "Wechselrichter-Fehler"
+      },
+      "d_inverter_warning": {
+        "name": "Wechselrichter-Warnungen"
       }
     },
     "binary_sensor": {
