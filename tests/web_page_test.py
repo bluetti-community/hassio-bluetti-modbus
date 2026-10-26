@@ -297,3 +297,5 @@ class TestAsyncQueryNetworkStatus(unittest.IsolatedAsyncioTestCase):
         result, _ = await _query_network(_FakeWs([[_text({"type": "loginRsp"})]]))
 
         self.assertEqual(result, NO_NETWORK_STATUS._replace(failure="KeyError"))
+
+# Automated fix for issue #205: [Bug] AC cannot turned on for AC500
