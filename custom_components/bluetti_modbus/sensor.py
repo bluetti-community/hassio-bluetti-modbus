@@ -52,7 +52,13 @@ from .const import (
 from .coordinator import PollingCoordinator
 from .field_metadata import metadata_for
 from .network import NetworkStatusCoordinator
-from .vendor.bluetti_modbus_lib import MAX_BATTERY_PACKS, PACK_INFO_FIELDS, get_device
+from .vendor.bluetti_modbus_lib import (
+    FAULT_DESCRIPTIONS,
+    MAX_BATTERY_PACKS,
+    PACK_INFO_FIELDS,
+    WARNING_DESCRIPTIONS,
+    get_device,
+)
 
 # field name -> phase, the reverse of SMETER_PHASE_FIELDS's phase -> fields.
 # AC500, AC200L, EP500P and PA030: the same register family (AC200L's
@@ -430,6 +436,19 @@ async def async_setup_entry(
 
     async_add_entities(sensors_to_add)
 
+    # The inverter's fault and warning registers: one BLUETTI E code per set
+    # bit, on the devices whose profile reads them.
+    async_add_entities(
+        BluettiCodesSensor(
+            coordinator,
+            device_info,
+            name,
+            _unique_id_for(coordinator, device_info, name, "sensor"),
+        )
+        for name in _CODE_DESCRIPTIONS
+        if name in bluetti_device.get_sensors()
+    )
+
     network = getattr(coordinator, "network", None)
     if isinstance(network, NetworkStatusCoordinator):
         async_add_entities(
@@ -465,6 +484,63 @@ class BluettiWifiSignalSensor(CoordinatorEntity[NetworkStatusCoordinator], Senso
     def native_value(self) -> int | None:
         """The signal, in dBm, or unknown when the page did not say."""
         return self.coordinator.data.rssi if self.coordinator.data else None
+
+
+# The descriptions of each code field's E codes (BLUETTI's fault and alarm
+# table, from the library).
+_CODE_DESCRIPTIONS: dict[str, dict[str, str]] = {
+    "d_inverter_fault": FAULT_DESCRIPTIONS,
+    "d_inverter_warning": WARNING_DESCRIPTIONS,
+}
+
+
+class BluettiCodesSensor(CoordinatorEntity[PollingCoordinator], SensorEntity):
+    """How many inverter fault or warning codes are active, and which.
+
+    The state is the count (0 when all is well); the codes and their meaning
+    are attributes, so an automation can trigger on the count and a card can
+    show the codes.
+    """
+
+    _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: PollingCoordinator,
+        device_info: DeviceInfo,
+        field_name: str,
+        unique_id: str,
+    ) -> None:
+        """Init the sensor."""
+        super().__init__(coordinator)
+        self._field_name = field_name
+        self._descriptions = _CODE_DESCRIPTIONS[field_name]
+        self._attr_device_info = device_info
+        self._attr_unique_id = unique_id
+        self._attr_translation_key = field_name
+
+    def _codes(self) -> list[str] | None:
+        """The active codes, or None when the field was not read."""
+        value = (self.coordinator.data or {}).get(self._field_name)
+        if value is None:
+            return None
+        return [code.name for code in value if code.name]
+
+    @property
+    def native_value(self) -> int | None:
+        """The number of active codes."""
+        codes = self._codes()
+        return None if codes is None else len(codes)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, list[str]]:
+        """The active codes and what each one means."""
+        codes = self._codes() or []
+        return {
+            "codes": codes,
+            "descriptions": [self._descriptions[code] for code in codes],
+        }
 
 
 def _disable_registered_beyond_count(

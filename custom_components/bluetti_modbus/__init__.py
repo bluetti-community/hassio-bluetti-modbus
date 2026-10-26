@@ -131,7 +131,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=str(serial))
 
 
-_CURRENT_VERSION = 25
+_CURRENT_VERSION = 26
 
 # The built-in battery's b_ver_2-4 sensors, retired by the 20 -> 21 step.
 _BATTERY_FIRMWARE_SLOT_SUFFIXES = ("battery_b_ver_2", "battery_b_ver_3", "battery_b_ver_4")
@@ -686,6 +686,17 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ):
                     registry.async_remove(entity_entry.entity_id)
         version = 25
+
+    if version == 25:
+        # The Apex 300's grid charging switch has no effect after all
+        # (bluetti-registers#49): the switch gives way to the read-only sensor.
+        if config is not None and config.dev_type == "pa030":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.domain == "switch" and entity_entry.unique_id.endswith(
+                    "_g_i_switch"
+                ):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 26
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:
