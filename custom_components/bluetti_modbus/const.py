@@ -300,3 +300,8 @@ FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1", "b_ver_2", "b_ver
 # publishes nothing for such a slot (bluetti_modbus_lib.pack_is_reporting()),
 # so its entities go unavailable rather than showing 0 %, 0 V.
 INDIVIDUAL_BC260_PACKS_CONFIRMED = True
+
+# Devices whose expansion packs are read one by one: the Balco 260's BC260
+# at 41 and up, the FridgePower's BC200 at 42 and up (its built-in battery
+# is at 41).
+EXPANSION_PACK_DEV_TYPES = ("balco260", "fp")

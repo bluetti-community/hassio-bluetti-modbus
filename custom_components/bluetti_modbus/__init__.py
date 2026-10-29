@@ -131,7 +131,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=str(serial))
 
 
-_CURRENT_VERSION = 26
+_CURRENT_VERSION = 27
 
 # The built-in battery's b_ver_2-4 sensors, retired by the 20 -> 21 step.
 _BATTERY_FIRMWARE_SLOT_SUFFIXES = ("battery_b_ver_2", "battery_b_ver_3", "battery_b_ver_4")
@@ -698,6 +698,18 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     registry.async_remove(entity_entry.entity_id)
         version = 26
 
+    if version == 26:
+        # The Apex 300's grid charging switch works in the Custom working
+        # mode (bluetti-registers#49): the read-only sensor gives way to the
+        # switch again.
+        if config is not None and config.dev_type == "pa030":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.domain == "sensor" and entity_entry.unique_id.endswith(
+                    "_g_i_switch"
+                ):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 27
+
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:
         updates["title"] = new_title
@@ -1013,11 +1025,11 @@ def pack_device_info(
     pack_num: int,
     coordinator: PollingCoordinator | None = None,
 ) -> DeviceInfo | None:
-    """Device info for one of Balco260's BC260 battery pack sub-devices.
+    """Device info for one expansion pack's sub-device: a Balco 260's BC260,
+    a FridgePower's BC200.
 
-    pack_num: 2..MAX_BATTERY_PACKS - pack 1's data is shown on the main
-    device (same Modbus slave address), see coordinator.py's
-    _async_update_battery_packs().
+    pack_num: 2..MAX_BATTERY_PACKS - pack 1 is the built-in battery, see
+    battery_device_info() and coordinator.py's _async_update_battery_packs().
     """
     config = FullDeviceConfig.from_dict(entry.data)
 

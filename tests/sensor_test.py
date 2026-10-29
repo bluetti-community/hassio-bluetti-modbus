@@ -1264,6 +1264,46 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(pack_sensors), len(PACK_INFO_FIELDS))
         self.assertEqual(pack_sensors[0].device_info, {"name": "Test Device Pack 2"})
 
+    @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.pack_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_a_fridgepower_bc200_gets_its_own_pack_sensors(
+        self, config_cls, dev_info_fn, get_device_fn, pack_device_info_fn, battery_device_info_fn
+    ):
+        # bluetti-registers#38: a FridgePower counts its BC200 the way a
+        # Balco 260 counts its BC260 packs, d_num_battery_packs 2.
+        config_cls.from_dict.return_value = MagicMock(dev_type="fp", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        pack_device_info_fn.side_effect = lambda hass, entry, pack_num, coordinator: {
+            "name": f"Test Device Pack {pack_num}"
+        }
+        battery_device_info_fn.return_value = {"name": "Test Device Battery"}
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = []
+        bluetti_device.get_field.side_effect = _pack_field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            PACK_INFO_FIELDS,
+        )
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {"d_num_battery_packs": 2}
+        hass = MagicMock()
+        entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        pack_sensors = [s for s in added if s._response_key.startswith("pack_2_")]
+        self.assertEqual(len(pack_sensors), len(PACK_INFO_FIELDS))
+        self.assertEqual(pack_sensors[0].device_info, {"name": "Test Device Pack 2"})
+        self.assertFalse([s for s in added if s._response_key.startswith("pack_3_")])
+
     @patch("custom_components.bluetti_modbus.sensor.pack_device_info")
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")

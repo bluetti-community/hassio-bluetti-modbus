@@ -39,6 +39,7 @@ from .const import (
     BUILT_IN_BATTERY_DEV_TYPES,
     CONF_SLOTS_BEYOND_COUNT_PENDING,
     DOMAIN,
+    EXPANSION_PACK_DEV_TYPES,
     FIELDS_NOT_SHOWN,
     FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO,
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
@@ -229,12 +230,12 @@ async def async_setup_entry(
             assert info is not None  # same guarantee as dev_info() above
             phase_device_infos[phase] = info
 
-    # BC260 packs beyond the first get their own sub-device (see
-    # pack_device_info()'s docstring and coordinator.py's
-    # _async_update_battery_packs()) - Balco260 only, and only for however
-    # many packs the device's own first refresh already found.
+    # Expansion packs (a Balco 260's BC260, a FridgePower's BC200) get their
+    # own sub-device (see pack_device_info()'s docstring and coordinator.py's
+    # _async_update_battery_packs()), only for however many packs the
+    # device's own first refresh already found.
     pack_device_infos: dict[int, DeviceInfo] = {}
-    if config.dev_type == "balco260" and INDIVIDUAL_BC260_PACKS_CONFIRMED:
+    if config.dev_type in EXPANSION_PACK_DEV_TYPES and INDIVIDUAL_BC260_PACKS_CONFIRMED:
         num_packs = coordinator.data.get("d_num_battery_packs")
         if isinstance(num_packs, int):
             for pack_num in range(2, min(num_packs, MAX_BATTERY_PACKS) + 1):

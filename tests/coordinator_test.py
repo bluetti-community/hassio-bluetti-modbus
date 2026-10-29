@@ -16,6 +16,7 @@ from custom_components.bluetti_modbus.coordinator import (
 )
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
     AC500,
+    FP,
     Balco260,
     SMeter,
 )
@@ -890,6 +891,108 @@ class TestBatteryPacks(unittest.IsolatedAsyncioTestCase):
         battery_pack_fn.assert_not_called()
         aggregate_fn.assert_not_called()
         self.assertEqual(result, {"d_num_battery_packs": 3})
+
+
+class TestFridgePowerPacks(unittest.IsolatedAsyncioTestCase):
+    """A FridgePower's built-in battery at 41 and BC200 packs at 42 and up
+    (bluetti-registers#38)."""
+
+    @staticmethod
+    def _pack(values):
+        pack = MagicMock()
+        pack.async_update_with_retry = AsyncMock()
+        pack.values = values
+        return pack
+
+    @patch(f"{_COORDINATOR}.fp_battery_pack_component")
+    @_shared
+    async def test_reads_the_built_in_battery_at_41_and_a_bc200_at_42(self, link, fp_pack_fn):
+        link.device = MagicMock(spec=FP)
+        link.read = AsyncMock(
+            return_value={"d_num_battery_packs": 2, "b_type": "FP", "b_v": 19.63, "b_cycle_count": 0}
+        )
+        built_in = self._pack({"b_type": "FP", "b_v": 19.63, "b_cycle_count": 20, "b_i_e": 42680})
+        bc200 = self._pack({"b_type": "BC200", "b_v": 19.6, "b_soc": 61, "b_cycle_count": 11})
+        fp_pack_fn.side_effect = [built_in, bc200]
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(
+            [c.args[0] for c in fp_pack_fn.call_args_list], [link.units[41], link.units[42]]
+        )
+        # Only 41 carries the built-in battery's cycles and energies.
+        self.assertEqual(result["b_cycle_count"], 20)
+        self.assertEqual(result["b_i_e"], 42680)
+        self.assertNotIn("pack_1_b_type", result)
+        self.assertEqual(result["pack_2_b_type"], "BC200")
+        self.assertEqual(result["pack_2_b_soc"], 61)
+
+    @patch(f"{_COORDINATOR}.fp_battery_pack_component")
+    @_shared
+    async def test_reuses_the_pack_components_across_polls(self, link, fp_pack_fn):
+        link.device = MagicMock(spec=FP)
+        link.read = AsyncMock(return_value={"d_num_battery_packs": 2})
+        fp_pack_fn.side_effect = [
+            self._pack({"b_type": "FP", "b_v": 19.6}),
+            self._pack({"b_type": "BC200", "b_v": 19.6}),
+        ]
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        await coordinator._async_update_data()
+        await coordinator._async_update_data()
+
+        self.assertEqual(fp_pack_fn.call_count, 2)
+
+    @patch(f"{_COORDINATOR}.fp_battery_pack_component")
+    @_shared
+    async def test_an_empty_slot_publishes_nothing(self, link, fp_pack_fn):
+        link.device = MagicMock(spec=FP)
+        link.read = AsyncMock(return_value={"d_num_battery_packs": 2, "b_cycle_count": 0})
+        fp_pack_fn.side_effect = [
+            self._pack({"b_type": "", "b_v": 0.0, "b_cycle_count": 0}),
+            self._pack({"b_type": "", "b_serial": 0, "b_v": 0.0}),
+        ]
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        result = await coordinator._async_update_data()
+
+        # The device's own 0 is not the built-in battery's count.
+        self.assertEqual(result, {"d_num_battery_packs": 2, "b_cycle_count": None})
+
+    @patch(f"{_COORDINATOR}.fp_battery_pack_component")
+    @_shared
+    async def test_a_failed_pack_read_keeps_the_poll(self, link, fp_pack_fn):
+        link.device = MagicMock(spec=FP)
+        link.read = AsyncMock(
+            return_value={"d_num_battery_packs": 2, "b_soc": 51, "b_i_e": 0, "b_o_e": 0}
+        )
+        failing = self._pack({})
+        failing.async_update_with_retry = AsyncMock(side_effect=ModbusConnectionError("timeout"))
+        fp_pack_fn.side_effect = [failing, self._pack({"b_type": "BC200", "b_v": 19.6})]
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        result = await coordinator._async_update_data()
+
+        self.assertEqual(result["b_soc"], 51)
+        # Unknown, not 0: a 0 would read as a reset of the energy meters.
+        self.assertIsNone(result["b_i_e"])
+        self.assertIsNone(result["b_o_e"])
+        self.assertEqual(result["pack_2_b_type"], "BC200")
+
+    @patch(f"{_COORDINATOR}.fp_battery_pack_component")
+    @_shared
+    async def test_without_a_pack_count_only_the_built_in_battery_is_read(
+        self, link, fp_pack_fn
+    ):
+        link.device = MagicMock(spec=FP)
+        link.read = AsyncMock(return_value={})
+        fp_pack_fn.return_value = self._pack({"b_type": "FP", "b_v": 19.6})
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        await coordinator._async_update_data()
+
+        fp_pack_fn.assert_called_once_with(link.units[41])
 
 
 class TestHomeAssistantsSharedConnection(unittest.IsolatedAsyncioTestCase):
