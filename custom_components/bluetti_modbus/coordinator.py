@@ -35,11 +35,17 @@ from .vendor.bluetti_modbus_lib import (
     SMeter,
     aggregate_pack_summary_component,
     battery_pack_component,
+    fp_battery_pack_component,
+    fp_pack_slave_id,
     get_device,
     pack_is_reporting,
     pack_slave_id,
     read_values,
 )
+
+# A FridgePower's built-in battery fields that read 0 at the device's own
+# unit id and only report at unit 41 (bluetti-registers#38).
+_FP_BUILT_IN_FIELDS_AT_41 = ("b_cycle_count", "b_i_e", "b_o_e")
 
 # Every profile the library can build - what get_device() returns, minus None.
 BluettiProfile = (
@@ -160,7 +166,9 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # from the main device's own fields (same Modbus slave address); the
         # others answer at slave 41 and up, pack_slave_id() does the
         # arithmetic - see bluetti_modbus_lib.battery_pack()'s docstring.
-        self._packs: dict[int, Balco260] = {}
+        # A FridgePower's packs are keyed the same way from 1, its built-in
+        # battery - see _async_update_fp_packs().
+        self._packs: dict[int, Balco260 | FP] = {}
         # Balco260 only - the aggregate "Pack Summary" block (51001-51008,
         # including d_num_battery_packs itself), which only reports
         # correctly at a different Modbus slave address (250) than the main
@@ -376,6 +384,9 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         the main device's own Modbus connection (a different slave address,
         not a new TCP connection), held from the first poll that needs them.
         """
+        if isinstance(self.device, FP):
+            await self._async_update_fp_packs(result)
+            return
         if not isinstance(self.device, Balco260):
             return
 
@@ -410,3 +421,36 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 continue
             for name, value in pack.values.items():
                 result[f"pack_{pack_num}_{name}"] = value
+
+    async def _async_update_fp_packs(self, result: dict[str, Any]) -> None:
+        """Read a FridgePower's built-in battery at 41 and its BC200 packs.
+
+        The built-in battery answers its block at the device's own unit id
+        too, but only at 41 with its cycle count and energies, so 41's
+        values replace those in result; when 41 has nothing, its cycle count
+        and energies are unknown rather than the device's 0, which the energy
+        statistics would take for a meter reset. BC200 packs 2..N land in
+        result as pack_{n}_{field}, as on the Balco 260. d_num_battery_packs
+        comes from the device's own read. A failed pack read keeps the
+        device's own values for this poll rather than failing it.
+        """
+        for name in _FP_BUILT_IN_FIELDS_AT_41:
+            if name in result:
+                result[name] = None
+        num_packs = result.get("d_num_battery_packs")
+        last = min(num_packs, MAX_BATTERY_PACKS) if isinstance(num_packs, int) else 1
+        for pack_num in range(1, last + 1):
+            pack = self._packs.get(pack_num)
+            if pack is None:
+                pack = fp_battery_pack_component(self._unit(fp_pack_slave_id(pack_num)))
+                self._packs[pack_num] = pack
+            try:
+                await pack.async_update_with_retry()
+            except ModbusError as err:
+                self.logger.debug("Battery pack %d read failed: %s", pack_num, err)
+                continue
+            if not pack_is_reporting(pack.values):
+                continue
+            prefix = "" if pack_num == 1 else f"pack_{pack_num}_"
+            for name, value in pack.values.items():
+                result[f"{prefix}{name}"] = value

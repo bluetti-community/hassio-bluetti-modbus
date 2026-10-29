@@ -17,6 +17,7 @@ class TestAsyncGetConfigEntryDiagnostics(unittest.IsolatedAsyncioTestCase):
                 "port": 502,
                 "name": "Balco 260",
                 "type": "balco260",
+                "serial": "1234567890123",
             },
             version=11,
         )
@@ -39,6 +40,7 @@ class TestAsyncGetConfigEntryDiagnostics(unittest.IsolatedAsyncioTestCase):
         diagnostics = await async_get_config_entry_diagnostics(hass, entry)
 
         self.assertEqual(diagnostics["entry_data"]["address"], "**REDACTED**")
+        self.assertEqual(diagnostics["entry_data"]["serial"], "**REDACTED**")
         # Not sensitive - passed through unredacted, unlike address.
         self.assertEqual(diagnostics["entry_data"]["port"], 502)
         self.assertEqual(diagnostics["entry_data"]["type"], "balco260")

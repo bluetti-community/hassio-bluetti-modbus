@@ -14,8 +14,9 @@ from .coordinator import PollingCoordinator
 # address is the device's local network IP - a diagnostics dump is meant to
 # be attached to a public GitHub issue (see CONTRIBUTING.md's own
 # diagnostics download steps), so this shouldn't leak a user's LAN layout
-# any more than a credential would.
-_TO_REDACT_ENTRY = {"address"}
+# any more than a credential would. serial is the unit's BLUETTI serial
+# number, redacted like the serial fields below.
+_TO_REDACT_ENTRY = {"address", "serial"}
 
 
 def _is_serial_field(field_name: str) -> bool:
