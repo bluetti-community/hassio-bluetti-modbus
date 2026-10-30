@@ -36,6 +36,11 @@
       "reconfigure_successful": "The device's address was updated"
     }
   },
+  "device": {
+    "built_in_battery": {
+      "name": "Built-in battery"
+    }
+  },
   "entity": {
     "sensor": {
       "d_num_inverters": {
@@ -768,6 +773,39 @@
       },
       "d_inverter_warning": {
         "name": "Inverter warnings"
+      },
+      "soc": {
+        "name": "SoC"
+      },
+      "soh": {
+        "name": "SoH"
+      },
+      "cycle_count": {
+        "name": "Cycle Count"
+      },
+      "total_charged_energy": {
+        "name": "Total Charged Energy"
+      },
+      "total_discharged_energy": {
+        "name": "Total Discharged Energy"
+      },
+      "type": {
+        "name": "Type"
+      },
+      "protection_status": {
+        "name": "Protection Status"
+      },
+      "system_error": {
+        "name": "System Error"
+      },
+      "residential_alarm": {
+        "name": "Residential Alarm"
+      },
+      "portable_alarm": {
+        "name": "Portable Alarm"
+      },
+      "firmware_version_slots": {
+        "name": "Firmware Version Slots"
       }
     },
     "binary_sensor": {

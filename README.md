@@ -30,8 +30,9 @@ documentation and verified against real hardware.
   automatically. Nothing is hard-coded per model.
 * **Real controls, not just readings.** Output, grid charging and feed-in switches and
   SoC limits where the device accepts the write - see the table below.
-* **Proper device structure.** The battery and each expansion pack are their own
-  sub-devices; S Meter's three phases each get their own, linked back to the meter.
+* **Proper device structure.** The built-in battery is a sub-device built into the
+  station; each expansion pack, and an EP2000's battery, are devices of their own
+  linked to it; S Meter's three phases each get their own, linked back to the meter.
 * **Stable entity IDs.** Entities are keyed on the device's real serial number read
   over Modbus, so they survive an IP change, a backup restore, or a move to a new
   Home Assistant instance.
@@ -68,7 +69,8 @@ Have a different BLUETTI model? Register data is welcome - see
 <summary><b>Per-device notes</b></summary>
 
 **Balco 260**
-- The battery and each BC260 expansion pack get their own sub-device.
+- The built-in battery is a sub-device of the station; each BC260 expansion pack is a
+  device of its own, linked to it.
 - With an energy meter paired in the BLUETTI app (a Shelly Pro 3EM, for example), the
   grid phase count and the grid phase entities report the meter's readings, i.e. the
   whole household's grid connection, not the Balco's own port. A three-phase meter on
@@ -94,13 +96,15 @@ with the AC200L profile.
   supported from what real units return.
 
 **AC240, AC240P** - an AC240P is added with the AC240 type.
-- The battery sub-device reads unknown except while the BLUETTI app shows the battery
+- The built-in battery reads unknown except while the BLUETTI app shows the battery
   page: the unit only fills those registers then.
 - On an AC240P, the DC Output switch also switches the USB ports.
 - No IoT serial or pack count entity: on this model the first holds the unit's own
   serial and the second the most packs it takes, not the connected ones.
 
 **EP2000**
+- The battery (an HV800 controller over stacked B700 packs) is a device of its own,
+  linked to the station, with its own serial number and firmware versions.
 - Modbus TCP is opened by the BLUETTI app's **VPP** option (the **Virtual Power
   Plant - Join VPP** row on the unit's page, below the energy flow → a provider,
   port 502); the web page has no switch for it. The providers listed differ by
@@ -150,6 +154,15 @@ Assistant will stop reaching it.
 ## Installation ⚙️
 
 From version 3.0.0: requires **Home Assistant 2026.10.1 or newer**.
+
+> [!NOTE]
+> From 3.2.0-beta.9, the built-in battery's device becomes a sub-device of the station
+> (except on an EP2000), named **Built-in battery**, and its entities drop the
+> "Battery" from their names (**Voltage**, **SoC**, **Cycle Count**, ...). The device
+> keeps its id, area and any name you gave it, and every existing entity keeps its
+> entity ID and history: automations and dashboards need no change. A new setup gets
+> entity IDs like `sensor.balco_260_built_in_battery_voltage`. The BMS version moves to
+> the station's firmware line.
 
 ### Via HACS (recommended)
 
@@ -240,8 +253,9 @@ set depends on your model.
 ### Sensors
 
 * **Battery** - voltage, current, SoC, SoH, cycle count, lifetime charged/discharged
-  energy. On its own **Battery** sub-device; each BC260 expansion pack on its own
-  **Pack N** sub-device with the same sensors.
+  energy. On a **Built-in battery** sub-device of the station, whose BMS version is
+  shown with the station's firmware; each BC260 expansion pack on its own **Pack N**
+  device with the same sensors. An EP2000's battery is a **Battery** device of its own.
 * **Solar** - per-string (MPPT 1-4) voltage, current and power, plus combined PV
   input power and lifetime energy.
 * **Grid** - frequency, import/export power, per-phase voltage/current/power, and

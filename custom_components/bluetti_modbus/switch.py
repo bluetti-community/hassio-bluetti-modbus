@@ -82,7 +82,7 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
         # for something that's never actually None here.
         self._device_name = device_info.get("name")
         self._attr_translation_key = field_name
-        self._attr_unique_id = _unique_id_for(coordinator, device_info, field_name, "switch")
+        self._attr_unique_id = _unique_id_for(coordinator, self._device_name, field_name, "switch")
 
     async def async_added_to_hass(self) -> None:
         """Prime is_on from whatever the coordinator already has.

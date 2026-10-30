@@ -8,6 +8,7 @@ from custom_components.bluetti_modbus import (
     async_setup_entry,
     async_unload_entry,
     battery_device_info,
+    battery_device_name,
     battery_firmware,
     device_info,
     get_unique_id,
@@ -1929,64 +1930,87 @@ class TestPackDeviceInfo(unittest.TestCase):
         self.assertEqual(pack_device_info(MagicMock(), entry, 2)["model"], "Balco 260")
 
 
+def _battery_entry(dev_type, title="My Balco260"):
+    entry = MagicMock()
+    entry.entry_id = "entry1"
+    entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": dev_type}
+    entry.title = title
+    return entry
+
+
 class TestBatteryDeviceInfo(unittest.TestCase):
+    # Patched: a TypedDict in Home Assistant 2026.10, a dataclass later, so
+    # only the arguments it is built with are checked.
+    @patch("custom_components.bluetti_modbus.ChildDeviceInfo")
+    def test_a_built_in_battery_is_a_child_of_the_main_device(self, child_info_cls):
+        for dev_type in ("ac240", "balco260", "balco500", "fp", "pa030"):
+            with self.subTest(dev_type=dev_type):
+                child_info_cls.reset_mock()
+                coordinator = MagicMock(data={"d_serial": 2611110033917}, device_id="main-id")
+
+                info = battery_device_info(MagicMock(), _battery_entry(dev_type), coordinator)
+
+                self.assertIs(info, child_info_cls.return_value)
+                # The address-based identifier converts the battery's old
+                # device in place; the serial-based one is Home Assistant's
+                # built-in bluetti_modbus's.
+                child_info_cls.assert_called_once_with(
+                    identifiers={
+                        (DOMAIN, "10.2.1.60-battery"),
+                        (DOMAIN, "2611110033917_battery"),
+                    },
+                    parent_device_id="main-id",
+                    translation_key="built_in_battery",
+                )
+
+    @patch("custom_components.bluetti_modbus.ChildDeviceInfo")
+    def test_a_child_battery_without_a_serial_keeps_the_address_identifier_only(
+        self, child_info_cls
+    ):
+        for data in ({}, {"d_serial": 0}):
+            with self.subTest(data=data):
+                child_info_cls.reset_mock()
+                coordinator = MagicMock(data=data, device_id="main-id")
+
+                battery_device_info(MagicMock(), _battery_entry("balco260"), coordinator)
+
+                self.assertEqual(
+                    child_info_cls.call_args.kwargs["identifiers"],
+                    {(DOMAIN, "10.2.1.60-battery")},
+                )
+
     @patch("custom_components.bluetti_modbus.dr")
-    def test_returns_sub_device_info_linked_to_the_main_device(self, dr_module):
+    def test_an_ep2000_battery_stays_a_device_linked_to_the_main_one(self, dr_module):
         dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
-        entry = MagicMock()
-        entry.entry_id = "entry1"
-        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
-        entry.title = "My Balco260"
+        entry = _battery_entry("ep2000", "EP2000")
         hass = MagicMock()
 
-        info = battery_device_info(hass, entry)
+        info = battery_device_info(hass, entry, MagicMock(data={}))
 
         self.assertEqual(info["identifiers"], {(DOMAIN, "10.2.1.60-battery")})
-        self.assertEqual(info["name"], "My Balco260 Battery")
+        self.assertEqual(info["name"], "EP2000 Battery")
         self.assertEqual(info["via_device_id"], "main-device-id")
         dr_module.async_get_device_id_by_identifier.assert_called_once_with(
             hass, (DOMAIN, "10.2.1.60"), config_entry_id="entry1"
         )
-        # No coordinator given - same "don't overwrite what's already set"
-        # guarantee as device_info()'s own docstring explains.
+        # Not read yet: no serial or firmware to show.
         self.assertNotIn("serial_number", info)
         self.assertNotIn("sw_version", info)
 
     @patch("custom_components.bluetti_modbus.dr")
-    def test_fills_in_serial_and_firmware_once_read(self, dr_module):
-        dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
-        entry = MagicMock()
-        entry.entry_id = "entry1"
-        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
-        entry.title = "My Balco260"
-        hass = MagicMock()
-        coordinator = MagicMock(data={"b_serial": 1234567890123, "b_ver_1": "50008.01.10"})
-
-        info = battery_device_info(hass, entry, coordinator)
-
-        self.assertEqual(info["serial_number"], "1234567890123")
-        self.assertEqual(info["sw_version"], "BMS v50008.01.10")
-
-    @patch("custom_components.bluetti_modbus.dr")
-    def test_an_ep2000_battery_shows_its_stack(self, dr_module):
+    def test_an_ep2000_battery_shows_its_serial_and_stack(self, dr_module):
         # 96 cells under an HV800 controller: three 32-cell B700 packs.
-        dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
-        entry = MagicMock()
-        entry.entry_id = "entry1"
-        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "ep2000"}
-        entry.title = "EP2000"
-        coordinator = MagicMock(data={"b_type": "HV800", "b_cell_count": 96})
+        coordinator = MagicMock(
+            data={"b_type": "HV800", "b_cell_count": 96, "b_serial": 2530000084722}
+        )
 
-        info = battery_device_info(MagicMock(), entry, coordinator)
+        info = battery_device_info(MagicMock(), _battery_entry("ep2000", "EP2000"), coordinator)
 
         self.assertEqual(info["model"], "HV800 + 3 × B700")
+        self.assertEqual(info["serial_number"], "2530000084722")
 
     @patch("custom_components.bluetti_modbus.dr")
     def test_an_ep2000_battery_lists_its_three_firmware_versions(self, dr_module):
-        entry = MagicMock()
-        entry.entry_id = "entry1"
-        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "ep2000"}
-        entry.title = "EP2000"
         coordinator = MagicMock(
             data={
                 "b_type": "HV800",
@@ -1998,51 +2022,28 @@ class TestBatteryDeviceInfo(unittest.TestCase):
             }
         )
 
-        info = battery_device_info(MagicMock(), entry, coordinator)
+        info = battery_device_info(MagicMock(), _battery_entry("ep2000", "EP2000"), coordinator)
 
         self.assertEqual(
             info["sw_version"], "BCU v1074.18, Safety Module v1076.05, BMU v1075.07"
         )
 
     @patch("custom_components.bluetti_modbus.dr")
-    def test_omits_serial_and_firmware_before_the_first_read(self, dr_module):
-        dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
-        entry = MagicMock()
-        entry.entry_id = "entry1"
-        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
-        entry.title = "My Balco260"
-        hass = MagicMock()
-        coordinator = MagicMock(data={})
+    def test_an_ep2000_battery_reporting_only_its_type_shows_it(self, dr_module):
+        coordinator = MagicMock(data={"b_type": "HV800"})
 
-        info = battery_device_info(hass, entry, coordinator)
+        info = battery_device_info(MagicMock(), _battery_entry("ep2000"), coordinator)
 
-        self.assertNotIn("serial_number", info)
-        self.assertNotIn("sw_version", info)
+        self.assertEqual(info["model"], "HV800")
 
     def test_returns_none_for_invalid_entry(self):
         entry = MagicMock()
         entry.data = {}
-        hass = MagicMock()
 
-        self.assertIsNone(battery_device_info(hass, entry))
+        self.assertIsNone(battery_device_info(MagicMock(), entry, MagicMock()))
 
-    @patch("custom_components.bluetti_modbus.dr")
-    def test_the_battery_is_shown_as_its_own_type_when_that_adds_something(self, dr_module):
-        # An EP2000's battery is an HV800; a Balco 260's built-in battery
-        # reports "Balco260", which only repeats the device's name.
-        def _entry(dev_type):
-            entry = MagicMock()
-            entry.entry_id = "entry1"
-            entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": dev_type}
-            entry.title = "Mine"
-            return entry
-
-        hv800 = MagicMock(data={"b_type": "HV800"})
-        balco = MagicMock(data={"b_type": "Balco260"})
-        self.assertEqual(battery_device_info(MagicMock(), _entry("ep2000"), hv800)["model"], "HV800")
-        self.assertEqual(
-            battery_device_info(MagicMock(), _entry("balco260"), balco)["model"], "Balco 260"
-        )
+    def test_the_legacy_name_is_the_title_and_battery(self):
+        self.assertEqual(battery_device_name(_battery_entry("balco260")), "My Balco260 Battery")
 
 
 class TestGetUniqueId(unittest.TestCase):
@@ -2067,7 +2068,7 @@ class TestUniqueIdFor(unittest.TestCase):
         coordinator = self._coordinator(data={})
 
         result = _unique_id_for(
-            coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
+            coordinator, "My Device", "d_num_inverters", "sensor"
         )
 
         self.assertEqual(result, "entry1_my_device_d_num_inverters")
@@ -2083,7 +2084,7 @@ class TestUniqueIdFor(unittest.TestCase):
         coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
         result = _unique_id_for(
-            coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
+            coordinator, "My Device", "d_num_inverters", "sensor"
         )
 
         # Home Assistant's built-in bluetti_modbus scheme: serial, then field.
@@ -2095,7 +2096,7 @@ class TestUniqueIdFor(unittest.TestCase):
         coordinator = self._coordinator(data={"d_serial": 0})
 
         result = _unique_id_for(
-            coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
+            coordinator, "My Device", "d_num_inverters", "sensor"
         )
 
         self.assertEqual(result, "0_my_device_d_num_inverters")
@@ -2113,7 +2114,7 @@ class TestUniqueIdFor(unittest.TestCase):
         coordinator = self._coordinator(data={"b_serial": 999, "d_serial": 111})
 
         result = _unique_id_for(
-            coordinator, {"name": "My Device Battery"}, "b_soc", "sensor"
+            coordinator, "My Device Battery", "b_soc", "sensor"
         )
 
         # The built-in battery's fields go on the device serial too, as in
@@ -2132,7 +2133,7 @@ class TestUniqueIdFor(unittest.TestCase):
         coordinator = self._coordinator(data={"pack_2_b_serial": 555, "b_serial": 999})
 
         result = _unique_id_for(
-            coordinator, {"name": "My Device Pack 2"}, "b_soc", "sensor", pack_num=2
+            coordinator, "My Device Pack 2", "b_soc", "sensor", pack_num=2
         )
 
         self.assertEqual(result, "555_my_device_pack_2_b_soc")
@@ -2148,7 +2149,7 @@ class TestUniqueIdFor(unittest.TestCase):
         coordinator = self._coordinator(data={"b_serial": 111})
 
         result = _unique_id_for(
-            coordinator, {"name": "My Device"}, "b_v", "sensor", cell_num=3
+            coordinator, "My Device", "b_v", "sensor", cell_num=3
         )
 
         self.assertEqual(result, "111_my_device_b_v_3")
@@ -2168,7 +2169,7 @@ class TestUniqueIdFor(unittest.TestCase):
         coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
         result = _unique_id_for(
-            coordinator, {"name": "My Device"}, "d_num_inverters", "sensor"
+            coordinator, "My Device", "d_num_inverters", "sensor"
         )
 
         self.assertEqual(result, "1234567890123_d_num_inverters")
@@ -2186,7 +2187,7 @@ class TestUniqueIdFor(unittest.TestCase):
         registry.async_get_entity_id.side_effect = lambda d, p, uid: registered.get(uid)
         coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
-        _unique_id_for(coordinator, {"name": "My Device"}, "d_num_inverters", "sensor")
+        _unique_id_for(coordinator, "My Device", "d_num_inverters", "sensor")
 
         registry.async_update_entity.assert_called_once_with(
             "sensor.x", new_unique_id="1234567890123_d_num_inverters"
@@ -2199,7 +2200,7 @@ class TestUniqueIdFor(unittest.TestCase):
         registry.async_get_entity_id.return_value = "sensor.taken"
         coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
-        _unique_id_for(coordinator, {"name": "My Device"}, "d_num_inverters", "sensor")
+        _unique_id_for(coordinator, "My Device", "d_num_inverters", "sensor")
 
         registry.async_update_entity.assert_not_called()
 
@@ -2215,7 +2216,7 @@ class TestUniqueIdFor(unittest.TestCase):
         registry.async_get_entity_id.return_value = None
         coordinator = self._coordinator(data={"d_serial": 1234567890123})
 
-        _unique_id_for(coordinator, {"name": "My Device"}, "d_num_inverters", "sensor")
+        _unique_id_for(coordinator, "My Device", "d_num_inverters", "sensor")
 
         registry.async_update_entity.assert_not_called()
 

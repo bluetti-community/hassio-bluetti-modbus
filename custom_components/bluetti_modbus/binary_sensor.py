@@ -53,14 +53,14 @@ async def async_setup_entry(
             BluettiCloudConnectionBinarySensor(
                 network,
                 device_info,
-                _unique_id_for(coordinator, device_info, "cloud_connected", "binary_sensor"),
+                _unique_id_for(coordinator, device_info.get("name"), "cloud_connected", "binary_sensor"),
             )
         )
         entities.extend(
             BluettiNetworkBinarySensor(
                 network,
                 device_info,
-                _unique_id_for(coordinator, device_info, field, "binary_sensor"),
+                _unique_id_for(coordinator, device_info.get("name"), field, "binary_sensor"),
                 field,
             )
             for field in NETWORK_FLAGS
@@ -154,7 +154,7 @@ class BluettiOnlineBinarySensor(CoordinatorEntity, BinarySensorEntity):
         super().__init__(coordinator)
         self._attr_device_info = device_info
         self._attr_unique_id = _unique_id_for(
-            coordinator, device_info, "d_status", "binary_sensor"
+            coordinator, device_info.get("name"), "d_status", "binary_sensor"
         )
 
     async def async_added_to_hass(self) -> None:

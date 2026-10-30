@@ -137,6 +137,15 @@ AC240_CONFIRMED = True
 # main device and shown nowhere; a test checks the two never drift apart.
 BUILT_IN_BATTERY_DEV_TYPES = ("ac240", "balco260", "balco500", "ep2000", "fp", "pa030")
 
+# The BUILT_IN_BATTERY_DEV_TYPES whose battery stays a device of its own,
+# linked to the station by via_device. Every other one is part of the
+# station, so it is a child device with no serial, model or firmware of its
+# own (its BMS version joins the station's). An EP2000's battery is an HV800
+# controller over stacked B700 packs, with three firmware versions and a
+# serial that is not the station's
+# (https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145#issuecomment-5980420529).
+SEPARATE_BATTERY_DEV_TYPES = ("ep2000",)
+
 # dev_type (config_flow's stored, lowercase value) -> the product's real
 # display name, for DeviceInfo.model. Without this, the Devices page would
 # show the raw stored string ("smeter") instead of "S Meter".

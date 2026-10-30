@@ -11,6 +11,7 @@ from custom_components.bluetti_modbus.const import (
     FIELDS_SHOWN_VIA_NUMBER,
     FIELDS_SHOWN_VIA_SWITCH,
 )
+from custom_components.bluetti_modbus.sensor import _CHILD_BATTERY_TRANSLATION_KEYS
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import get_device
 
 _TRANSLATIONS_PATH = (
@@ -125,3 +126,21 @@ class TestMpptNames(unittest.TestCase):
             path = _TRANSLATIONS_PATH.with_name(f"{lang}.json")
             sensor = json.loads(path.read_text())["entity"]["sensor"]
             self.assertEqual(keys - set(sensor), set(), lang)
+
+
+class TestBuiltInBatteryNames(unittest.TestCase):
+    """The built-in battery's child device and its entities (sensor.py)."""
+
+    def test_the_child_device_and_its_keys_have_a_name_in_every_language(self):
+        keys = {key for key in _CHILD_BATTERY_TRANSLATION_KEYS.values() if key is not None}
+        for lang in ("en", "de"):
+            translations = json.loads(_TRANSLATIONS_PATH.with_name(f"{lang}.json").read_text())
+            self.assertIn("name", translations["device"]["built_in_battery"], lang)
+            self.assertEqual(keys - set(translations["entity"]["sensor"]), set(), lang)
+
+    def test_the_child_device_names_are_distinct(self):
+        sensor = json.loads(_TRANSLATIONS_PATH.read_text())["entity"]["sensor"]
+        names = [
+            sensor[key]["name"] for key in _CHILD_BATTERY_TRANSLATION_KEYS.values() if key is not None
+        ]
+        self.assertEqual(len(names), len(set(names)))

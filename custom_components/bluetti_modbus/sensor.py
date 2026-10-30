@@ -20,7 +20,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import SIGNAL_STRENGTH_DECIBELS_MILLIWATT, EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -28,6 +28,8 @@ from . import (
     FullDeviceConfig,
     _unique_id_for,
     battery_device_info,
+    battery_device_name,
+    battery_is_child_device,
     pack_device_info,
     phase_device_info,
 )
@@ -100,6 +102,27 @@ _UNSIGNED_GRID_TOTAL = ("ep2000",)
 # total_increasing sensor would count each 0 as a meter reset and add the
 # whole total to the statistics again when it returns.
 _ZERO_IS_UNKNOWN = {("balco260", "pv_ac_e")}
+
+# The built-in battery's entities on its child device, named without the
+# "Battery" their keys on a battery device of its own carry: the device name
+# says it already, as in Home Assistant's built-in bluetti_modbus. None is
+# named by its device class (Voltage, Current). Every other field keeps its
+# key.
+_CHILD_BATTERY_TRANSLATION_KEYS: dict[str, str | None] = {
+    "b_v": None,
+    "b_c": None,
+    "b_soc": "soc",
+    "b_soh": "soh",
+    "b_cycle_count": "cycle_count",
+    "b_i_e": "total_charged_energy",
+    "b_o_e": "total_discharged_energy",
+    "b_type": "type",
+    "b_protect": "protection_status",
+    "b_error": "system_error",
+    "b_alarm_residential": "residential_alarm",
+    "b_alarm_portable": "portable_alarm",
+    "b_ver_count": "firmware_version_slots",
+}
 
 # Numbered fields and the count the unit reports for their group: a number
 # above the count is a phase, inverter, PV input or firmware slot the unit
@@ -247,8 +270,10 @@ async def async_setup_entry(
     # packs above - but unconditionally (a Balco260, or a FridgePower,
     # always has one), unlike those, which depend on d_num_battery_packs
     # having been read. Without it, PACK_INFO_FIELDS - skipped from the
-    # main device below - would have nowhere to go on such a device.
-    battery_info: DeviceInfo | None = None
+    # main device below - would have nowhere to go on such a device. A child
+    # device on most models (see battery_device_info()).
+    battery_info: DeviceInfo | ChildDeviceInfo | None = None
+    battery_is_child = battery_is_child_device(config.dev_type)
     if config.dev_type in BUILT_IN_BATTERY_DEV_TYPES:
         battery_info = battery_device_info(hass, entry, coordinator)
         assert battery_info is not None  # same guarantee as dev_info() above
@@ -352,6 +377,7 @@ async def async_setup_entry(
         sensor = BluettiSensor(
             coordinator,
             field_device_info,
+            field_device_info.get("name"),
             field.address,
             field.name,
             unit_of_measurement=field.unit,
@@ -384,6 +410,7 @@ async def async_setup_entry(
             sensor = BluettiSensor(
                 coordinator,
                 pack_info,
+                pack_info.get("name"),
                 field.address,
                 field.name,
                 unit_of_measurement=field.unit,
@@ -409,11 +436,15 @@ async def async_setup_entry(
             if field is None:
                 continue
             metadata = metadata_for(name)
+            translation_key = (
+                _CHILD_BATTERY_TRANSLATION_KEYS.get(name, name) if battery_is_child else name
+            )
             # No count check here: the built-in battery's only numbered
             # fields, its firmware slots, are on its device page.
             sensor = BluettiSensor(
                 coordinator,
                 battery_info,
+                battery_device_name(entry),
                 field.address,
                 field.name,
                 unit_of_measurement=field.unit,
@@ -424,6 +455,8 @@ async def async_setup_entry(
                 display_precision=_display_precision(field),
                 enabled_by_default=metadata.enabled_by_default,
                 logger=logger,
+                translation_key=translation_key,
+                named_by_device_class=translation_key is None,
                 # No pack_num - unlike packs 2..5 (own Modbus slave
                 # address), the built-in battery's data comes from the
                 # main device's own read, under its plain field names
@@ -444,7 +477,7 @@ async def async_setup_entry(
             coordinator,
             device_info,
             name,
-            _unique_id_for(coordinator, device_info, name, "sensor"),
+            _unique_id_for(coordinator, device_info.get("name"), name, "sensor"),
         )
         for name in _CODE_DESCRIPTIONS
         if name in bluetti_device.get_sensors()
@@ -457,7 +490,7 @@ async def async_setup_entry(
                 BluettiWifiSignalSensor(
                     network,
                     device_info,
-                    _unique_id_for(coordinator, device_info, "wifi_rssi", "sensor"),
+                    _unique_id_for(coordinator, device_info.get("name"), "wifi_rssi", "sensor"),
                 )
             ]
         )
@@ -583,7 +616,8 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
     def __init__(
         self,
         coordinator: PollingCoordinator,
-        device_info: DeviceInfo,
+        device_info: DeviceInfo | ChildDeviceInfo,
+        device_name: str | None,
         address: int,
         response_key: str,
         unit_of_measurement: str | None = None,
@@ -598,8 +632,14 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
         display_precision: int | None = None,
         translation_key: str | None = None,
         zero_is_unknown: bool = False,
+        named_by_device_class: bool = False,
     ) -> None:
-        """Init sensor entity."""
+        """Init sensor entity.
+
+        device_name is the name its unique_id is built from (see
+        _unique_id_for()), given apart from device_info: a child device's
+        info is not read back.
+        """
         super().__init__(coordinator)
         self.coordinator = coordinator
         self._zero_is_unknown = zero_is_unknown
@@ -622,11 +662,15 @@ class BluettiSensor(CoordinatorEntity, RestoreSensor):
         if cell_num is not None:
             self._attr_translation_key = f"pack_{response_key}"
             self._attr_translation_placeholders = {"cell_num": str(cell_num)}
+        if named_by_device_class:
+            # No name of its own: Home Assistant names it after its device
+            # class ("Voltage").
+            self._attr_translation_key = None
 
         self._attr_available = False
         self._attr_unique_id = _unique_id_for(
             coordinator,
-            device_info,
+            device_name,
             response_key,
             "sensor",
             pack_num=pack_num,
