@@ -96,13 +96,13 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # d_serial-replaces-d_iot_serial-as-identity, fault/warning-entity-
     # removal, ac500-pv-type-disable, ac500-pv-local-disable,
     # ac500-grid/ac-local-disable, balco260-never-populated-fields and
-    # slots-beyond-count, battery-firmware-slots and switch-replaces-sensor migrations -
+    # slots-beyond-count, battery-firmware-slots, switch-replaces-sensor and retired-fields migrations -
     # see __init__.py's async_migrate_entry(). Must stay in sync with
     # _CURRENT_VERSION there - this is what HA stamps a newly created entry's
     # version with (a fresh entry created at a stale VERSION here would
     # otherwise immediately trigger a real migration step on its very next
     # setup, for no reason).
-    VERSION = 27
+    VERSION = 28
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")

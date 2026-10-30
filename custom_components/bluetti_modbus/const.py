@@ -204,8 +204,16 @@ AC500_FIELDS_NOT_SHOWN = {"g_i_switch"}
 # because it carries the whole Balco register map, but the unit is for
 # off-grid use only ("do not connect its AC output to the grid", user
 # manual) - there is no feed-in to switch. Not shown, like AC500's
-# g_i_switch above.
-FP_FIELDS_NOT_SHOWN = {"g_o_switch"}
+# g_i_switch above. Nor its feed-in energy, AC-coupled PV power and energy
+# (pv_ac_count reads 0) or inverter phase count, 0 on every unit
+# (bluetti-registers#38).
+FP_FIELDS_NOT_SHOWN = {
+    "g_o_switch",
+    "g_o_e_total",
+    "pv_ac_p",
+    "pv_ac_e",
+    "d_inverter_phase_count",
+}
 
 # AC240: d_iot_serial (53007) serves the unit's own serial, the same as
 # d_serial, not the communication board's serial the BLUETTI app shows, and
@@ -293,6 +301,10 @@ FIELDS_SHOWN_VIA_DEVICE_INFO = {"d_ver_arm", "d_ver_dsp", "d_iot_ver", "d_serial
 # (battery_firmware()). Every other PACK_INFO_FIELDS name becomes a plain
 # sensor on that same sub-device instead of the main device - see sensor.py.
 FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO = {"b_serial", "b_ver_1", "b_ver_2", "b_ver_3", "b_ver_4"}
+
+# b_type: the station's own type on a built-in battery, and the model an
+# expansion pack's or a separate battery's device already shows.
+BATTERY_FIELDS_NOT_SHOWN = {"b_type"}
 
 # Individual BC260 packs beyond the built-in one: confirmed on a real
 # Balco260 with three packs on 2026-09-18 (bluetti-modbus#55) - each answers

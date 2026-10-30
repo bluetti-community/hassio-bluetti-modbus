@@ -1,0 +1,88 @@
+{
+  "entity": {
+    "sensor": {
+      "b_cell_count": {
+        "default": "mdi:counter"
+      },
+      "b_cycle_count": {
+        "default": "mdi:battery-sync"
+      },
+      "b_ntc_count": {
+        "default": "mdi:counter"
+      },
+      "b_soh": {
+        "default": "mdi:battery-heart-variant"
+      },
+      "cycle_count": {
+        "default": "mdi:battery-sync"
+      },
+      "d_inverter_1_status": {
+        "default": "mdi:solar-power",
+        "state": {
+          "abnormal_off_grid": "mdi:transmission-tower-off",
+          "inverter_fault": "mdi:alert-circle",
+          "off_grid": "mdi:transmission-tower-off",
+          "stop": "mdi:power-off"
+        }
+      },
+      "d_inverter_2_status": {
+        "default": "mdi:solar-power",
+        "state": {
+          "abnormal_off_grid": "mdi:transmission-tower-off",
+          "inverter_fault": "mdi:alert-circle",
+          "off_grid": "mdi:transmission-tower-off",
+          "stop": "mdi:power-off"
+        }
+      },
+      "d_inverter_3_status": {
+        "default": "mdi:solar-power",
+        "state": {
+          "abnormal_off_grid": "mdi:transmission-tower-off",
+          "inverter_fault": "mdi:alert-circle",
+          "off_grid": "mdi:transmission-tower-off",
+          "stop": "mdi:power-off"
+        }
+      },
+      "d_inverter_status": {
+        "default": "mdi:solar-power",
+        "state": {
+          "abnormal_off_grid": "mdi:transmission-tower-off",
+          "inverter_fault": "mdi:alert-circle",
+          "off_grid": "mdi:transmission-tower-off",
+          "stop": "mdi:power-off"
+        }
+      },
+      "d_num_inverters": {
+        "default": "mdi:counter"
+      },
+      "input_type": {
+        "default": "mdi:solar-panel",
+        "state": {
+          "adapter": "mdi:power-plug",
+          "car": "mdi:car-electric"
+        }
+      },
+      "pack_b_cell_count": {
+        "default": "mdi:counter"
+      },
+      "pack_b_cycle_count": {
+        "default": "mdi:battery-sync"
+      },
+      "pack_b_ntc_count": {
+        "default": "mdi:counter"
+      },
+      "pack_b_soh": {
+        "default": "mdi:battery-heart-variant"
+      },
+      "pv_ac_count": {
+        "default": "mdi:counter"
+      },
+      "pv_dc_count": {
+        "default": "mdi:counter"
+      },
+      "soh": {
+        "default": "mdi:battery-heart-variant"
+      }
+    }
+  }
+}

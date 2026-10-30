@@ -135,7 +135,22 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=str(serial))
 
 
-_CURRENT_VERSION = 27
+_CURRENT_VERSION = 28
+
+# The 27 -> 28 step: fields no longer shown, per device type, matched as
+# unique_id suffixes. The PV inputs the AC200L and EP500P profiles dropped
+# (bluetti-registers 0.0.66) take their devices with them.
+_V28_RETIRED_FIELD_SUFFIXES: dict[str, tuple[str, ...]] = {
+    "fp": ("_g_o_e_total", "_pv_ac_p", "_pv_ac_e", "_d_inverter_phase_count"),
+    "ac200l": ("_pv_2_i_type", "_pv_2_i_p"),
+    "ep500p": ("_pv_1_i_type", "_pv_1_i_p", "_pv_1_i_v", "_pv_2_i_type", "_pv_2_i_p"),
+}
+_V28_RETIRED_PV_INPUTS: dict[str, tuple[int, ...]] = {"ac200l": (2,), "ep500p": (1, 2)}
+
+# The FridgePower's inverters 2 and 3, beyond d_num_inverters (1).
+_FP_SPARE_INVERTER_SUFFIXES = tuple(
+    f"_d_inverter_{num}_{reading}" for num in (2, 3) for reading in ("status", "p", "v", "c")
+)
 
 # The built-in battery's b_ver_2-4 sensors, retired by the 20 -> 21 step.
 _BATTERY_FIRMWARE_SLOT_SUFFIXES = ("battery_b_ver_2", "battery_b_ver_3", "battery_b_ver_4")
@@ -375,6 +390,11 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     switch entity instead of a read-only sensor. The switch reuses the same
     unique_id in the switch domain; remove the old sensor entry, EP500P
     entries only - same pattern as the 6 -> 7 step.
+
+    27 -> 28: b_type is no sensor any more (BATTERY_FIELDS_NOT_SHOWN), nor
+    the fields in _V28_RETIRED_FIELD_SUFFIXES: remove their entries, and the
+    devices of the PV inputs gone from a profile. The FridgePower's inverters
+    2 and 3 are beyond d_num_inverters now: disable them.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -713,6 +733,32 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ):
                     registry.async_remove(entity_entry.entity_id)
         version = 27
+
+    if version == 27:
+        if config is not None:
+            retired = ("_b_type", *_V28_RETIRED_FIELD_SUFFIXES.get(config.dev_type, ()))
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.domain != "sensor":
+                    continue
+                if entity_entry.unique_id.endswith(retired):
+                    registry.async_remove(entity_entry.entity_id)
+                elif (
+                    config.dev_type == "fp"
+                    and entity_entry.unique_id.endswith(_FP_SPARE_INVERTER_SUFFIXES)
+                    and entity_entry.disabled_by is None
+                ):
+                    registry.async_update_entity(
+                        entity_entry.entity_id,
+                        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+                    )
+            device_registry = dr.async_get(hass)
+            for input_num in _V28_RETIRED_PV_INPUTS.get(config.dev_type, ()):
+                device = device_registry.async_get_device(
+                    identifiers={(DOMAIN, f"{config.address}-pv-{input_num}")}
+                )
+                if device is not None:
+                    device_registry.async_remove_device(device.id)
+        version = 28
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:

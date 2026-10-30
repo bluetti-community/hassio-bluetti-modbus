@@ -57,8 +57,13 @@ class TestBeyondReportedCount(unittest.TestCase):
     def test_a_missing_ac_pv_count_counts_as_none(self):
         self.assertTrue(beyond_reported_count("pv_2_i_p", {"pv_dc_count": 1}))
 
+    def test_the_fridgepower_inverters_follow_the_inverter_count(self):
+        # It reads d_inverter_phase_count 0 with one inverter.
+        data = {"d_num_inverters": 1, "d_inverter_phase_count": 0}
+        self.assertTrue(beyond_reported_count("d_inverter_2_status", data))
+        self.assertFalse(beyond_reported_count("d_inverter_1_p", data))
+
     def test_a_missing_or_zero_count_hides_nothing(self):
-        # The FridgePower reads d_inverter_phase_count 0 with one inverter.
         self.assertFalse(beyond_reported_count("d_inverter_2_p", {}))
         self.assertFalse(beyond_reported_count("d_inverter_2_p", {"d_inverter_phase_count": 0}))
         self.assertFalse(beyond_reported_count("d_inverter_2_p", {"d_inverter_phase_count": None}))
@@ -76,7 +81,7 @@ class TestBeyondReportedCount(unittest.TestCase):
 
 
 class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
-    def _setup(self, data, entry_data=None, sensors=("pv_2_i_p", "pv_3_i_p")):
+    def _setup(self, data, entry_data=None, sensors=("ac_2_o_v", "ac_3_o_v")):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock())
         coordinator.data = data
         hass = MagicMock()
@@ -102,7 +107,7 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         }
         hass, entry, bluetti_device = self._setup(
             {
-                "pv_dc_count": 2,
+                "ac_phase_count": 2,
                 "b_ver_count": 1,
                 "d_num_battery_packs": 2,
                 "pack_2_b_ver_count": 2,
@@ -114,8 +119,8 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         enabled = {s._response_key: s._attr_entity_registry_enabled_default for s in added}
-        self.assertTrue(enabled["pv_2_i_p"])
-        self.assertFalse(enabled["pv_3_i_p"])
+        self.assertTrue(enabled["ac_2_o_v"])
+        self.assertFalse(enabled["ac_3_o_v"])
         # The built-in battery's firmware slots are on its device page, not
         # sensors; an expansion pack's stay sensors, hidden beyond its count.
         self.assertNotIn("b_ver_2", enabled)
@@ -134,9 +139,9 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         dev_info_fn.return_value = {"name": "Balco 260"}
         battery_device_info_fn.return_value = {"name": "Battery"}
         hass, entry, bluetti_device = self._setup(
-            {"pv_dc_count": 1},
+            {"ac_phase_count": 1},
             entry_data={**_ENTRY_DATA, CONF_SLOTS_BEYOND_COUNT_PENDING: True},
-            sensors=("pv_1_i_p", "pv_2_i_p", "pv_3_i_p", "pv_4_i_p"),
+            sensors=("ac_1_o_v", "ac_2_o_v", "ac_3_o_v", "ac_4_o_v"),
         )
         get_device_fn.return_value = bluetti_device
         registry = MagicMock()
@@ -144,19 +149,19 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         entries = {}
 
         def entity_id_for(domain, platform, unique_id):
-            # pv_2 registered and enabled, pv_3 never registered, pv_4
+            # ac_2 registered and enabled, ac_3 never registered, ac_4
             # disabled by the user.
             for key, entity_id in (
-                ("pv_2_i_p", "sensor.pv_2"),
-                ("pv_4_i_p", "sensor.pv_4"),
+                ("ac_2_o_v", "sensor.ac_2"),
+                ("ac_4_o_v", "sensor.ac_4"),
             ):
                 if unique_id == unique_ids[key]:
                     return entity_id
             return None
 
         registry.async_get_entity_id.side_effect = entity_id_for
-        entries["sensor.pv_2"] = MagicMock(disabled_by=None)
-        entries["sensor.pv_4"] = MagicMock(disabled_by="user")
+        entries["sensor.ac_2"] = MagicMock(disabled_by=None)
+        entries["sensor.ac_4"] = MagicMock(disabled_by="user")
         registry.async_get.side_effect = entries.get
         unique_ids = {}
         added = []
@@ -179,10 +184,10 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         ):
             await async_setup_entry(hass, entry, add)
 
-        # Every entity beyond a count is checked, pv_1 never is.
-        self.assertEqual(set(unique_ids), {"pv_2_i_p", "pv_3_i_p", "pv_4_i_p"})
+        # Every entity beyond a count is checked, ac_1 never is.
+        self.assertEqual(set(unique_ids), {"ac_2_o_v", "ac_3_o_v", "ac_4_o_v"})
         disabled = {call.args[0] for call in registry.async_update_entity.call_args_list}
-        self.assertEqual(disabled, {"sensor.pv_2"})
+        self.assertEqual(disabled, {"sensor.ac_2"})
         for call in registry.async_update_entity.call_args_list:
             self.assertEqual(
                 call.kwargs, {"disabled_by": er_module.RegistryEntryDisabler.INTEGRATION}
@@ -199,13 +204,13 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         dev_info_fn.return_value = {"name": "Balco 260"}
         battery_device_info_fn.return_value = {"name": "Battery"}
         hass, entry, bluetti_device = self._setup(
-            {"pv_dc_count": 1},
+            {"ac_phase_count": 1},
             entry_data={**_ENTRY_DATA, CONF_SLOTS_BEYOND_COUNT_PENDING: True},
         )
         get_device_fn.return_value = bluetti_device
         registry = MagicMock()
         er_module.async_get.return_value = registry
-        registry.async_get_entity_id.return_value = "sensor.pv_2"
+        registry.async_get_entity_id.return_value = "sensor.ac_2"
         registry.async_get.return_value = None
 
         await async_setup_entry(hass, entry, lambda sensors: None)
