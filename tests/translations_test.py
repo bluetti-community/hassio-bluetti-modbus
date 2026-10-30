@@ -11,7 +11,11 @@ from custom_components.bluetti_modbus.const import (
     FIELDS_SHOWN_VIA_NUMBER,
     FIELDS_SHOWN_VIA_SWITCH,
 )
-from custom_components.bluetti_modbus.sensor import _CHILD_BATTERY_TRANSLATION_KEYS
+from custom_components.bluetti_modbus.sensor import (
+    _CHILD_BATTERY_TRANSLATION_KEYS,
+    PV_INPUT_FIELD,
+    PV_INPUT_TRANSLATION_KEYS,
+)
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import get_device
 
 _TRANSLATIONS_PATH = (
@@ -26,6 +30,12 @@ _TRANSLATIONS_PATH = (
 # what an owner tests from a prerelease, and an untranslated field there
 # shows the device's own name in place of the entity's.
 _DEV_TYPES = tuple(DEVICE_TYPE_DISPLAY_NAMES)
+
+
+def _sensor_key(name):
+    """The translation key a sensor field is named by (sensor.py)."""
+    pv_input = PV_INPUT_FIELD.match(name)
+    return PV_INPUT_TRANSLATION_KEYS[pv_input.group(2)] if pv_input else name
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):
@@ -64,7 +74,7 @@ class TestTranslationsCoverAllShownFields(unittest.TestCase):
                     if name not in switch_translated:
                         missing.append(f"{dev_type}.{name} (switch)")
                     continue
-                if name not in sensor_translated:
+                if _sensor_key(name) not in sensor_translated:
                     missing.append(f"{dev_type}.{name} (sensor)")
 
         self.assertEqual(missing, [])
@@ -102,6 +112,9 @@ class TestNoDuplicateSensorNames(unittest.TestCase):
                     continue
                 if name in FIELDS_SHOWN_VIA_SWITCH and field.writable:
                     continue
+                # One name per PV input, each on its own device.
+                if PV_INPUT_FIELD.match(name):
+                    continue
                 entry = sensor_names.get(name)
                 if entry is None:
                     continue  # already reported by the coverage test above
@@ -117,15 +130,21 @@ class TestNoDuplicateSensorNames(unittest.TestCase):
         self.assertEqual(duplicates, [])
 
 
-class TestMpptNames(unittest.TestCase):
-    """The EP2000's PV slots are named after its MPPTs (sensor.py)."""
+class TestPvInputNames(unittest.TestCase):
+    """Each PV input's child device and its entities (sensor.py)."""
 
-    def test_every_mppt_key_has_a_name_in_every_language(self):
-        keys = {f"mppt_{n}_i_{k}" for n in (1, 2) for k in ("p", "v", "c", "type")}
+    def test_the_devices_and_keys_have_a_name_in_every_language(self):
         for lang in ("en", "de"):
-            path = _TRANSLATIONS_PATH.with_name(f"{lang}.json")
-            sensor = json.loads(path.read_text())["entity"]["sensor"]
-            self.assertEqual(keys - set(sensor), set(), lang)
+            translations = json.loads(_TRANSLATIONS_PATH.with_name(f"{lang}.json").read_text())
+            for device in ("pv_input", "mppt"):
+                self.assertIn("{input}", translations["device"][device]["name"], lang)
+            sensor = translations["entity"]["sensor"]
+            self.assertEqual(set(PV_INPUT_TRANSLATION_KEYS.values()) - set(sensor), set(), lang)
+            self.assertEqual(
+                set(sensor["input_type"]["state"]),
+                {"reserve", "car", "adapter", "other", "dc_pv", "ac_pv"},
+                lang,
+            )
 
 
 class TestBuiltInBatteryNames(unittest.TestCase):

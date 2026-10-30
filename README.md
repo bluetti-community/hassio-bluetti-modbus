@@ -30,9 +30,10 @@ documentation and verified against real hardware.
   automatically. Nothing is hard-coded per model.
 * **Real controls, not just readings.** Output, grid charging and feed-in switches and
   SoC limits where the device accepts the write - see the table below.
-* **Proper device structure.** The built-in battery is a sub-device built into the
-  station; each expansion pack, and an EP2000's battery, are devices of their own
-  linked to it; S Meter's three phases each get their own, linked back to the meter.
+* **Proper device structure.** The built-in battery and each PV input are sub-devices
+  built into the station; each expansion pack, and an EP2000's battery, are devices
+  of their own linked to it; S Meter's three phases each get their own, linked back
+  to the meter.
 * **Stable entity IDs.** Entities are keyed on the device's real serial number read
   over Modbus, so they survive an IP change, a backup restore, or a move to a new
   Home Assistant instance.
@@ -81,7 +82,7 @@ Have a different BLUETTI model? Register data is welcome - see
 - The SoC limits refuse writes on this model and stay read-only; the AC output switch
   is left untried (it powers the fridge).
 - No grid feed-in switch: the unit is off-grid only.
-- On a single-phase, single-pack unit, the entities for phases 2-3, PV strings 2-4
+- On a single-phase, single-pack unit, the entities for phases 2-3, PV inputs 2-4
   and pack slots 2-4 read empty.
 
 **AC500, EP500Pro, AC200L, Apex 300** - one shared register layout. An AC200PL reads
@@ -103,6 +104,8 @@ with the AC200L profile.
   serial and the second the most packs it takes, not the connected ones.
 
 **EP2000**
+- Its two MPPTs report in the first two PV slots, so their sub-devices are named
+  **MPPT 1** and **MPPT 2**.
 - The battery (an HV800 controller over stacked B700 packs) is a device of its own,
   linked to the station, with its own serial number and firmware versions.
 - Modbus TCP is opened by the BLUETTI app's **VPP** option (the **Virtual Power
@@ -163,6 +166,11 @@ From version 3.0.0: requires **Home Assistant 2026.10.1 or newer**.
 > entity ID and history: automations and dashboards need no change. A new setup gets
 > entity IDs like `sensor.balco_260_built_in_battery_voltage`. The BMS version moves to
 > the station's firmware line.
+>
+> From 3.2.0-beta.10, each PV input's entities move to a **PV 1**-**PV 4** sub-device
+> (**MPPT 1**-**MPPT 2** on an EP2000) and drop the number from their names (**Input
+> Power**, **Input Voltage**, ...). Entity IDs and history are kept, and a new setup
+> gets the same entity IDs as before (`sensor.balco_260_pv_1_input_power`).
 
 ### Via HACS (recommended)
 
@@ -256,8 +264,9 @@ set depends on your model.
   energy. On a **Built-in battery** sub-device of the station, whose BMS version is
   shown with the station's firmware; each BC260 expansion pack on its own **Pack N**
   device with the same sensors. An EP2000's battery is a **Battery** device of its own.
-* **Solar** - per-string (MPPT 1-4) voltage, current and power, plus combined PV
-  input power and lifetime energy.
+* **Solar** - per-input voltage, current, power and input type, each input on a
+  **PV 1**-**PV 4** sub-device of the station (**MPPT 1**-**MPPT 2** on an EP2000),
+  plus combined PV input power and lifetime energy on the station itself.
 * **Grid** - frequency, import/export power, per-phase voltage/current/power, and
   lifetime import/export energy counters.
 * **AC output** - power, per-phase voltage/current/power, lifetime output energy.

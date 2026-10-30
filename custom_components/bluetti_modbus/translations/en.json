@@ -39,6 +39,12 @@
   "device": {
     "built_in_battery": {
       "name": "Built-in battery"
+    },
+    "pv_input": {
+      "name": "PV {input}"
+    },
+    "mppt": {
+      "name": "MPPT {input}"
     }
   },
   "entity": {
@@ -94,42 +100,6 @@
       },
       "g_i_f": {
         "name": "Grid Frequency"
-      },
-      "pv_1_i_p": {
-        "name": "PV 1 Input Power"
-      },
-      "pv_1_i_v": {
-        "name": "PV 1 Input Voltage"
-      },
-      "pv_1_i_c": {
-        "name": "PV 1 Input Current"
-      },
-      "pv_2_i_p": {
-        "name": "PV 2 Input Power"
-      },
-      "pv_2_i_v": {
-        "name": "PV 2 Input Voltage"
-      },
-      "pv_2_i_c": {
-        "name": "PV 2 Input Current"
-      },
-      "pv_3_i_p": {
-        "name": "PV 3 Input Power"
-      },
-      "pv_3_i_v": {
-        "name": "PV 3 Input Voltage"
-      },
-      "pv_3_i_c": {
-        "name": "PV 3 Input Current"
-      },
-      "pv_4_i_p": {
-        "name": "PV 4 Input Power"
-      },
-      "pv_4_i_v": {
-        "name": "PV 4 Input Voltage"
-      },
-      "pv_4_i_c": {
-        "name": "PV 4 Input Current"
       },
       "ac_o_switch": {
         "name": "AC Output Switch"
@@ -361,50 +331,6 @@
       },
       "pv_ac_count": {
         "name": "Number of AC PV Strings"
-      },
-      "pv_1_i_type": {
-        "name": "PV 1 Input Type",
-        "state": {
-          "reserve": "Reserve",
-          "car": "CAR",
-          "adapter": "Adapter",
-          "other": "Other",
-          "dc_pv": "DC PV",
-          "ac_pv": "AC PV"
-        }
-      },
-      "pv_2_i_type": {
-        "name": "PV 2 Input Type",
-        "state": {
-          "reserve": "Reserve",
-          "car": "CAR",
-          "adapter": "Adapter",
-          "other": "Other",
-          "dc_pv": "DC PV",
-          "ac_pv": "AC PV"
-        }
-      },
-      "pv_3_i_type": {
-        "name": "PV 3 Input Type",
-        "state": {
-          "reserve": "Reserve",
-          "car": "CAR",
-          "adapter": "Adapter",
-          "other": "Other",
-          "dc_pv": "DC PV",
-          "ac_pv": "AC PV"
-        }
-      },
-      "pv_4_i_type": {
-        "name": "PV 4 Input Type",
-        "state": {
-          "reserve": "Reserve",
-          "car": "CAR",
-          "adapter": "Adapter",
-          "other": "Other",
-          "dc_pv": "DC PV",
-          "ac_pv": "AC PV"
-        }
       },
       "b_status": {
         "name": "Battery Status",
@@ -741,30 +667,6 @@
       "d_p_apparent_target_l3": {
         "name": "Phase 3 Apparent Power Target"
       },
-      "mppt_1_i_p": {
-        "name": "MPPT 1 Input Power"
-      },
-      "mppt_1_i_v": {
-        "name": "MPPT 1 Input Voltage"
-      },
-      "mppt_1_i_c": {
-        "name": "MPPT 1 Input Current"
-      },
-      "mppt_1_i_type": {
-        "name": "MPPT 1 Input Type"
-      },
-      "mppt_2_i_p": {
-        "name": "MPPT 2 Input Power"
-      },
-      "mppt_2_i_v": {
-        "name": "MPPT 2 Input Voltage"
-      },
-      "mppt_2_i_c": {
-        "name": "MPPT 2 Input Current"
-      },
-      "mppt_2_i_type": {
-        "name": "MPPT 2 Input Type"
-      },
       "wifi_rssi": {
         "name": "Wi-Fi signal"
       },
@@ -806,6 +708,26 @@
       },
       "firmware_version_slots": {
         "name": "Firmware Version Slots"
+      },
+      "input_power": {
+        "name": "Input Power"
+      },
+      "input_voltage": {
+        "name": "Input Voltage"
+      },
+      "input_current": {
+        "name": "Input Current"
+      },
+      "input_type": {
+        "name": "Input Type",
+        "state": {
+          "reserve": "Reserve",
+          "car": "CAR",
+          "adapter": "Adapter",
+          "other": "Other",
+          "dc_pv": "DC PV",
+          "ac_pv": "AC PV"
+        }
       }
     },
     "binary_sensor": {

@@ -1149,6 +1149,31 @@ def battery_device_info(
     return info
 
 
+def pv_input_device_info(
+    address: str, coordinator: PollingCoordinator, input_num: int, *, mppt: bool
+) -> ChildDeviceInfo:
+    """Device info for one PV input, a child device of the station.
+
+    Named "PV n", or "MPPT n" where the slot is a tracker rather than a
+    terminal (mppt). As for the built-in battery, the address-based
+    identifier keeps the device found before a serial is read, and the
+    serial-based one follows Home Assistant's built-in bluetti_modbus.
+    """
+    # Set by async_setup_entry() before the platforms, which are the only
+    # callers.
+    assert coordinator.device_id is not None
+    identifiers = {(DOMAIN, f"{address}-pv-{input_num}")}
+    serial = (coordinator.data or {}).get("d_serial")
+    if serial not in (None, 0, ""):
+        identifiers.add((DOMAIN, f"{serial}_pv_{input_num}"))
+    return ChildDeviceInfo(
+        identifiers=identifiers,
+        parent_device_id=coordinator.device_id,
+        translation_key="mppt" if mppt else "pv_input",
+        translation_placeholders={"input": str(input_num)},
+    )
+
+
 # The part each firmware slot belongs to, per battery type, as the app's
 # firmware upgrade page names them (slot order: b_ver_1, b_ver_2, ...).
 _FIRMWARE_PART_NAMES: dict[str, tuple[str, ...]] = {

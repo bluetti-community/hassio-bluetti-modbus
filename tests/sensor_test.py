@@ -1,6 +1,6 @@
 import unittest
 from enum import Enum
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -949,18 +949,22 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # cumulative PV energy reading - stays on.
         self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
 
+    @patch("custom_components.bluetti_modbus.sensor.pv_input_device_info")
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
     async def test_ep2000_pv_slots_energies_and_temperature(
-        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
+        self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn, pv_info_fn
     ):
-        # Two MPPTs reported as PV1/PV2, named after the tracker; PV energy
-        # counters that read zero start off; the pack temperature is real.
+        # Two MPPTs reported as PV1/PV2, their devices named after the
+        # tracker; PV energy counters that read zero start off; the pack
+        # temperature is real.
         battery_device_info_fn.return_value = {"name": "Test Device Battery"}
         names = ["pv_1_i_p", "pv_2_i_c", "pv_i_e_total", "pv_ac_p", "pv_ac_e", "b_t_avg"]
         for dev_type, ep2000 in (("ep2000", True), ("balco260", False)):
+            pv_info_fn.reset_mock()
+            pv_info_fn.side_effect = lambda address, coordinator, n, mppt: {"input": n}
             config_cls.from_dict.return_value = MagicMock(dev_type=dev_type, address="10.2.1.60")
             dev_info_fn.return_value = _device_info()
 
@@ -984,13 +988,16 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             await async_setup_entry(hass, MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend)
 
             by_key = {s._response_key: s for s in added}
+            self.assertEqual(by_key["pv_1_i_p"]._attr_translation_key, "input_power")
+            self.assertEqual(by_key["pv_2_i_c"]._attr_translation_key, "input_current")
+            self.assertEqual(by_key["pv_1_i_p"]._attr_device_info, {"input": 1})
+            self.assertEqual(by_key["pv_2_i_c"]._attr_device_info, {"input": 2})
             self.assertEqual(
-                by_key["pv_1_i_p"]._attr_translation_key,
-                "mppt_1_i_p" if ep2000 else "pv_1_i_p",
-            )
-            self.assertEqual(
-                by_key["pv_2_i_c"]._attr_translation_key,
-                "mppt_2_i_c" if ep2000 else "pv_2_i_c",
+                pv_info_fn.call_args_list,
+                [
+                    call("10.2.1.60", coordinator, 1, mppt=ep2000),
+                    call("10.2.1.60", coordinator, 2, mppt=ep2000),
+                ],
             )
             self.assertTrue(by_key["pv_1_i_p"].unique_id.endswith("pv_1_i_p"))
             for name in ("pv_i_e_total", "pv_ac_p", "pv_ac_e"):

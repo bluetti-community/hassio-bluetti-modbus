@@ -33,6 +33,12 @@
   "device": {
     "built_in_battery": {
       "name": "Eingebaute Batterie"
+    },
+    "pv_input": {
+      "name": "PV {input}"
+    },
+    "mppt": {
+      "name": "MPPT {input}"
     }
   },
   "entity": {
@@ -78,42 +84,6 @@
       },
       "g_i_f": {
         "name": "Netzfrequenz"
-      },
-      "pv_1_i_p": {
-        "name": "PV 1 Eingangsleistung"
-      },
-      "pv_1_i_v": {
-        "name": "PV 1 Eingangsspannung"
-      },
-      "pv_1_i_c": {
-        "name": "PV 1 Eingangsstrom"
-      },
-      "pv_2_i_p": {
-        "name": "PV 2 Eingangsleistung"
-      },
-      "pv_2_i_v": {
-        "name": "PV 2 Eingangsspannung"
-      },
-      "pv_2_i_c": {
-        "name": "PV 2 Eingangsstrom"
-      },
-      "pv_3_i_p": {
-        "name": "PV 3 Eingangsleistung"
-      },
-      "pv_3_i_v": {
-        "name": "PV 3 Eingangsspannung"
-      },
-      "pv_3_i_c": {
-        "name": "PV 3 Eingangsstrom"
-      },
-      "pv_4_i_p": {
-        "name": "PV 4 Eingangsleistung"
-      },
-      "pv_4_i_v": {
-        "name": "PV 4 Eingangsspannung"
-      },
-      "pv_4_i_c": {
-        "name": "PV 4 Eingangsstrom"
       },
       "ac_o_switch": {
         "name": "AC-Ausgang Schalter"
@@ -181,30 +151,6 @@
       "b_o_e": {
         "name": "Entladene Batterieenergie Gesamt"
       },
-      "mppt_1_i_p": {
-        "name": "MPPT 1 Eingangsleistung"
-      },
-      "mppt_1_i_v": {
-        "name": "MPPT 1 Eingangsspannung"
-      },
-      "mppt_1_i_c": {
-        "name": "MPPT 1 Eingangsstrom"
-      },
-      "mppt_1_i_type": {
-        "name": "MPPT 1 Eingangstyp"
-      },
-      "mppt_2_i_p": {
-        "name": "MPPT 2 Eingangsleistung"
-      },
-      "mppt_2_i_v": {
-        "name": "MPPT 2 Eingangsspannung"
-      },
-      "mppt_2_i_c": {
-        "name": "MPPT 2 Eingangsstrom"
-      },
-      "mppt_2_i_type": {
-        "name": "MPPT 2 Eingangstyp"
-      },
       "wifi_rssi": {
         "name": "WLAN-Signal"
       },
@@ -246,6 +192,26 @@
       },
       "firmware_version_slots": {
         "name": "Firmware-Versionsplätze"
+      },
+      "input_power": {
+        "name": "Eingangsleistung"
+      },
+      "input_voltage": {
+        "name": "Eingangsspannung"
+      },
+      "input_current": {
+        "name": "Eingangsstrom"
+      },
+      "input_type": {
+        "name": "Eingangstyp",
+        "state": {
+          "reserve": "Reserviert",
+          "car": "Auto",
+          "adapter": "Netzteil",
+          "other": "Sonstige",
+          "dc_pv": "DC-PV",
+          "ac_pv": "AC-PV"
+        }
       }
     },
     "binary_sensor": {

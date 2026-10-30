@@ -32,6 +32,7 @@ from . import (
     battery_is_child_device,
     pack_device_info,
     phase_device_info,
+    pv_input_device_info,
 )
 from . import device_info as dev_info
 from .const import (
@@ -84,8 +85,8 @@ _PV_TYPE_UNVERIFIED = ("ac500", "ac200l", "ep500p")
 _NO_PV_ENERGY_TOTAL = ("ac500", "ac200l", "ep500p")
 
 # The EP2000 has two MPPTs - terminals PV1+PV2 on one, PV3+PV4 on the other -
-# and reports them in the PV1 and PV2 slots, so those are named after the
-# tracker rather than a terminal. It fills none of the PV energy counters
+# and reports them in the PV1 and PV2 slots, so their devices are named after
+# the tracker rather than a terminal. It fills none of the PV energy counters
 # (zero on every read so far), and its pack temperature is a real reading.
 _MPPT_SLOTS = ("ep2000",)
 _NO_PV_ENERGY_COUNTERS = ("ep2000",)
@@ -122,6 +123,18 @@ _CHILD_BATTERY_TRANSLATION_KEYS: dict[str, str | None] = {
     "b_alarm_residential": "residential_alarm",
     "b_alarm_portable": "portable_alarm",
     "b_ver_count": "firmware_version_slots",
+}
+
+# One PV input's readings, each input on a child device of the station ("PV
+# n", or "MPPT n" on _MPPT_SLOTS) and named without its number, as Home
+# Assistant's Fronius integration does its MPPTs. The totals stay on the
+# station.
+PV_INPUT_FIELD = re.compile(r"^pv_([1-4])_i_(p|v|c|type)$")
+PV_INPUT_TRANSLATION_KEYS = {
+    "p": "input_power",
+    "v": "input_voltage",
+    "c": "input_current",
+    "type": "input_type",
 }
 
 # Numbered fields and the count the unit reports for their group: a number
@@ -322,6 +335,8 @@ async def async_setup_entry(
     sensors_to_add = []
     sensors_beyond_count: list[BluettiSensor] = []
     data = coordinator.data or {}
+    # Each PV input's child device, built once for the fields it has.
+    pv_device_infos: dict[int, ChildDeviceInfo] = {}
 
     for field in sensor_fields:
         metadata = metadata_for(field.name)
@@ -370,14 +385,26 @@ async def async_setup_entry(
         if beyond_count:
             metadata = dataclasses.replace(metadata, enabled_by_default=False)
         translation_key = None
-        if config.dev_type in _MPPT_SLOTS and field.name.startswith(("pv_1_", "pv_2_")):
-            translation_key = "mppt_" + field.name.removeprefix("pv_")
+        field_device_info: DeviceInfo | ChildDeviceInfo = device_info
+        device_name = device_info.get("name")
         field_phase = _PHASE_FOR_FIELD.get(field.name)
-        field_device_info = phase_device_infos[field_phase] if field_phase else device_info
+        pv_input = PV_INPUT_FIELD.match(field.name)
+        if field_phase:
+            field_device_info = phase_device_infos[field_phase]
+            device_name = field_device_info.get("name")
+        elif pv_input:
+            input_num = int(pv_input.group(1))
+            if input_num not in pv_device_infos:
+                pv_device_infos[input_num] = pv_input_device_info(
+                    config.address, coordinator, input_num, mppt=config.dev_type in _MPPT_SLOTS
+                )
+            # The unique_id keeps the station's name the entity had there.
+            field_device_info = pv_device_infos[input_num]
+            translation_key = PV_INPUT_TRANSLATION_KEYS[pv_input.group(2)]
         sensor = BluettiSensor(
             coordinator,
             field_device_info,
-            field_device_info.get("name"),
+            device_name,
             field.address,
             field.name,
             unit_of_measurement=field.unit,
