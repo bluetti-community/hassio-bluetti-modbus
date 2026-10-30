@@ -129,6 +129,7 @@ class TestPlatforms(unittest.IsolatedAsyncioTestCase):
     def _coordinator(self, network):
         coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
         coordinator.network = network
+        coordinator.device_id = "main-device-id"
         coordinator.device.get_sensors.return_value = []
         return coordinator
 

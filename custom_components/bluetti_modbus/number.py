@@ -87,7 +87,7 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
         # None check for something that's never actually None here.
         self._device_name = device_info.get("name")
         self._attr_translation_key = field_name
-        self._attr_unique_id = _unique_id_for(coordinator, device_info, field_name, "number")
+        self._attr_unique_id = _unique_id_for(coordinator, self._device_name, field_name, "number")
         self._attr_native_min_value, self._attr_native_max_value = _FIELD_BOUNDS[field_name]
 
     async def async_added_to_hass(self) -> None:

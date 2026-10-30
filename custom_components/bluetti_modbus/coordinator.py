@@ -181,6 +181,9 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # The web page's network status, on the devices that serve it - set
         # by async_setup_entry().
         self.network: NetworkStatusCoordinator | None = None
+        # The main device's registry id, the parent of the built-in
+        # battery's child device - set by async_setup_entry().
+        self.device_id: str | None = None
 
     def _unit(self, unit_id: int) -> ModbusUnit:
         """Hold unit_id on this device's shared connection, until unload."""

@@ -49,6 +49,7 @@ def _sensor(**overrides) -> BluettiSensor:
             config_entry=MagicMock(entry_id="test_entry_id"), data={}
         ),
         "device_info": _device_info(),
+        "device_name": "Test Device",
         "address": 50001,
         "response_key": "d_num_inverters",
     }

@@ -11,7 +11,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 
 from .const import (
     BUILT_IN_BATTERY_DEV_TYPES,
@@ -19,6 +19,7 @@ from .const import (
     DEVICE_TYPE_DISPLAY_NAMES,
     DOMAIN,
     MANUFACTURER,
+    SEPARATE_BATTERY_DEV_TYPES,
 )
 from .coordinator import PollingCoordinator
 from .network import NETWORK_STATUS_DEV_TYPES, NetworkStatusCoordinator
@@ -76,8 +77,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # forwarding to platforms (ShellyRpcCoordinator.async_setup()).
     main_device_info = device_info(entry, coordinator)
     if main_device_info is not None:
-        dr.async_get(hass).async_get_or_create(
-            config_entry_id=entry.entry_id, **main_device_info
+        # Kept for the built-in battery, a child device of this one.
+        coordinator.device_id = (
+            dr.async_get(hass)
+            .async_get_or_create(config_entry_id=entry.entry_id, **main_device_info)
+            .id
         )
 
     logger.debug("Creating entities")
@@ -759,9 +763,10 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
     if no coordinator is given (e.g. S Meter, which doesn't declare these
     fields at all).
 
-    b_ver_1 (BMS, the battery's own firmware) is deliberately not here - it
-    moved to battery_device_info()'s own sw_version, since BMS is the
-    battery's firmware, not the main unit's.
+    The built-in battery's firmware (battery_firmware(), "BMS v...") comes
+    last when that battery is a child device, which has no firmware of its
+    own; a battery that is a device of its own (SEPARATE_BATTERY_DEV_TYPES)
+    keeps it on its own page instead.
 
     AC500 exception: it doesn't declare d_iot_ver at all (real hardware
     confirmed this field is simply absent, see bluetti-official/bluetti-
@@ -786,13 +791,17 @@ def _modbus_identity(coordinator: PollingCoordinator | None) -> tuple[str | None
         segments.append(f"ARM v{arm}")
     if dsp is not None:
         segments.append(f"DSP v{dsp}")
+    if battery_is_child_device(coordinator.config.dev_type):
+        bms = battery_firmware(data)
+        if bms is not None:
+            segments.append(bms)
     sw_version = ", ".join(segments) if segments else None
     return serial_number, sw_version
 
 
 def _unique_id_for(
     coordinator: PollingCoordinator,
-    device_info: DeviceInfo,
+    device_name: str | None,
     response_key: str,
     domain: str,
     *,
@@ -851,7 +860,10 @@ def _unique_id_for(
         serial = data.get("d_serial")
     identity = str(serial) if serial is not None else coordinator.config_entry.entry_id
 
-    name = device_info.get("name")
+    # The name of the device the entity sits on, as the older schemes below
+    # spelled it - for the built-in battery, battery_device_name(), which it
+    # keeps as a child device.
+    name = device_name
     suffix = f"{response_key} {cell_num}" if cell_num is not None else response_key
     named_unique_id = get_unique_id(f"{identity} {name} {suffix}")
 
@@ -1054,57 +1066,85 @@ def pack_device_info(
     )
 
 
+def battery_is_child_device(dev_type: str) -> bool:
+    """Whether dev_type's built-in battery is a child device of the station."""
+    return dev_type in BUILT_IN_BATTERY_DEV_TYPES and dev_type not in SEPARATE_BATTERY_DEV_TYPES
+
+
+def battery_device_name(entry: ConfigEntry) -> str:
+    """The name the built-in battery's device was registered under.
+
+    A child device is named by its translation instead, but the battery's
+    older entity unique_ids carry this name (see _unique_id_for()).
+    """
+    return f"{entry.title} Battery"
+
+
 def battery_device_info(
-    hass: HomeAssistant, entry: ConfigEntry, coordinator: PollingCoordinator | None = None
-) -> DeviceInfo | None:
-    """Device info for Balco260's own built-in battery, as a sub-device.
+    hass: HomeAssistant, entry: ConfigEntry, coordinator: PollingCoordinator
+) -> DeviceInfo | ChildDeviceInfo | None:
+    """Device info for the station's own built-in battery.
 
-    Unlike BC260 packs 2..MAX_BATTERY_PACKS (pack_device_info() above), this
-    one always exists - a Balco260 always has a built-in battery - so unlike
-    those, it doesn't depend on d_num_battery_packs having been read yet.
+    Unlike the expansion packs (pack_device_info() above), this one always
+    exists, so it doesn't depend on d_num_battery_packs having been read yet.
 
-    serial_number/sw_version come from b_serial ("Pack SN") and b_ver_1
-    ("BMS", the battery's own firmware) - both properties of the battery
-    itself, not the main unit (which uses d_iot_serial/d_iot_ver/d_ver_arm/
-    d_ver_dsp instead, see _modbus_identity()). coordinator is optional for
-    the same reason as device_info()'s own docstring explains: omit it for a
-    per-entity DeviceInfo dict, where leaving these keys out never overwrites
-    what async_setup_entry's own registration already set with one.
+    Part of the station on most models, so a child device of the main one:
+    no serial, model or firmware of its own (its BMS version is on the main
+    device, see _modbus_identity()). Its identifiers are the address-based
+    one the battery had as a device of its own - the registry finds that
+    device and converts it in place, keeping its id, area and custom name -
+    and the serial-based one Home Assistant's built-in bluetti_modbus gives
+    it, so an entry moving there finds it again.
+
+    On SEPARATE_BATTERY_DEV_TYPES it stays a device of its own, linked by
+    via_device: serial_number/sw_version come from b_serial ("Pack SN") and
+    its firmware slots, properties of the battery itself.
     """
     config = FullDeviceConfig.from_dict(entry.data)
 
     if config is None:
         return None
 
+    data = coordinator.data or {}
+
+    if battery_is_child_device(config.dev_type):
+        # Set by async_setup_entry() before the platforms, which are the only
+        # callers.
+        assert coordinator.device_id is not None
+        identifiers = {(DOMAIN, f"{config.address}-battery")}
+        serial = data.get("d_serial")
+        if serial not in (None, 0, ""):
+            identifiers.add((DOMAIN, f"{serial}_battery"))
+        return ChildDeviceInfo(
+            identifiers=identifiers,
+            parent_device_id=coordinator.device_id,
+            translation_key="built_in_battery",
+        )
+
     info = DeviceInfo(
         identifiers={(DOMAIN, f"{config.address}-battery")},
-        name=f"{entry.title} Battery",
+        name=battery_device_name(entry),
         manufacturer=MANUFACTURER,
         model=stacked_battery_model(
-            sub_device_model(
-                (coordinator.data or {}).get("b_type") if coordinator else None,
-                config.dev_type,
-            ),
+            sub_device_model(data.get("b_type"), config.dev_type),
             config.dev_type,
-            (coordinator.data or {}).get("b_cell_count") if coordinator else None,
+            data.get("b_cell_count"),
         ),
-        # Groups this sub-device under the main Balco260 device on the
-        # Devices page - same pattern as pack_device_info() above. The main
-        # device is registered explicitly in async_setup_entry() above
-        # before this can ever be resolved.
+        # Groups this sub-device under the main device on the Devices page -
+        # same pattern as pack_device_info() above. The main device is
+        # registered explicitly in async_setup_entry() above before this can
+        # ever be resolved.
         via_device_id=dr.async_get_device_id_by_identifier(
             hass, (DOMAIN, config.address), config_entry_id=entry.entry_id
         ),
     )
 
-    if coordinator is not None:
-        data = coordinator.data or {}
-        serial = data.get("b_serial")
-        if serial is not None:
-            info["serial_number"] = str(serial)
-        sw_version = battery_firmware(data)
-        if sw_version is not None:
-            info["sw_version"] = sw_version
+    serial = data.get("b_serial")
+    if serial is not None:
+        info["serial_number"] = str(serial)
+    sw_version = battery_firmware(data)
+    if sw_version is not None:
+        info["sw_version"] = sw_version
 
     return info
 

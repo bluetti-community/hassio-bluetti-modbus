@@ -30,6 +30,11 @@
       "reconfigure_successful": "Die Adresse des Geräts wurde aktualisiert"
     }
   },
+  "device": {
+    "built_in_battery": {
+      "name": "Eingebaute Batterie"
+    }
+  },
   "entity": {
     "sensor": {
       "d_num_inverters": {
@@ -208,6 +213,39 @@
       },
       "d_inverter_warning": {
         "name": "Wechselrichter-Warnungen"
+      },
+      "soc": {
+        "name": "Ladezustand (SoC)"
+      },
+      "soh": {
+        "name": "Zustand (SoH)"
+      },
+      "cycle_count": {
+        "name": "Ladezyklen"
+      },
+      "total_charged_energy": {
+        "name": "Geladene Energie Gesamt"
+      },
+      "total_discharged_energy": {
+        "name": "Entladene Energie Gesamt"
+      },
+      "type": {
+        "name": "Typ"
+      },
+      "protection_status": {
+        "name": "Schutzstatus"
+      },
+      "system_error": {
+        "name": "Systemfehler"
+      },
+      "residential_alarm": {
+        "name": "Alarm Heimspeicher"
+      },
+      "portable_alarm": {
+        "name": "Alarm Powerstation"
+      },
+      "firmware_version_slots": {
+        "name": "Firmware-Versionsplätze"
       }
     },
     "binary_sensor": {
