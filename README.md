@@ -167,7 +167,7 @@ From version 3.0.0: requires **Home Assistant 2026.10.1 or newer**.
 > entity IDs like `sensor.balco_260_built_in_battery_voltage`. The BMS version moves to
 > the station's firmware line.
 >
-> From 3.2.0-beta.10, each PV input's entities move to a **PV 1**-**PV 4** sub-device
+> From 3.2.0-rc.1, each PV input's entities move to a **PV 1**-**PV 4** sub-device
 > (**MPPT 1**-**MPPT 2** on an EP2000) and drop the number from their names (**Input
 > Power**, **Input Voltage**, ...). Entity IDs and history are kept, and a new setup
 > gets the same entity IDs as before (`sensor.balco_260_pv_1_input_power`).
