@@ -13,7 +13,7 @@
         "modbus-connection[tmodbus]>=4.12.4",
         "tmodbus[async-serial]>=0.6.1"
     ],
-    "version": "3.2.0-beta.9",
+    "version": "3.2.0-rc.1",
     "zeroconf": [
         {
             "type": "_bluetti._tcp.local.",

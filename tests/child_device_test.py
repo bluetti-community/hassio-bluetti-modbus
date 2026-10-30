@@ -294,3 +294,103 @@ class TestBuiltInBatteryChildDevice(_RealRegistries):
         self.assertEqual(self._entity("b_v").device_id, battery.id)
         # Its firmware is on its own page, not the station's.
         self.assertNotIn("BMS", main.sw_version)
+
+
+PV_DATA = {
+    **BALCO260_DATA,
+    "pv_dc_count": 2,
+    "pv_ac_count": 0,
+    "pv_i_p_total": 300,
+    **{f"pv_{n}_i_{k}": 1 for n in (1, 2, 3, 4) for k in ("p", "v", "c")},
+}
+
+
+class TestPvInputChildDevices(_RealRegistries):
+    def _pv_input(self, entry, n):
+        return self.devices.async_get_child_device_by_identifier(
+            (DOMAIN, f"{SERIAL}_pv_{n}"), entry.entry_id
+        )
+
+    async def test_each_pv_input_is_a_child_of_the_station(self):
+        entry = self._entry()
+
+        await self._setup(entry, PV_DATA)
+
+        main = self._main_device(entry)
+        for n in (1, 2, 3, 4):
+            with self.subTest(input=n):
+                pv_input = self._pv_input(entry, n)
+                self.assertIsNotNone(pv_input)
+                self.assertEqual(pv_input.parent_device_id, main.id)
+                self.assertEqual(pv_input.name, f"PV {n}")
+                self.assertEqual(
+                    pv_input.identifiers,
+                    {(DOMAIN, f"{ADDRESS}-pv-{n}"), (DOMAIN, f"{SERIAL}_pv_{n}")},
+                )
+                for field, name in (
+                    (f"pv_{n}_i_p", "Input Power"),
+                    (f"pv_{n}_i_v", "Input Voltage"),
+                    (f"pv_{n}_i_c", "Input Current"),
+                    (f"pv_{n}_i_type", "Input Type"),
+                ):
+                    entity = self._entity(field)
+                    self.assertEqual(entity.device_id, pv_input.id, field)
+                    self.assertEqual(entity.original_name, name, field)
+        # The totals stay on the station.
+        for field in ("pv_i_p_total", "pv_dc_count", "pv_ac_count"):
+            self.assertEqual(self._entity(field).device_id, main.id, field)
+
+    async def test_a_new_install_keeps_todays_entity_id(self):
+        entry = self._entry()
+
+        await self._setup(entry, PV_DATA)
+
+        self.assertEqual(self._entity("pv_1_i_p").entity_id, "sensor.balco_260_pv_1_input_power")
+
+    async def test_inputs_beyond_the_reported_count_are_disabled(self):
+        entry = self._entry()
+
+        await self._setup(entry, PV_DATA)
+
+        for n, disabled in ((1, False), (2, False), (3, True), (4, True)):
+            with self.subTest(input=n):
+                entity = self._entity(f"pv_{n}_i_p")
+                self.assertEqual(entity.disabled, disabled)
+                # A child whose entities are all disabled is still there.
+                self.assertIsNotNone(self._pv_input(entry, n))
+        self.assertIsNone(self.hass.states.get("sensor.balco_260_pv_3_input_power"))
+
+    async def test_an_existing_entity_moves_to_its_input_as_it_was(self):
+        entry = self._entry()
+        main = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id, identifiers={(DOMAIN, ADDRESS)}, name="Balco 260"
+        )
+        power = self.entities.async_get_or_create(
+            "sensor",
+            DOMAIN,
+            f"{SERIAL}_pv_1_i_p",
+            config_entry=entry,
+            device_id=main.id,
+            suggested_object_id="balco_260_pv_1_input_power",
+        )
+        self.devices.async_config_entry_unloaded(entry.entry_id)
+
+        await self._setup(entry, PV_DATA)
+
+        entity = self._entity("pv_1_i_p")
+        self.assertEqual(entity.entity_id, power.entity_id)
+        self.assertEqual(entity.device_id, self._pv_input(entry, 1).id)
+
+    async def test_an_ep2000_names_its_inputs_after_its_mppts(self):
+        entry = self._entry("ep2000", "EP2000")
+
+        await self._setup(
+            entry,
+            {**PV_DATA, "b_type": "HV800", "b_cell_count": 96, "b_ver_count": 3},
+        )
+
+        for n in (1, 2):
+            with self.subTest(input=n):
+                self.assertEqual(self._pv_input(entry, n).name, f"MPPT {n}")
+        self.assertIsNone(self._pv_input(entry, 3))
+        self.assertEqual(self._entity("pv_1_i_p").entity_id, "sensor.ep2000_mppt_1_input_power")

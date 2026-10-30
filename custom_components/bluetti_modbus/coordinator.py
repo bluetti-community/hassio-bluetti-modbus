@@ -102,8 +102,8 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     # read entry_id for their own unique_id (see e.g. sensor.py).
     config_entry: ConfigEntry
 
-    # The main device's registry id, the parent of the built-in battery's
-    # child device - set by async_setup_entry().
+    # The main device's registry id, the parent of its child devices (the
+    # built-in battery, the PV inputs) - set by async_setup_entry().
     device_id: str | None = None
 
     def __init__(
