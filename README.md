@@ -82,8 +82,8 @@ Have a different BLUETTI model? Register data is welcome - see
 - The SoC limits refuse writes on this model and stay read-only; the AC output switch
   is left untried (it powers the fridge).
 - No grid feed-in switch: the unit is off-grid only.
-- On a single-phase, single-pack unit, the entities for phases 2-3, PV inputs 2-4
-  and pack slots 2-4 read empty.
+- One PV input and one inverter: there is no PV 2-4, and inverters 2-3 start
+  disabled. No feed-in energy, AC-coupled PV or inverter phase count either.
 
 **AC500, EP500Pro, AC200L, Apex 300** - one shared register layout. An AC200PL reads
 with the AC200L profile.
@@ -173,6 +173,9 @@ From version 3.0.0: requires **Home Assistant 2026.10.1 or newer**.
 > (**MPPT 1**-**MPPT 2** on an EP2000) and drop the number from their names (**Input
 > Power**, **Input Voltage**, ...). Entity IDs and history are kept, and a new setup
 > gets the same entity IDs as before (`sensor.balco_260_pv_1_input_power`).
+>
+> From 3.2.0-rc.2, a PV input beyond the count the unit reports has no sub-device,
+> and the battery's and packs' **Type** sensors are gone: a pack's type is its model.
 
 ### Via HACS (recommended)
 
@@ -266,8 +269,8 @@ set depends on your model.
   energy. On a **Built-in battery** sub-device of the station, whose BMS version is
   shown with the station's firmware; each BC260 expansion pack on its own **Pack N**
   device with the same sensors. An EP2000's battery is a **Battery** device of its own.
-* **Solar** - per-input voltage, current, power and input type, each input on a
-  **PV 1**-**PV 4** sub-device of the station (**MPPT 1**-**MPPT 2** on an EP2000),
+* **Solar** - per-input voltage, current, power and input type, each input the unit
+  reports on a **PV n** sub-device of the station (**MPPT n** on an EP2000),
   plus combined PV input power and lifetime energy on the station itself.
 * **Grid** - frequency, import/export power, per-phase voltage/current/power, and
   lifetime import/export energy counters.

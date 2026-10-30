@@ -9,7 +9,10 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import EntityCategory
 
-from custom_components.bluetti_modbus.const import FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO
+from custom_components.bluetti_modbus.const import (
+    BATTERY_FIELDS_NOT_SHOWN,
+    FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO,
+)
 from custom_components.bluetti_modbus.sensor import (
     BluettiCodesSensor,
     BluettiSensor,
@@ -1269,7 +1272,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # test's own assertions down to pack 2's, which are what it's
         # actually about.
         pack_sensors = [s for s in added if s._response_key.startswith("pack_2_")]
-        self.assertEqual(len(pack_sensors), len(PACK_INFO_FIELDS))
+        self.assertEqual(len(pack_sensors), len(PACK_INFO_FIELDS - BATTERY_FIELDS_NOT_SHOWN))
         self.assertEqual(pack_sensors[0].device_info, {"name": "Test Device Pack 2"})
 
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
@@ -1308,7 +1311,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         pack_sensors = [s for s in added if s._response_key.startswith("pack_2_")]
-        self.assertEqual(len(pack_sensors), len(PACK_INFO_FIELDS))
+        self.assertEqual(len(pack_sensors), len(PACK_INFO_FIELDS - BATTERY_FIELDS_NOT_SHOWN))
         self.assertEqual(pack_sensors[0].device_info, {"name": "Test Device Pack 2"})
         self.assertFalse([s for s in added if s._response_key.startswith("pack_3_")])
 
@@ -1471,7 +1474,10 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         # b_serial and the firmware slots b_ver_1-4 feed the battery's own
         # DeviceInfo instead (see FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO) - not
         # sensors here.
-        self.assertEqual(response_keys, PACK_INFO_FIELDS - FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO)
+        self.assertEqual(
+            response_keys,
+            PACK_INFO_FIELDS - FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO - BATTERY_FIELDS_NOT_SHOWN,
+        )
         # No pack_N_ prefix - unlike packs 2+, unprefixed (see the class
         # docstring).
         self.assertTrue(all("pack_" not in k for k in response_keys))
@@ -1513,7 +1519,10 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(hass, entry, added.extend)
 
         response_keys = {s._response_key for s in added}
-        self.assertEqual(response_keys, PACK_INFO_FIELDS - FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO)
+        self.assertEqual(
+            response_keys,
+            PACK_INFO_FIELDS - FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO - BATTERY_FIELDS_NOT_SHOWN,
+        )
         self.assertTrue(all(s.device_info == {"name": "Test Device Battery"} for s in added))
 
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
@@ -1543,7 +1552,7 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
         on_battery = {
             s._response_key for s in added if s.device_info == {"name": "Test Device Battery"}
         }
-        self.assertEqual(on_battery, {"b_type", "b_ver_count", "b_soc", "b_cell_count", "b_ntc_count"})
+        self.assertEqual(on_battery, {"b_ver_count", "b_soc", "b_cell_count", "b_ntc_count"})
 
     def test_every_profile_with_a_battery_block_gets_the_battery_sub_device(self):
         # PACK_INFO_FIELDS are always skipped from the main device, so a

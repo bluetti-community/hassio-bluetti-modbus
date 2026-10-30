@@ -317,7 +317,7 @@ class TestPvInputChildDevices(_RealRegistries):
         await self._setup(entry, PV_DATA)
 
         main = self._main_device(entry)
-        for n in (1, 2, 3, 4):
+        for n in (1, 2):
             with self.subTest(input=n):
                 pv_input = self._pv_input(entry, n)
                 self.assertIsNotNone(pv_input)
@@ -347,18 +347,47 @@ class TestPvInputChildDevices(_RealRegistries):
 
         self.assertEqual(self._entity("pv_1_i_p").entity_id, "sensor.balco_260_pv_1_input_power")
 
-    async def test_inputs_beyond_the_reported_count_are_disabled(self):
+    async def test_inputs_beyond_the_reported_count_have_no_entity_or_device(self):
         entry = self._entry()
 
         await self._setup(entry, PV_DATA)
 
-        for n, disabled in ((1, False), (2, False), (3, True), (4, True)):
+        for n in (3, 4):
             with self.subTest(input=n):
-                entity = self._entity(f"pv_{n}_i_p")
-                self.assertEqual(entity.disabled, disabled)
-                # A child whose entities are all disabled is still there.
-                self.assertIsNotNone(self._pv_input(entry, n))
-        self.assertIsNone(self.hass.states.get("sensor.balco_260_pv_3_input_power"))
+                self.assertIsNone(self._pv_input(entry, n))
+                self.assertIsNone(
+                    self.entities.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_pv_{n}_i_p")
+                )
+
+    async def test_what_was_registered_beyond_the_count_is_removed(self):
+        # 3.2.0-rc.1 gave every input a device; the versions before it put
+        # the inputs' entities, disabled, on the station.
+        entry = self._entry()
+        main = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id, identifiers={(DOMAIN, ADDRESS)}, name="Balco 260"
+        )
+        pv_3 = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id, identifiers={(DOMAIN, f"{ADDRESS}-pv-3")}, name="PV 3"
+        )
+        on_pv_3 = self.entities.async_get_or_create(
+            "sensor", DOMAIN, f"{SERIAL}_pv_3_i_p", config_entry=entry, device_id=pv_3.id
+        )
+        on_station = self.entities.async_get_or_create(
+            "sensor",
+            DOMAIN,
+            f"{SERIAL}_pv_4_i_p",
+            config_entry=entry,
+            device_id=main.id,
+            disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+        )
+        self.devices.async_config_entry_unloaded(entry.entry_id)
+
+        await self._setup(entry, PV_DATA)
+
+        self.assertIsNone(self.devices.async_get(pv_3.id))
+        self.assertIsNone(self.entities.async_get(on_pv_3.entity_id))
+        self.assertIsNone(self.entities.async_get(on_station.entity_id))
+        self.assertIsNotNone(self._pv_input(entry, 2))
 
     async def test_an_existing_entity_moves_to_its_input_as_it_was(self):
         entry = self._entry()

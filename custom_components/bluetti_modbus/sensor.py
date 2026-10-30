@@ -19,6 +19,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import SIGNAL_STRENGTH_DECIBELS_MILLIWATT, EntityCategory
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -39,6 +40,7 @@ from .const import (
     AC240_FIELDS_NOT_SHOWN,
     AC500_FIELDS_NOT_SHOWN,
     BALCO500_FIELDS_NOT_SHOWN,
+    BATTERY_FIELDS_NOT_SHOWN,
     BUILT_IN_BATTERY_DEV_TYPES,
     CONF_SLOTS_BEYOND_COUNT_PENDING,
     DOMAIN,
@@ -139,17 +141,19 @@ PV_INPUT_TRANSLATION_KEYS = {
 
 # Numbered fields and the count the unit reports for their group: a number
 # above the count is a phase, inverter, PV input or firmware slot the unit
-# says it does not have, so its entity is created disabled. The registers are
-# still read - they sit inside the same block reads as their neighbours. On
-# the EP2000 d_inverter_1..3 are the three phases of one inverter
-# (d_num_inverters reads 1), hence d_inverter_phase_count. A count that is
-# missing or 0 (d_inverter_phase_count on the FridgePower) hides nothing.
+# says it does not have, so its entity is created disabled - or, for a PV
+# input, not created at all, since each input is a device of its own. The
+# registers are still read - they sit inside the same block reads as their
+# neighbours. On the EP2000 d_inverter_1..3 are the three phases of one
+# inverter (d_num_inverters reads 1), hence d_inverter_phase_count; the
+# FridgePower reads that one 0, so its inverter count stands in. A count
+# that is missing or 0 hides nothing.
 _SLOT_GROUPS = (
-    (re.compile(r"^g_(\d)_[ip]_"), "d_phase_count", None),
-    (re.compile(r"^ac_(\d)_o_"), "ac_phase_count", None),
-    (re.compile(r"^d_inverter_(\d)_"), "d_inverter_phase_count", None),
-    (re.compile(r"^pv_(\d)_i_"), "pv_dc_count", "pv_ac_count"),
-    (re.compile(r"^b_ver_(\d)$"), "b_ver_count", None),
+    (re.compile(r"^g_(\d)_[ip]_"), "d_phase_count", None, None),
+    (re.compile(r"^ac_(\d)_o_"), "ac_phase_count", None, None),
+    (re.compile(r"^d_inverter_(\d)_"), "d_inverter_phase_count", None, "d_num_inverters"),
+    (re.compile(r"^pv_(\d)_i_"), "pv_dc_count", "pv_ac_count", None),
+    (re.compile(r"^b_ver_(\d)$"), "b_ver_count", None, None),
 )
 
 
@@ -164,11 +168,13 @@ def beyond_reported_count(field_name: str, data: dict[str, Any], prefix: str = "
 
     prefix is "pack_{n}_" for an expansion pack, whose counts are its own.
     """
-    for pattern, count_key, extra_key in _SLOT_GROUPS:
+    for pattern, count_key, extra_key, fallback_key in _SLOT_GROUPS:
         match = pattern.match(field_name)
         if match is None:
             continue
         count = _count(data.get(prefix + count_key))
+        if not count and fallback_key is not None:
+            count = _count(data.get(prefix + fallback_key))
         if count is None:
             return False
         if extra_key is not None:
@@ -337,6 +343,9 @@ async def async_setup_entry(
     data = coordinator.data or {}
     # Each PV input's child device, built once for the fields it has.
     pv_device_infos: dict[int, ChildDeviceInfo] = {}
+    # The PV inputs beyond the count, and the unique_ids their fields had.
+    pv_inputs_not_served: set[int] = set()
+    unique_ids_not_served: list[str] = []
 
     for field in sensor_fields:
         metadata = metadata_for(field.name)
@@ -392,6 +401,12 @@ async def async_setup_entry(
         if field_phase:
             field_device_info = phase_device_infos[field_phase]
             device_name = field_device_info.get("name")
+        elif pv_input and beyond_count:
+            pv_inputs_not_served.add(int(pv_input.group(1)))
+            unique_ids_not_served.append(
+                _unique_id_for(coordinator, device_name, field.name, "sensor")
+            )
+            continue
         elif pv_input:
             input_num = int(pv_input.group(1))
             if input_num not in pv_device_infos:
@@ -424,6 +439,8 @@ async def async_setup_entry(
 
     for pack_num, pack_info in pack_device_infos.items():
         for name in PACK_INFO_FIELDS:
+            if name in BATTERY_FIELDS_NOT_SHOWN:
+                continue
             # Same field object as the built-in battery's own instance of
             # this field (see the dedicated loop below) - packs share the
             # exact same schema, just at a different Modbus slave address
@@ -456,7 +473,7 @@ async def async_setup_entry(
 
     if battery_info is not None:
         for name in PACK_INFO_FIELDS:
-            if name in FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO:
+            if name in FIELDS_SHOWN_VIA_BATTERY_DEVICE_INFO | BATTERY_FIELDS_NOT_SHOWN:
                 continue
             field = bluetti_device.get_field(name)
             # The Apex 300 serves only part of the block.
@@ -494,6 +511,10 @@ async def async_setup_entry(
 
     if entry.data.get(CONF_SLOTS_BEYOND_COUNT_PENDING) is True:
         _disable_registered_beyond_count(hass, entry, sensors_beyond_count)
+    if pv_inputs_not_served:
+        _remove_pv_inputs_not_served(
+            hass, config.address, unique_ids_not_served, pv_inputs_not_served
+        )
 
     async_add_entities(sensors_to_add)
 
@@ -629,6 +650,27 @@ def _disable_registered_beyond_count(
             )
     new_data = {k: v for k, v in entry.data.items() if k != CONF_SLOTS_BEYOND_COUNT_PENDING}
     hass.config_entries.async_update_entry(entry, data=new_data)
+
+
+def _remove_pv_inputs_not_served(
+    hass: HomeAssistant, address: str, unique_ids: list[str], input_nums: set[int]
+) -> None:
+    """Remove what an earlier version registered for PV inputs beyond the
+    count: their entities, on the station or on their own device, and those
+    devices.
+    """
+    entity_registry = er.async_get(hass)
+    for unique_id in unique_ids:
+        entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        if entity_id is not None:
+            entity_registry.async_remove(entity_id)
+    device_registry = dr.async_get(hass)
+    for input_num in sorted(input_nums):
+        device = device_registry.async_get_device(
+            identifiers={(DOMAIN, f"{address}-pv-{input_num}")}
+        )
+        if device is not None:
+            device_registry.async_remove_device(device.id)
 
 
 class BluettiSensor(CoordinatorEntity, RestoreSensor):
