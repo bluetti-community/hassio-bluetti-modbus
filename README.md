@@ -51,10 +51,10 @@ documentation and verified against real hardware.
 | **S Meter** | Discovered | Read-only | Real hardware + BLUETTI spec |
 | **FridgePower** | Manual (IP) | DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/38) |
 | **AC500** | Manual (IP) | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
-| **EP500Pro** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
+| **EP500Pro** | Manual (IP) | AC output, DC output, grid charging | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | Manual (IP) | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
 | **AC240**, **AC240P** | Manual (IP) | AC output, DC output, grid charging, AC ECO, AC power lifting | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/176) |
-| **Apex 300** | Manual (IP) | AC output, DC output | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/49) |
+| **Apex 300** | Manual (IP) | AC output, DC output, grid charging (from 3.2.0-beta.8) | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/49) |
 | **EP2000** | Manual (IP) | Grid feed-in | [4 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
 | **Balco Transfer Hub** | Manual (IP) | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
 
@@ -88,6 +88,8 @@ Have a different BLUETTI model? Register data is welcome - see
 **AC500, EP500Pro, AC200L, Apex 300** - one shared register layout. An AC200PL reads
 with the AC200L profile.
 - The SoC limits are read-only: the AC500 refuses the write.
+- On the Apex 300, Grid Charging is the Custom working mode's "Charge From Grid"
+  setting: it has no effect in Backup mode.
 - No per-pack data: the pack registers show whichever pack the app has selected, and
   that selector is not reachable over Modbus TCP.
 - On the AC500 and EP500Pro, never address a Modbus unit id other than 1: it freezes
