@@ -1,0 +1,790 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "address": "Adresse IP",
+          "port": "Port",
+          "type": "Type d'appareil"
+        }
+      },
+      "zeroconf_confirm": {
+        "title": "Appareil découvert",
+        "description": "Voulez-vous configurer le {name} trouvé à l'adresse {address} ?"
+      },
+      "reconfigure": {
+        "title": "Modifier l'adresse de l'appareil",
+        "description": "L'appareil est vérifié à la nouvelle adresse avant que l'entrée n'y soit déplacée.",
+        "data": {
+          "address": "Adresse IP",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion à l'appareil : {error}. Vérifiez que Modbus TCP est activé dans les réglages web de l'appareil ; si cette page est ouverte dans un navigateur, fermez-la avant de réessayer, car elle peut empêcher cette vérification de lire le réglage.",
+      "modbus_tcp_disabled": "Modbus TCP est désactivé sur cet appareil. Ouvrez http://{address}/ dans un navigateur, connectez-vous en tant qu'admin (le mot de passe est le mot de passe Bluetooth de l'appareil dans l'application BLUETTI, ou vide), allez dans Settings → Modbus TCP, activez Enable avec le port 502 et enregistrez, puis fermez cette page et réessayez.",
+      "modbus_tcp_encrypted": "Modbus TCP est chiffré sur cet appareil. Ouvrez http://{address}/ dans un navigateur, connectez-vous en tant qu'admin (le mot de passe est le mot de passe Bluetooth de l'appareil dans l'application BLUETTI, ou vide), allez dans Settings → Modbus TCP, désactivez Crypt Enable et enregistrez, puis fermez cette page et réessayez."
+    },
+    "abort": {
+      "no_unconfigured_devices": "Aucun appareil trouvé",
+      "already_configured": "L'appareil est déjà configuré",
+      "cannot_connect": "Échec de la connexion à l'appareil",
+      "modbus_tcp_disabled": "Modbus TCP est désactivé sur cet appareil. Ouvrez http://{address}/ dans un navigateur, connectez-vous en tant qu'admin (le mot de passe est le mot de passe Bluetooth de l'appareil dans l'application BLUETTI, ou vide), allez dans Settings → Modbus TCP, activez Enable avec le port 502 et enregistrez, puis fermez cette page et réessayez.",
+      "modbus_tcp_encrypted": "Modbus TCP est chiffré sur cet appareil. Ouvrez http://{address}/ dans un navigateur, connectez-vous en tant qu'admin (le mot de passe est le mot de passe Bluetooth de l'appareil dans l'application BLUETTI, ou vide), allez dans Settings → Modbus TCP, désactivez Crypt Enable et enregistrez, puis fermez cette page et réessayez.",
+      "wrong_device": "Un autre appareil répond à cette adresse : son numéro de série n'est pas celui de cette entrée",
+      "reconfigure_successful": "L'adresse de l'appareil a été mise à jour"
+    }
+  },
+  "device": {
+    "built_in_battery": {
+      "name": "Batterie intégrée"
+    },
+    "pv_input": {
+      "name": "PV {input}"
+    },
+    "mppt": {
+      "name": "MPPT {input}"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "d_num_inverters": {
+        "name": "Nombre d'onduleurs"
+      },
+      "ac_o_p_total": {
+        "name": "Puissance de sortie AC totale"
+      },
+      "pv_i_p_total": {
+        "name": "Puissance d'entrée PV totale"
+      },
+      "g_i_p_total": {
+        "name": "Puissance réseau totale"
+      },
+      "d_inverter_total": {
+        "name": "Puissance onduleur totale"
+      },
+      "pv_ac_p": {
+        "name": "Puissance PV AC totale"
+      },
+      "ac_o_e_total": {
+        "name": "Énergie de sortie AC totale"
+      },
+      "pv_i_e_total": {
+        "name": "Énergie d'entrée PV totale"
+      },
+      "g_i_e_total": {
+        "name": "Énergie soutirée du réseau totale"
+      },
+      "g_o_e_total": {
+        "name": "Énergie injectée dans le réseau totale"
+      },
+      "pv_ac_e": {
+        "name": "Énergie PV AC totale"
+      },
+      "d_inverter_status": {
+        "name": "État de l'onduleur",
+        "state": {
+          "stop": "Arrêt",
+          "off_grid": "Fonctionnement hors réseau",
+          "grid_connected_load": "Consommation raccordée au réseau",
+          "grid_connected_operation": "Fonctionnement raccordé au réseau",
+          "grid_connected_charging": "En charge, raccordé au réseau",
+          "grid_connected_discharging": "En décharge, raccordé au réseau",
+          "inverter_fault": "Défaut onduleur",
+          "abnormal_off_grid": "Hors réseau anormal"
+        }
+      },
+      "d_inverter_type": {
+        "name": "Type d'onduleur"
+      },
+      "g_i_f": {
+        "name": "Fréquence réseau"
+      },
+      "ac_o_switch": {
+        "name": "Interrupteur sortie AC"
+      },
+      "dc_o_switch": {
+        "name": "Interrupteur sortie DC"
+      },
+      "g_i_switch": {
+        "name": "Interrupteur charge depuis le réseau"
+      },
+      "g_o_switch": {
+        "name": "Interrupteur injection réseau"
+      },
+      "b_soc_low": {
+        "name": "Limite de décharge minimale (SoC bas)"
+      },
+      "b_soc_high": {
+        "name": "Limite de charge maximale (SoC haut)"
+      },
+      "d_num_battery_packs": {
+        "name": "Nombre de packs batterie"
+      },
+      "b_v_total": {
+        "name": "Tension batterie totale"
+      },
+      "b_c_total": {
+        "name": "Courant batterie total"
+      },
+      "b_soc_total": {
+        "name": "SoC batterie total"
+      },
+      "b_soh_total": {
+        "name": "SoH batterie total"
+      },
+      "b_type": {
+        "name": "Type de batterie"
+      },
+      "b_v": {
+        "name": "Tension batterie"
+      },
+      "b_c": {
+        "name": "Courant batterie"
+      },
+      "b_soc": {
+        "name": "SoC batterie"
+      },
+      "b_soh": {
+        "name": "SoH batterie"
+      },
+      "b_cycle_count": {
+        "name": "Cycles batterie"
+      },
+      "b_t_avg": {
+        "name": "Température moyenne de la batterie"
+      },
+      "b_cell_count": {
+        "name": "Nombre de cellules"
+      },
+      "b_ntc_count": {
+        "name": "Nombre de capteurs de température"
+      },
+      "b_i_e": {
+        "name": "Énergie chargée dans la batterie totale"
+      },
+      "b_o_e": {
+        "name": "Énergie déchargée de la batterie totale"
+      },
+      "g_i_p_local": {
+        "name": "Puissance d'entrée réseau"
+      },
+      "ac_o_p_local": {
+        "name": "Puissance de sortie AC"
+      },
+      "pv_i_p_local": {
+        "name": "Puissance d'entrée PV"
+      },
+      "pv_ac_p_local": {
+        "name": "Puissance PV AC"
+      },
+      "g_i_e_local": {
+        "name": "Énergie soutirée du réseau"
+      },
+      "g_o_e_local": {
+        "name": "Énergie injectée dans le réseau"
+      },
+      "ac_o_e_local": {
+        "name": "Énergie de sortie AC"
+      },
+      "pv_i_e_local": {
+        "name": "Énergie d'entrée PV"
+      },
+      "pv_ac_e_local": {
+        "name": "Énergie PV AC"
+      },
+      "d_self_consumption": {
+        "name": "Taux d'autoconsommation"
+      },
+      "d_phase_count": {
+        "name": "Nombre de phases réseau"
+      },
+      "g_1_i_p": {
+        "name": "Réseau phase 1 puissance"
+      },
+      "g_1_i_v": {
+        "name": "Réseau phase 1 tension"
+      },
+      "g_1_i_c": {
+        "name": "Réseau phase 1 courant"
+      },
+      "g_2_i_p": {
+        "name": "Réseau phase 2 puissance"
+      },
+      "g_2_i_v": {
+        "name": "Réseau phase 2 tension"
+      },
+      "g_2_i_c": {
+        "name": "Réseau phase 2 courant"
+      },
+      "g_3_i_p": {
+        "name": "Réseau phase 3 puissance"
+      },
+      "g_3_i_v": {
+        "name": "Réseau phase 3 tension"
+      },
+      "g_3_i_c": {
+        "name": "Réseau phase 3 courant"
+      },
+      "ac_phase_count": {
+        "name": "Nombre de phases de sortie AC"
+      },
+      "ac_1_o_p": {
+        "name": "Sortie AC phase 1 puissance"
+      },
+      "ac_1_o_v": {
+        "name": "Sortie AC phase 1 tension"
+      },
+      "ac_1_o_c": {
+        "name": "Sortie AC phase 1 courant"
+      },
+      "ac_2_o_p": {
+        "name": "Sortie AC phase 2 puissance"
+      },
+      "ac_2_o_v": {
+        "name": "Sortie AC phase 2 tension"
+      },
+      "ac_2_o_c": {
+        "name": "Sortie AC phase 2 courant"
+      },
+      "ac_3_o_p": {
+        "name": "Sortie AC phase 3 puissance"
+      },
+      "ac_3_o_v": {
+        "name": "Sortie AC phase 3 tension"
+      },
+      "ac_3_o_c": {
+        "name": "Sortie AC phase 3 courant"
+      },
+      "d_inverter_phase_count": {
+        "name": "Nombre de phases de l'onduleur"
+      },
+      "d_inverter_1_status": {
+        "name": "Onduleur 1 état",
+        "state": {
+          "stop": "Arrêt",
+          "off_grid": "Fonctionnement hors réseau",
+          "grid_connected_load": "Consommation raccordée au réseau",
+          "grid_connected_operation": "Fonctionnement raccordé au réseau",
+          "grid_connected_charging": "En charge, raccordé au réseau",
+          "grid_connected_discharging": "En décharge, raccordé au réseau",
+          "inverter_fault": "Défaut onduleur",
+          "abnormal_off_grid": "Hors réseau anormal"
+        }
+      },
+      "d_inverter_1_p": {
+        "name": "Onduleur 1 puissance"
+      },
+      "d_inverter_1_v": {
+        "name": "Onduleur 1 tension"
+      },
+      "d_inverter_1_c": {
+        "name": "Onduleur 1 courant"
+      },
+      "d_inverter_2_status": {
+        "name": "Onduleur 2 état",
+        "state": {
+          "stop": "Arrêt",
+          "off_grid": "Fonctionnement hors réseau",
+          "grid_connected_load": "Consommation raccordée au réseau",
+          "grid_connected_operation": "Fonctionnement raccordé au réseau",
+          "grid_connected_charging": "En charge, raccordé au réseau",
+          "grid_connected_discharging": "En décharge, raccordé au réseau",
+          "inverter_fault": "Défaut onduleur",
+          "abnormal_off_grid": "Hors réseau anormal"
+        }
+      },
+      "d_inverter_2_p": {
+        "name": "Onduleur 2 puissance"
+      },
+      "d_inverter_2_v": {
+        "name": "Onduleur 2 tension"
+      },
+      "d_inverter_2_c": {
+        "name": "Onduleur 2 courant"
+      },
+      "d_inverter_3_status": {
+        "name": "Onduleur 3 état",
+        "state": {
+          "stop": "Arrêt",
+          "off_grid": "Fonctionnement hors réseau",
+          "grid_connected_load": "Consommation raccordée au réseau",
+          "grid_connected_operation": "Fonctionnement raccordé au réseau",
+          "grid_connected_charging": "En charge, raccordé au réseau",
+          "grid_connected_discharging": "En décharge, raccordé au réseau",
+          "inverter_fault": "Défaut onduleur",
+          "abnormal_off_grid": "Hors réseau anormal"
+        }
+      },
+      "d_inverter_3_p": {
+        "name": "Onduleur 3 puissance"
+      },
+      "d_inverter_3_v": {
+        "name": "Onduleur 3 tension"
+      },
+      "d_inverter_3_c": {
+        "name": "Onduleur 3 courant"
+      },
+      "pv_dc_count": {
+        "name": "Nombre de chaînes PV DC"
+      },
+      "pv_ac_count": {
+        "name": "Nombre de chaînes PV AC"
+      },
+      "b_status": {
+        "name": "État de la batterie",
+        "state": {
+          "idle": "Au repos",
+          "charging": "En charge",
+          "discharging": "En décharge"
+        }
+      },
+      "b_time_to_full_total": {
+        "name": "Temps total jusqu'à la charge complète"
+      },
+      "b_time_to_empty_total": {
+        "name": "Temps total jusqu'à épuisement"
+      },
+      "b_ver_count": {
+        "name": "Emplacements de version du firmware batterie"
+      },
+      "b_ver_2": {
+        "name": "Version du firmware batterie 2"
+      },
+      "b_ver_3": {
+        "name": "Version du firmware batterie 3"
+      },
+      "b_ver_4": {
+        "name": "Version du firmware batterie 4"
+      },
+      "b_protect": {
+        "name": "État de protection de la batterie"
+      },
+      "b_error": {
+        "name": "Erreur système de la batterie"
+      },
+      "b_alarm_residential": {
+        "name": "Alarme batterie (stockage résidentiel)"
+      },
+      "b_alarm_portable": {
+        "name": "Alarme batterie (station portable)"
+      },
+      "b_time_to_full": {
+        "name": "Temps jusqu'à la charge complète"
+      },
+      "b_time_to_empty": {
+        "name": "Temps jusqu'à épuisement"
+      },
+      "d_iot_model": {
+        "name": "Modèle du module IoT"
+      },
+      "d_iot_serial": {
+        "name": "Numéro de série IoT"
+      },
+      "pack_b_type": {
+        "name": "Type de batterie"
+      },
+      "pack_b_v": {
+        "name": "Tension batterie"
+      },
+      "pack_b_c": {
+        "name": "Courant batterie"
+      },
+      "pack_b_soc": {
+        "name": "SoC batterie"
+      },
+      "pack_b_soh": {
+        "name": "SoH batterie"
+      },
+      "pack_b_cycle_count": {
+        "name": "Cycles batterie"
+      },
+      "pack_b_t_avg": {
+        "name": "Température moyenne de la batterie"
+      },
+      "pack_b_cell_count": {
+        "name": "Nombre de cellules"
+      },
+      "pack_b_ntc_count": {
+        "name": "Nombre de capteurs de température"
+      },
+      "pack_b_i_e": {
+        "name": "Énergie chargée dans la batterie totale"
+      },
+      "pack_b_o_e": {
+        "name": "Énergie déchargée de la batterie totale"
+      },
+      "d_timestamp": {
+        "name": "Horodatage"
+      },
+      "ac_a_v": {
+        "name": "Phase A tension"
+      },
+      "ac_b_v": {
+        "name": "Phase B tension"
+      },
+      "ac_c_v": {
+        "name": "Phase C tension"
+      },
+      "ac_a_c": {
+        "name": "Phase A courant"
+      },
+      "ac_b_c": {
+        "name": "Phase B courant"
+      },
+      "ac_c_c": {
+        "name": "Phase C courant"
+      },
+      "ac_a_p": {
+        "name": "Phase A puissance"
+      },
+      "ac_b_p": {
+        "name": "Phase B puissance"
+      },
+      "ac_c_p": {
+        "name": "Phase C puissance"
+      },
+      "ac_a_p_reactive": {
+        "name": "Phase A puissance réactive"
+      },
+      "ac_b_p_reactive": {
+        "name": "Phase B puissance réactive"
+      },
+      "ac_c_p_reactive": {
+        "name": "Phase C puissance réactive"
+      },
+      "ac_a_p_apparent": {
+        "name": "Phase A puissance apparente"
+      },
+      "ac_b_p_apparent": {
+        "name": "Phase B puissance apparente"
+      },
+      "ac_c_p_apparent": {
+        "name": "Phase C puissance apparente"
+      },
+      "ac_a_pf": {
+        "name": "Phase A facteur de puissance"
+      },
+      "ac_b_pf": {
+        "name": "Phase B facteur de puissance"
+      },
+      "ac_c_pf": {
+        "name": "Phase C facteur de puissance"
+      },
+      "ac_v_avg": {
+        "name": "Tension de phase moyenne"
+      },
+      "ac_c_avg": {
+        "name": "Courant de ligne moyen"
+      },
+      "ac_c_unbalance": {
+        "name": "Déséquilibre des courants de ligne"
+      },
+      "ac_c_total": {
+        "name": "Courant de ligne total"
+      },
+      "ac_p_total": {
+        "name": "Puissance active totale"
+      },
+      "ac_p_reactive_total": {
+        "name": "Puissance réactive totale"
+      },
+      "ac_p_apparent_total": {
+        "name": "Puissance apparente totale"
+      },
+      "ac_pf_total": {
+        "name": "Facteur de puissance total"
+      },
+      "b_p": {
+        "name": "Puissance batterie"
+      },
+      "d_manufacturer": {
+        "name": "Fabricant"
+      },
+      "d_reactive_p_total": {
+        "name": "Puissance réactive totale"
+      },
+      "d_apparent_p_total": {
+        "name": "Puissance apparente totale"
+      },
+      "d_rated_p_max": {
+        "name": "Puissance active max. nominale"
+      },
+      "d_rated_p_max_continuous": {
+        "name": "Puissance active continue nominale"
+      },
+      "d_rated_va_max_continuous": {
+        "name": "Puissance apparente continue nominale"
+      },
+      "d_rated_var_max_continuous": {
+        "name": "Puissance réactive continue nominale (fournie)"
+      },
+      "d_rated_var_max_continuous_neg": {
+        "name": "Puissance réactive continue nominale (absorbée)"
+      },
+      "d_rated_pf_min_over_excited": {
+        "name": "Facteur de puissance min. (fourniture de réactif)"
+      },
+      "d_rated_pf_min_under_excited": {
+        "name": "Facteur de puissance min. (absorption de réactif)"
+      },
+      "d_online_component": {
+        "name": "Accessoires connectés"
+      },
+      "d_rated_v": {
+        "name": "Tension nominale"
+      },
+      "d_rated_f": {
+        "name": "Fréquence nominale"
+      },
+      "d_hw_ver": {
+        "name": "Version matérielle"
+      },
+      "d_p_active": {
+        "name": "DER puissance active"
+      },
+      "d_p_reactive": {
+        "name": "DER puissance réactive"
+      },
+      "d_f": {
+        "name": "DER fréquence"
+      },
+      "d_operational_mode_status": {
+        "name": "DER mode de fonctionnement"
+      },
+      "d_connection_status": {
+        "name": "DER état de connexion"
+      },
+      "d_alarm_status": {
+        "name": "DER état d'alarme"
+      },
+      "d_inverter_der_status": {
+        "name": "DER état de l'onduleur"
+      },
+      "d_local_control_mode_status": {
+        "name": "DER mode de contrôle"
+      },
+      "d_storage_mode_status": {
+        "name": "DER mode de stockage"
+      },
+      "d_ems_ctrl": {
+        "name": "Contrôle à distance"
+      },
+      "d_p_output_level_pct": {
+        "name": "Niveau de puissance active en sortie"
+      },
+      "d_p_limit_timeout": {
+        "name": "Délai d'expiration de la limite de puissance"
+      },
+      "d_p_limit_ramp_time": {
+        "name": "Durée de rampe de la limite de puissance"
+      },
+      "d_p_limit_ramp_rate_pct": {
+        "name": "Pente de rampe de la limite de puissance"
+      },
+      "d_battery_control": {
+        "name": "Mode de contrôle de la batterie"
+      },
+      "d_export_limit": {
+        "name": "Limite d'injection réseau"
+      },
+      "d_storage_set_point": {
+        "name": "Puissance de charge/décharge forcée"
+      },
+      "d_op_mod_connect": {
+        "name": "État de connexion/mise sous tension"
+      },
+      "d_op_mod_gen_lim_w": {
+        "name": "Limite de puissance de charge (soutirage)"
+      },
+      "d_op_mod_load_lim_w": {
+        "name": "Limite de puissance de décharge (injection)"
+      },
+      "d_ramp_rate": {
+        "name": "Pente de rampe"
+      },
+      "g_1_p_active": {
+        "name": "Réseau phase 1 puissance active"
+      },
+      "g_1_p_reactive": {
+        "name": "Réseau phase 1 puissance réactive"
+      },
+      "g_1_p_apparent": {
+        "name": "Réseau phase 1 puissance apparente"
+      },
+      "d_inverter_1_p_active_internal": {
+        "name": "Onduleur 1 puissance active interne"
+      },
+      "d_p_active_target_l1": {
+        "name": "Phase 1 consigne de puissance active"
+      },
+      "d_p_reactive_target_l1": {
+        "name": "Phase 1 consigne de puissance réactive"
+      },
+      "d_p_apparent_target_l1": {
+        "name": "Phase 1 consigne de puissance apparente"
+      },
+      "g_2_p_active": {
+        "name": "Réseau phase 2 puissance active"
+      },
+      "g_2_p_reactive": {
+        "name": "Réseau phase 2 puissance réactive"
+      },
+      "g_2_p_apparent": {
+        "name": "Réseau phase 2 puissance apparente"
+      },
+      "d_inverter_2_p_active_internal": {
+        "name": "Onduleur 2 puissance active interne"
+      },
+      "d_p_active_target_l2": {
+        "name": "Phase 2 consigne de puissance active"
+      },
+      "d_p_reactive_target_l2": {
+        "name": "Phase 2 consigne de puissance réactive"
+      },
+      "d_p_apparent_target_l2": {
+        "name": "Phase 2 consigne de puissance apparente"
+      },
+      "g_3_p_active": {
+        "name": "Réseau phase 3 puissance active"
+      },
+      "g_3_p_reactive": {
+        "name": "Réseau phase 3 puissance réactive"
+      },
+      "g_3_p_apparent": {
+        "name": "Réseau phase 3 puissance apparente"
+      },
+      "d_inverter_3_p_active_internal": {
+        "name": "Onduleur 3 puissance active interne"
+      },
+      "d_p_active_target_l3": {
+        "name": "Phase 3 consigne de puissance active"
+      },
+      "d_p_reactive_target_l3": {
+        "name": "Phase 3 consigne de puissance réactive"
+      },
+      "d_p_apparent_target_l3": {
+        "name": "Phase 3 consigne de puissance apparente"
+      },
+      "wifi_rssi": {
+        "name": "Signal Wi-Fi"
+      },
+      "d_inverter_fault": {
+        "name": "Défauts onduleur"
+      },
+      "d_inverter_warning": {
+        "name": "Avertissements onduleur"
+      },
+      "soc": {
+        "name": "SoC"
+      },
+      "soh": {
+        "name": "SoH"
+      },
+      "cycle_count": {
+        "name": "Cycles"
+      },
+      "total_charged_energy": {
+        "name": "Énergie chargée totale"
+      },
+      "total_discharged_energy": {
+        "name": "Énergie déchargée totale"
+      },
+      "type": {
+        "name": "Type"
+      },
+      "protection_status": {
+        "name": "État de protection"
+      },
+      "system_error": {
+        "name": "Erreur système"
+      },
+      "residential_alarm": {
+        "name": "Alarme stockage résidentiel"
+      },
+      "portable_alarm": {
+        "name": "Alarme station portable"
+      },
+      "firmware_version_slots": {
+        "name": "Emplacements de version du firmware"
+      },
+      "input_power": {
+        "name": "Puissance d'entrée"
+      },
+      "input_voltage": {
+        "name": "Tension d'entrée"
+      },
+      "input_current": {
+        "name": "Courant d'entrée"
+      },
+      "input_type": {
+        "name": "Type d'entrée",
+        "state": {
+          "reserve": "Réservé",
+          "car": "Voiture",
+          "adapter": "Adaptateur",
+          "other": "Autre",
+          "dc_pv": "PV DC",
+          "ac_pv": "PV AC"
+        }
+      }
+    },
+    "binary_sensor": {
+      "d_status": {
+        "name": "En ligne"
+      },
+      "cloud_connected": {
+        "name": "Connexion au cloud BLUETTI"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi connecté"
+      },
+      "lan_reachable": {
+        "name": "Réseau local accessible"
+      },
+      "wan_reachable": {
+        "name": "Internet accessible"
+      }
+    },
+    "number": {
+      "b_soc_low": {
+        "name": "Limite de décharge minimale (SoC bas)"
+      },
+      "b_soc_high": {
+        "name": "Limite de charge maximale (SoC haut)"
+      }
+    },
+    "switch": {
+      "ac_o_switch": {
+        "name": "Interrupteur sortie AC"
+      },
+      "dc_o_switch": {
+        "name": "Interrupteur sortie DC"
+      },
+      "g_i_switch": {
+        "name": "Interrupteur charge depuis le réseau"
+      },
+      "g_o_switch": {
+        "name": "Interrupteur injection réseau"
+      },
+      "ac_eco_switch": {
+        "name": "Interrupteur AC ECO"
+      },
+      "ac_power_lifting_switch": {
+        "name": "Interrupteur AC Power Lifting"
+      }
+    }
+  },
+  "exceptions": {
+    "communication_error": {
+      "message": "Erreur de communication avec l'appareil : {error}"
+    },
+    "wrong_device": {
+      "message": "Un appareil avec un autre numéro de série répond à l'adresse {address} ; les entités restent indisponibles jusqu'à ce que l'appareil de cette entrée y réponde"
+    },
+    "write_failed": {
+      "message": "Échec de l'écriture sur {device} {field} : {error}"
+    }
+  }
+}
