@@ -135,11 +135,11 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=str(serial))
 
 
-_CURRENT_VERSION = 28
+_CURRENT_VERSION = 29
 
 # The 27 -> 28 step: fields no longer shown, per device type, matched as
 # unique_id suffixes. The PV inputs the AC200L and EP500P profiles dropped
-# (bluetti-registers 0.0.66) take their devices with them.
+# (bluetti-registers 0.0.66) lose their devices in the 28 -> 29 step.
 _V28_RETIRED_FIELD_SUFFIXES: dict[str, tuple[str, ...]] = {
     "fp": ("_g_o_e_total", "_pv_ac_p", "_pv_ac_e", "_d_inverter_phase_count"),
     "ac200l": ("_pv_2_i_type", "_pv_2_i_p"),
@@ -392,9 +392,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entries only - same pattern as the 6 -> 7 step.
 
     27 -> 28: b_type is no sensor any more (BATTERY_FIELDS_NOT_SHOWN), nor
-    the fields in _V28_RETIRED_FIELD_SUFFIXES: remove their entries, and the
-    devices of the PV inputs gone from a profile. The FridgePower's inverters
-    2 and 3 are beyond d_num_inverters now: disable them.
+    the fields in _V28_RETIRED_FIELD_SUFFIXES: remove their entries. The
+    FridgePower's inverters 2 and 3 are beyond d_num_inverters now: disable
+    them.
+
+    28 -> 29: remove the child devices of the PV inputs gone from a profile
+    (_V28_RETIRED_PV_INPUTS). The 27 -> 28 step meant to, but looked them up
+    among the main devices only.
     """
     version = entry.version
     if version >= _CURRENT_VERSION:
@@ -751,14 +755,20 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         entity_entry.entity_id,
                         disabled_by=er.RegistryEntryDisabler.INTEGRATION,
                     )
+        version = 28
+
+    if version == 28:
+        # The retired PV inputs' devices are child devices, which the 27 -> 28
+        # step looked up among the main devices only and so never removed.
+        if config is not None:
             device_registry = dr.async_get(hass)
             for input_num in _V28_RETIRED_PV_INPUTS.get(config.dev_type, ()):
-                device = device_registry.async_get_device(
-                    identifiers={(DOMAIN, f"{config.address}-pv-{input_num}")}
+                device = device_registry.async_get_child_device_by_identifier(
+                    (DOMAIN, f"{config.address}-pv-{input_num}"), entry.entry_id
                 )
                 if device is not None:
                     device_registry.async_remove_device(device.id)
-        version = 28
+        version = 29
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:
