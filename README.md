@@ -42,7 +42,7 @@ documentation and verified against real hardware.
 * **Conservative polling.** One shared connection, one request at a time: readings
   every 15 seconds, settings every 60 - this device's Modbus stack is fragile under
   load, and this integration is deliberately gentle with it.
-* **Translated.** English, German, Dutch, Lithuanian, Portuguese (Portugal and
+* **Translated.** English, French, German, Dutch, Lithuanian, Portuguese (Portugal and
   Brazil) and Ukrainian.
 
 ## Supported devices 🔋
