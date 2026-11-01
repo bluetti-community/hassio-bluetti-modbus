@@ -311,6 +311,26 @@ Only on the models whose writes are confirmed - see
   and **Local network reachable** are there too but start disabled: the page is
   reached through them, so they can only read on.
 
+## Actions 🔧
+
+### Read registers (`bluetti_modbus.read_register`)
+
+Reads raw holding registers from a device while the integration keeps running,
+for tests and diagnostics. It returns the words as the device sent them:
+
+```yaml
+action: bluetti_modbus.read_register
+data:
+  config_entry_id: <your entry>
+  address: 57016
+  count: 2
+# response: {address: 57016, values: [15, 95]}
+```
+
+Only addresses the device's profile already reads are accepted, at most one
+block long (20 registers on a Balco 260 or FridgePower, 10 on a Transfer Hub, 50
+otherwise). Not available on the S Meter.
+
 ## Known limitations ⚠️
 
 These are device or firmware limitations found on real hardware, not bugs in the

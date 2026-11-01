@@ -255,6 +255,15 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
         return raw
 
+    async def async_read_registers(self, address: int, count: int) -> list[int]:
+        """Read raw holding registers, serialized against the poll.
+
+        The library's read_registers() refuses, with ValueError, a read
+        outside the ranges the profile reads or longer than its max_span.
+        """
+        async with self._io_lock:
+            return await self.device.read_registers(address, count)
+
     async def async_write(self, field_name: str, value: int) -> None:
         """Write a single field, serialized against the periodic poll.
 

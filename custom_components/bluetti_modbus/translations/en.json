@@ -785,6 +785,32 @@
     },
     "write_failed": {
       "message": "Failed to write to {device} {field}: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} does not support reading registers directly"
+    },
+    "invalid_register_request": {
+      "message": "Invalid register request: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Read registers",
+      "description": "Reads raw holding registers from a BLUETTI device, inside the ranges its profile already reads.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Device",
+          "description": "The BLUETTI Modbus entry to read from."
+        },
+        "address": {
+          "name": "Address",
+          "description": "First holding register to read."
+        },
+        "count": {
+          "name": "Count",
+          "description": "Number of registers to read, at most the device's own block size (20 on a Balco 260 or FridgePower, 10 on a Transfer Hub, 50 otherwise)."
+        }
+      }
     }
   }
 }

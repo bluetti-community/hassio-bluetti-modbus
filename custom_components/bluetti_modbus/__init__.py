@@ -9,9 +9,11 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
+from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     BUILT_IN_BATTERY_DEV_TYPES,
@@ -23,6 +25,7 @@ from .const import (
 )
 from .coordinator import PollingCoordinator
 from .network import NETWORK_STATUS_DEV_TYPES, NetworkStatusCoordinator
+from .services import async_setup_services
 from .types import FullDeviceConfig as FullDeviceConfig
 from .types.initial_device_config import CONF_TYPE
 from .vendor.bluetti_modbus_lib import PACK_INFO_FIELDS
@@ -38,6 +41,14 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
 ]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the actions, which then report a missing or unloaded entry."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
