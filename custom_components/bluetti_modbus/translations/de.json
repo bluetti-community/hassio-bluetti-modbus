@@ -3,10 +3,14 @@
     "step": {
       "user": {
         "data": {
-          "address": "IP-Addresse",
+          "address": "IP-Adresse",
           "port": "Port",
           "type": "Gerätetyp"
         }
+      },
+      "zeroconf_confirm": {
+        "title": "Gefundenes Gerät",
+        "description": "Soll {name} unter {address} eingerichtet werden?"
       },
       "reconfigure": {
         "title": "Adresse des Geräts ändern",
@@ -24,6 +28,8 @@
     },
     "abort": {
       "no_unconfigured_devices": "Keine Geräte gefunden",
+      "already_configured": "Gerät ist bereits eingerichtet",
+      "cannot_connect": "Verbindung zum Gerät fehlgeschlagen",
       "modbus_tcp_disabled": "Modbus TCP ist auf diesem Gerät ausgeschaltet. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Enable mit Port 502 einschalten und speichern, dann die Seite schließen und erneut versuchen.",
       "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Crypt Enable ausschalten und speichern, dann die Seite schließen und erneut versuchen.",
       "wrong_device": "Unter dieser Adresse antwortet ein anderes Gerät: seine Seriennummer ist nicht die dieses Eintrags",
@@ -44,7 +50,7 @@
   "entity": {
     "sensor": {
       "d_num_inverters": {
-        "name": "Inverter Anzahl"
+        "name": "Anzahl Wechselrichter"
       },
       "ac_o_p_total": {
         "name": "AC-Ausgangsleistung Gesamt"
@@ -56,10 +62,10 @@
         "name": "Netzleistung Gesamt"
       },
       "d_inverter_total": {
-        "name": "Inverterleistung Gesamt"
+        "name": "Wechselrichterleistung Gesamt"
       },
       "pv_ac_p": {
-        "name": "PV AC-Leistung"
+        "name": "PV-AC-Leistung Gesamt"
       },
       "ac_o_e_total": {
         "name": "AC-Ausgangsenergie Gesamt"
@@ -74,13 +80,23 @@
         "name": "Netzeinspeiseenergie Gesamt"
       },
       "pv_ac_e": {
-        "name": "PV AC-Energie"
+        "name": "PV-AC-Energie Gesamt"
       },
       "d_inverter_status": {
-        "name": "Inverter Status"
+        "name": "Wechselrichterstatus",
+        "state": {
+          "stop": "Gestoppt",
+          "off_grid": "Inselbetrieb",
+          "grid_connected_load": "Netzgekoppelte Last",
+          "grid_connected_operation": "Netzgekoppelter Betrieb",
+          "grid_connected_charging": "Netzgekoppeltes Laden",
+          "grid_connected_discharging": "Netzgekoppeltes Entladen",
+          "inverter_fault": "Wechselrichterfehler",
+          "abnormal_off_grid": "Gestörter Inselbetrieb"
+        }
       },
       "d_inverter_type": {
-        "name": "Inverter Typ"
+        "name": "Wechselrichtertyp"
       },
       "g_i_f": {
         "name": "Netzfrequenz"
@@ -151,6 +167,506 @@
       "b_o_e": {
         "name": "Entladene Batterieenergie Gesamt"
       },
+      "g_i_p_local": {
+        "name": "Netzeingangsleistung"
+      },
+      "ac_o_p_local": {
+        "name": "AC-Ausgangsleistung"
+      },
+      "pv_i_p_local": {
+        "name": "PV-Eingangsleistung"
+      },
+      "pv_ac_p_local": {
+        "name": "PV-AC-Leistung"
+      },
+      "g_i_e_local": {
+        "name": "Netzbezugsenergie"
+      },
+      "g_o_e_local": {
+        "name": "Netzeinspeiseenergie"
+      },
+      "ac_o_e_local": {
+        "name": "AC-Ausgangsenergie"
+      },
+      "pv_i_e_local": {
+        "name": "PV-Eingangsenergie"
+      },
+      "pv_ac_e_local": {
+        "name": "PV-AC-Energie"
+      },
+      "d_self_consumption": {
+        "name": "Eigenverbrauchsanteil"
+      },
+      "d_phase_count": {
+        "name": "Anzahl Netzphasen"
+      },
+      "g_1_i_p": {
+        "name": "Netz Phase 1 Leistung"
+      },
+      "g_1_i_v": {
+        "name": "Netz Phase 1 Spannung"
+      },
+      "g_1_i_c": {
+        "name": "Netz Phase 1 Strom"
+      },
+      "g_2_i_p": {
+        "name": "Netz Phase 2 Leistung"
+      },
+      "g_2_i_v": {
+        "name": "Netz Phase 2 Spannung"
+      },
+      "g_2_i_c": {
+        "name": "Netz Phase 2 Strom"
+      },
+      "g_3_i_p": {
+        "name": "Netz Phase 3 Leistung"
+      },
+      "g_3_i_v": {
+        "name": "Netz Phase 3 Spannung"
+      },
+      "g_3_i_c": {
+        "name": "Netz Phase 3 Strom"
+      },
+      "ac_phase_count": {
+        "name": "Anzahl AC-Ausgangsphasen"
+      },
+      "ac_1_o_p": {
+        "name": "AC-Ausgang Phase 1 Leistung"
+      },
+      "ac_1_o_v": {
+        "name": "AC-Ausgang Phase 1 Spannung"
+      },
+      "ac_1_o_c": {
+        "name": "AC-Ausgang Phase 1 Strom"
+      },
+      "ac_2_o_p": {
+        "name": "AC-Ausgang Phase 2 Leistung"
+      },
+      "ac_2_o_v": {
+        "name": "AC-Ausgang Phase 2 Spannung"
+      },
+      "ac_2_o_c": {
+        "name": "AC-Ausgang Phase 2 Strom"
+      },
+      "ac_3_o_p": {
+        "name": "AC-Ausgang Phase 3 Leistung"
+      },
+      "ac_3_o_v": {
+        "name": "AC-Ausgang Phase 3 Spannung"
+      },
+      "ac_3_o_c": {
+        "name": "AC-Ausgang Phase 3 Strom"
+      },
+      "d_inverter_phase_count": {
+        "name": "Anzahl Wechselrichterphasen"
+      },
+      "d_inverter_1_status": {
+        "name": "Wechselrichter 1 Status",
+        "state": {
+          "stop": "Gestoppt",
+          "off_grid": "Inselbetrieb",
+          "grid_connected_load": "Netzgekoppelte Last",
+          "grid_connected_operation": "Netzgekoppelter Betrieb",
+          "grid_connected_charging": "Netzgekoppeltes Laden",
+          "grid_connected_discharging": "Netzgekoppeltes Entladen",
+          "inverter_fault": "Wechselrichterfehler",
+          "abnormal_off_grid": "Gestörter Inselbetrieb"
+        }
+      },
+      "d_inverter_1_p": {
+        "name": "Wechselrichter 1 Leistung"
+      },
+      "d_inverter_1_v": {
+        "name": "Wechselrichter 1 Spannung"
+      },
+      "d_inverter_1_c": {
+        "name": "Wechselrichter 1 Strom"
+      },
+      "d_inverter_2_status": {
+        "name": "Wechselrichter 2 Status",
+        "state": {
+          "stop": "Gestoppt",
+          "off_grid": "Inselbetrieb",
+          "grid_connected_load": "Netzgekoppelte Last",
+          "grid_connected_operation": "Netzgekoppelter Betrieb",
+          "grid_connected_charging": "Netzgekoppeltes Laden",
+          "grid_connected_discharging": "Netzgekoppeltes Entladen",
+          "inverter_fault": "Wechselrichterfehler",
+          "abnormal_off_grid": "Gestörter Inselbetrieb"
+        }
+      },
+      "d_inverter_2_p": {
+        "name": "Wechselrichter 2 Leistung"
+      },
+      "d_inverter_2_v": {
+        "name": "Wechselrichter 2 Spannung"
+      },
+      "d_inverter_2_c": {
+        "name": "Wechselrichter 2 Strom"
+      },
+      "d_inverter_3_status": {
+        "name": "Wechselrichter 3 Status",
+        "state": {
+          "stop": "Gestoppt",
+          "off_grid": "Inselbetrieb",
+          "grid_connected_load": "Netzgekoppelte Last",
+          "grid_connected_operation": "Netzgekoppelter Betrieb",
+          "grid_connected_charging": "Netzgekoppeltes Laden",
+          "grid_connected_discharging": "Netzgekoppeltes Entladen",
+          "inverter_fault": "Wechselrichterfehler",
+          "abnormal_off_grid": "Gestörter Inselbetrieb"
+        }
+      },
+      "d_inverter_3_p": {
+        "name": "Wechselrichter 3 Leistung"
+      },
+      "d_inverter_3_v": {
+        "name": "Wechselrichter 3 Spannung"
+      },
+      "d_inverter_3_c": {
+        "name": "Wechselrichter 3 Strom"
+      },
+      "pv_dc_count": {
+        "name": "Anzahl DC-PV-Strings"
+      },
+      "pv_ac_count": {
+        "name": "Anzahl AC-PV-Strings"
+      },
+      "b_status": {
+        "name": "Batteriestatus",
+        "state": {
+          "idle": "Leerlauf",
+          "charging": "Lädt",
+          "discharging": "Entlädt"
+        }
+      },
+      "b_time_to_full_total": {
+        "name": "Gesamtzeit bis voll geladen"
+      },
+      "b_time_to_empty_total": {
+        "name": "Gesamtzeit bis leer"
+      },
+      "b_ver_count": {
+        "name": "Batterie-Firmware-Versionsplätze"
+      },
+      "b_ver_2": {
+        "name": "Batterie-Firmwareversion 2"
+      },
+      "b_ver_3": {
+        "name": "Batterie-Firmwareversion 3"
+      },
+      "b_ver_4": {
+        "name": "Batterie-Firmwareversion 4"
+      },
+      "b_protect": {
+        "name": "Batterie-Schutzstatus"
+      },
+      "b_error": {
+        "name": "Batterie-Systemfehler"
+      },
+      "b_alarm_residential": {
+        "name": "Batterie-Alarm Heimspeicher"
+      },
+      "b_alarm_portable": {
+        "name": "Batterie-Alarm Powerstation"
+      },
+      "b_time_to_full": {
+        "name": "Zeit bis voll geladen"
+      },
+      "b_time_to_empty": {
+        "name": "Zeit bis leer"
+      },
+      "d_iot_model": {
+        "name": "IoT-Modul Modell"
+      },
+      "d_iot_serial": {
+        "name": "IoT-Seriennummer"
+      },
+      "pack_b_type": {
+        "name": "Batterietyp"
+      },
+      "pack_b_v": {
+        "name": "Batteriespannung"
+      },
+      "pack_b_c": {
+        "name": "Batteriestrom"
+      },
+      "pack_b_soc": {
+        "name": "Batterieladezustand (SoC)"
+      },
+      "pack_b_soh": {
+        "name": "Batteriezustand (SoH)"
+      },
+      "pack_b_cycle_count": {
+        "name": "Ladezyklen"
+      },
+      "pack_b_t_avg": {
+        "name": "Durchschnittliche Batterietemperatur"
+      },
+      "pack_b_cell_count": {
+        "name": "Anzahl Batteriezellen"
+      },
+      "pack_b_ntc_count": {
+        "name": "Anzahl Temperatursensoren"
+      },
+      "pack_b_i_e": {
+        "name": "Geladene Batterieenergie Gesamt"
+      },
+      "pack_b_o_e": {
+        "name": "Entladene Batterieenergie Gesamt"
+      },
+      "d_timestamp": {
+        "name": "Zeitstempel"
+      },
+      "ac_a_v": {
+        "name": "Phase A Spannung"
+      },
+      "ac_b_v": {
+        "name": "Phase B Spannung"
+      },
+      "ac_c_v": {
+        "name": "Phase C Spannung"
+      },
+      "ac_a_c": {
+        "name": "Phase A Strom"
+      },
+      "ac_b_c": {
+        "name": "Phase B Strom"
+      },
+      "ac_c_c": {
+        "name": "Phase C Strom"
+      },
+      "ac_a_p": {
+        "name": "Phase A Leistung"
+      },
+      "ac_b_p": {
+        "name": "Phase B Leistung"
+      },
+      "ac_c_p": {
+        "name": "Phase C Leistung"
+      },
+      "ac_a_p_reactive": {
+        "name": "Phase A Blindleistung"
+      },
+      "ac_b_p_reactive": {
+        "name": "Phase B Blindleistung"
+      },
+      "ac_c_p_reactive": {
+        "name": "Phase C Blindleistung"
+      },
+      "ac_a_p_apparent": {
+        "name": "Phase A Scheinleistung"
+      },
+      "ac_b_p_apparent": {
+        "name": "Phase B Scheinleistung"
+      },
+      "ac_c_p_apparent": {
+        "name": "Phase C Scheinleistung"
+      },
+      "ac_a_pf": {
+        "name": "Phase A Leistungsfaktor"
+      },
+      "ac_b_pf": {
+        "name": "Phase B Leistungsfaktor"
+      },
+      "ac_c_pf": {
+        "name": "Phase C Leistungsfaktor"
+      },
+      "ac_v_avg": {
+        "name": "Durchschnittliche Phasenspannung"
+      },
+      "ac_c_avg": {
+        "name": "Durchschnittlicher Leiterstrom"
+      },
+      "ac_c_unbalance": {
+        "name": "Leiterstrom-Unsymmetrie"
+      },
+      "ac_c_total": {
+        "name": "Leiterstrom Gesamt"
+      },
+      "ac_p_total": {
+        "name": "Wirkleistung Gesamt"
+      },
+      "ac_p_reactive_total": {
+        "name": "Blindleistung Gesamt"
+      },
+      "ac_p_apparent_total": {
+        "name": "Scheinleistung Gesamt"
+      },
+      "ac_pf_total": {
+        "name": "Leistungsfaktor Gesamt"
+      },
+      "b_p": {
+        "name": "Batterieleistung"
+      },
+      "d_manufacturer": {
+        "name": "Hersteller"
+      },
+      "d_reactive_p_total": {
+        "name": "Blindleistung Gesamt"
+      },
+      "d_apparent_p_total": {
+        "name": "Scheinleistung Gesamt"
+      },
+      "d_rated_p_max": {
+        "name": "Maximale Nennwirkleistung"
+      },
+      "d_rated_p_max_continuous": {
+        "name": "Dauernennwirkleistung"
+      },
+      "d_rated_va_max_continuous": {
+        "name": "Dauernennscheinleistung"
+      },
+      "d_rated_var_max_continuous": {
+        "name": "Dauernennblindleistung (abgegeben)"
+      },
+      "d_rated_var_max_continuous_neg": {
+        "name": "Dauernennblindleistung (aufgenommen)"
+      },
+      "d_rated_pf_min_over_excited": {
+        "name": "Minimaler Leistungsfaktor (Blindleistung abgebend)"
+      },
+      "d_rated_pf_min_under_excited": {
+        "name": "Minimaler Leistungsfaktor (Blindleistung aufnehmend)"
+      },
+      "d_online_component": {
+        "name": "Angeschlossenes Zubehör"
+      },
+      "d_rated_v": {
+        "name": "Nennspannung"
+      },
+      "d_rated_f": {
+        "name": "Nennfrequenz"
+      },
+      "d_hw_ver": {
+        "name": "Hardwareversion"
+      },
+      "d_p_active": {
+        "name": "DER-Wirkleistung"
+      },
+      "d_p_reactive": {
+        "name": "DER-Blindleistung"
+      },
+      "d_f": {
+        "name": "DER-Frequenz"
+      },
+      "d_operational_mode_status": {
+        "name": "DER-Betriebsmodus"
+      },
+      "d_connection_status": {
+        "name": "DER-Verbindungsstatus"
+      },
+      "d_alarm_status": {
+        "name": "DER-Alarmstatus"
+      },
+      "d_inverter_der_status": {
+        "name": "DER-Wechselrichterstatus"
+      },
+      "d_local_control_mode_status": {
+        "name": "DER-Steuerungsmodus"
+      },
+      "d_storage_mode_status": {
+        "name": "DER-Speichermodus"
+      },
+      "d_ems_ctrl": {
+        "name": "Fernsteuerung"
+      },
+      "d_p_output_level_pct": {
+        "name": "Wirkleistungs-Ausgangsniveau"
+      },
+      "d_p_limit_timeout": {
+        "name": "Leistungsbegrenzung Zeitüberschreitung"
+      },
+      "d_p_limit_ramp_time": {
+        "name": "Leistungsbegrenzung Rampenzeit"
+      },
+      "d_p_limit_ramp_rate_pct": {
+        "name": "Leistungsbegrenzung Rampenrate"
+      },
+      "d_battery_control": {
+        "name": "Batteriesteuerungsmodus"
+      },
+      "d_export_limit": {
+        "name": "Netzeinspeisegrenze"
+      },
+      "d_storage_set_point": {
+        "name": "Erzwungene Lade-/Entladeleistung"
+      },
+      "d_op_mod_connect": {
+        "name": "Verbindungs-/Zuschaltzustand"
+      },
+      "d_op_mod_gen_lim_w": {
+        "name": "Ladeleistungsgrenze (Bezug)"
+      },
+      "d_op_mod_load_lim_w": {
+        "name": "Entladeleistungsgrenze (Einspeisung)"
+      },
+      "d_ramp_rate": {
+        "name": "Rampenrate"
+      },
+      "g_1_p_active": {
+        "name": "Netz Phase 1 Wirkleistung"
+      },
+      "g_1_p_reactive": {
+        "name": "Netz Phase 1 Blindleistung"
+      },
+      "g_1_p_apparent": {
+        "name": "Netz Phase 1 Scheinleistung"
+      },
+      "d_inverter_1_p_active_internal": {
+        "name": "Wechselrichter 1 interne Wirkleistung"
+      },
+      "d_p_active_target_l1": {
+        "name": "Phase 1 Wirkleistung Sollwert"
+      },
+      "d_p_reactive_target_l1": {
+        "name": "Phase 1 Blindleistung Sollwert"
+      },
+      "d_p_apparent_target_l1": {
+        "name": "Phase 1 Scheinleistung Sollwert"
+      },
+      "g_2_p_active": {
+        "name": "Netz Phase 2 Wirkleistung"
+      },
+      "g_2_p_reactive": {
+        "name": "Netz Phase 2 Blindleistung"
+      },
+      "g_2_p_apparent": {
+        "name": "Netz Phase 2 Scheinleistung"
+      },
+      "d_inverter_2_p_active_internal": {
+        "name": "Wechselrichter 2 interne Wirkleistung"
+      },
+      "d_p_active_target_l2": {
+        "name": "Phase 2 Wirkleistung Sollwert"
+      },
+      "d_p_reactive_target_l2": {
+        "name": "Phase 2 Blindleistung Sollwert"
+      },
+      "d_p_apparent_target_l2": {
+        "name": "Phase 2 Scheinleistung Sollwert"
+      },
+      "g_3_p_active": {
+        "name": "Netz Phase 3 Wirkleistung"
+      },
+      "g_3_p_reactive": {
+        "name": "Netz Phase 3 Blindleistung"
+      },
+      "g_3_p_apparent": {
+        "name": "Netz Phase 3 Scheinleistung"
+      },
+      "d_inverter_3_p_active_internal": {
+        "name": "Wechselrichter 3 interne Wirkleistung"
+      },
+      "d_p_active_target_l3": {
+        "name": "Phase 3 Wirkleistung Sollwert"
+      },
+      "d_p_reactive_target_l3": {
+        "name": "Phase 3 Blindleistung Sollwert"
+      },
+      "d_p_apparent_target_l3": {
+        "name": "Phase 3 Scheinleistung Sollwert"
+      },
       "wifi_rssi": {
         "name": "WLAN-Signal"
       },
@@ -215,6 +731,9 @@
       }
     },
     "binary_sensor": {
+      "d_status": {
+        "name": "Online"
+      },
       "cloud_connected": {
         "name": "BLUETTI-Cloud-Verbindung"
       },
@@ -226,6 +745,34 @@
       },
       "wan_reachable": {
         "name": "Internet erreichbar"
+      }
+    },
+    "number": {
+      "b_soc_low": {
+        "name": "Minimale Entladegrenze (SoC Low)"
+      },
+      "b_soc_high": {
+        "name": "Maximale Ladegrenze (SoC High)"
+      }
+    },
+    "switch": {
+      "ac_o_switch": {
+        "name": "AC-Ausgang Schalter"
+      },
+      "dc_o_switch": {
+        "name": "DC-Ausgang Schalter"
+      },
+      "g_i_switch": {
+        "name": "Netzbezug Schalter"
+      },
+      "g_o_switch": {
+        "name": "Netzeinspeisung Schalter"
+      },
+      "ac_eco_switch": {
+        "name": "AC-ECO Schalter"
+      },
+      "ac_power_lifting_switch": {
+        "name": "AC Power Lifting Schalter"
       }
     }
   },

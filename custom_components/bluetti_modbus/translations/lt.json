@@ -1,0 +1,790 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "address": "IP adresas",
+          "port": "Prievadas",
+          "type": "Įrenginio tipas"
+        }
+      },
+      "zeroconf_confirm": {
+        "title": "Rastas įrenginys",
+        "description": "Ar norite nustatyti {name}, rastą adresu {address}?"
+      },
+      "reconfigure": {
+        "title": "Pakeisti įrenginio adresą",
+        "description": "Prieš perkeliant įrašą, įrenginys patikrinamas naujuoju adresu.",
+        "data": {
+          "address": "IP adresas",
+          "port": "Prievadas"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nepavyko prisijungti prie įrenginio: {error}. Patikrinkite, ar Modbus TCP įjungtas paties įrenginio žiniatinklio nustatymuose; jei tas puslapis atidarytas naršyklėje, uždarykite jį prieš bandydami dar kartą, nes jis gali trukdyti šiam patikrinimui nuskaityti nustatymą.",
+      "modbus_tcp_disabled": "Šiame įrenginyje Modbus TCP išjungtas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, įjunkite Enable su prievadu 502 ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
+      "modbus_tcp_encrypted": "Šiame įrenginyje Modbus TCP yra šifruotas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, išjunkite Crypt Enable ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą."
+    },
+    "abort": {
+      "no_unconfigured_devices": "Įrenginių nerasta",
+      "already_configured": "Įrenginys jau sukonfigūruotas",
+      "cannot_connect": "Nepavyko prisijungti prie įrenginio",
+      "modbus_tcp_disabled": "Šiame įrenginyje Modbus TCP išjungtas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, įjunkite Enable su prievadu 502 ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
+      "modbus_tcp_encrypted": "Šiame įrenginyje Modbus TCP yra šifruotas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, išjunkite Crypt Enable ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
+      "wrong_device": "Tuo adresu atsako kitas įrenginys: jo serijos numeris nėra šio įrašo",
+      "reconfigure_successful": "Įrenginio adresas atnaujintas"
+    }
+  },
+  "device": {
+    "built_in_battery": {
+      "name": "Integruota baterija"
+    },
+    "pv_input": {
+      "name": "PV {input}"
+    },
+    "mppt": {
+      "name": "MPPT {input}"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "d_num_inverters": {
+        "name": "Inverterių skaičius"
+      },
+      "ac_o_p_total": {
+        "name": "Bendra AC išėjimo galia"
+      },
+      "pv_i_p_total": {
+        "name": "Bendra PV įėjimo galia"
+      },
+      "g_i_p_total": {
+        "name": "Bendra tinklo galia"
+      },
+      "d_inverter_total": {
+        "name": "Bendra inverterio galia"
+      },
+      "pv_ac_p": {
+        "name": "Bendra PV AC galia"
+      },
+      "ac_o_e_total": {
+        "name": "Bendra AC išėjimo energija"
+      },
+      "pv_i_e_total": {
+        "name": "Bendra PV įėjimo energija"
+      },
+      "g_i_e_total": {
+        "name": "Bendra iš tinklo gauta energija"
+      },
+      "g_o_e_total": {
+        "name": "Bendra į tinklą atiduota energija"
+      },
+      "pv_ac_e": {
+        "name": "Bendra PV AC energija"
+      },
+      "d_inverter_status": {
+        "name": "Inverterio būsena",
+        "state": {
+          "stop": "Sustabdytas",
+          "off_grid": "Autonominis režimas",
+          "grid_connected_load": "Prijungto prie tinklo apkrova",
+          "grid_connected_operation": "Darbas prijungus prie tinklo",
+          "grid_connected_charging": "Įkrovimas prijungus prie tinklo",
+          "grid_connected_discharging": "Iškrovimas prijungus prie tinklo",
+          "inverter_fault": "Inverterio gedimas",
+          "abnormal_off_grid": "Neįprastas autonominis režimas"
+        }
+      },
+      "d_inverter_type": {
+        "name": "Inverterio tipas"
+      },
+      "g_i_f": {
+        "name": "Tinklo dažnis"
+      },
+      "ac_o_switch": {
+        "name": "AC išėjimo jungiklis"
+      },
+      "dc_o_switch": {
+        "name": "DC išėjimo jungiklis"
+      },
+      "g_i_switch": {
+        "name": "Įkrovimo iš tinklo jungiklis"
+      },
+      "g_o_switch": {
+        "name": "Atidavimo į tinklą jungiklis"
+      },
+      "b_soc_low": {
+        "name": "Minimali iškrovimo riba (SoC žema)"
+      },
+      "b_soc_high": {
+        "name": "Maksimali įkrovimo riba (SoC aukšta)"
+      },
+      "d_num_battery_packs": {
+        "name": "Baterijų modulių skaičius"
+      },
+      "b_v_total": {
+        "name": "Bendra baterijos įtampa"
+      },
+      "b_c_total": {
+        "name": "Bendra baterijos srovė"
+      },
+      "b_soc_total": {
+        "name": "Bendras baterijos SoC"
+      },
+      "b_soh_total": {
+        "name": "Bendras baterijos SoH"
+      },
+      "b_type": {
+        "name": "Baterijos tipas"
+      },
+      "b_v": {
+        "name": "Baterijos įtampa"
+      },
+      "b_c": {
+        "name": "Baterijos srovė"
+      },
+      "b_soc": {
+        "name": "Baterijos SoC"
+      },
+      "b_soh": {
+        "name": "Baterijos SoH"
+      },
+      "b_cycle_count": {
+        "name": "Baterijos ciklų skaičius"
+      },
+      "b_t_avg": {
+        "name": "Vidutinė baterijos temperatūra"
+      },
+      "b_cell_count": {
+        "name": "Elementų skaičius"
+      },
+      "b_ntc_count": {
+        "name": "Temperatūros jutiklių skaičius"
+      },
+      "b_i_e": {
+        "name": "Bendra į bateriją įkrauta energija"
+      },
+      "b_o_e": {
+        "name": "Bendra iš baterijos iškrauta energija"
+      },
+      "g_i_p_local": {
+        "name": "Tinklo įėjimo galia"
+      },
+      "ac_o_p_local": {
+        "name": "AC išėjimo galia"
+      },
+      "pv_i_p_local": {
+        "name": "PV įėjimo galia"
+      },
+      "pv_ac_p_local": {
+        "name": "PV AC galia"
+      },
+      "g_i_e_local": {
+        "name": "Iš tinklo gauta energija"
+      },
+      "g_o_e_local": {
+        "name": "Į tinklą atiduota energija"
+      },
+      "ac_o_e_local": {
+        "name": "AC išėjimo energija"
+      },
+      "pv_i_e_local": {
+        "name": "PV įėjimo energija"
+      },
+      "pv_ac_e_local": {
+        "name": "PV AC energija"
+      },
+      "d_self_consumption": {
+        "name": "Savojo vartojimo dalis"
+      },
+      "d_phase_count": {
+        "name": "Tinklo fazių skaičius"
+      },
+      "g_1_i_p": {
+        "name": "Tinklo 1 fazės galia"
+      },
+      "g_1_i_v": {
+        "name": "Tinklo 1 fazės įtampa"
+      },
+      "g_1_i_c": {
+        "name": "Tinklo 1 fazės srovė"
+      },
+      "g_2_i_p": {
+        "name": "Tinklo 2 fazės galia"
+      },
+      "g_2_i_v": {
+        "name": "Tinklo 2 fazės įtampa"
+      },
+      "g_2_i_c": {
+        "name": "Tinklo 2 fazės srovė"
+      },
+      "g_3_i_p": {
+        "name": "Tinklo 3 fazės galia"
+      },
+      "g_3_i_v": {
+        "name": "Tinklo 3 fazės įtampa"
+      },
+      "g_3_i_c": {
+        "name": "Tinklo 3 fazės srovė"
+      },
+      "ac_phase_count": {
+        "name": "AC išėjimo fazių skaičius"
+      },
+      "ac_1_o_p": {
+        "name": "AC išėjimo 1 fazės galia"
+      },
+      "ac_1_o_v": {
+        "name": "AC išėjimo 1 fazės įtampa"
+      },
+      "ac_1_o_c": {
+        "name": "AC išėjimo 1 fazės srovė"
+      },
+      "ac_2_o_p": {
+        "name": "AC išėjimo 2 fazės galia"
+      },
+      "ac_2_o_v": {
+        "name": "AC išėjimo 2 fazės įtampa"
+      },
+      "ac_2_o_c": {
+        "name": "AC išėjimo 2 fazės srovė"
+      },
+      "ac_3_o_p": {
+        "name": "AC išėjimo 3 fazės galia"
+      },
+      "ac_3_o_v": {
+        "name": "AC išėjimo 3 fazės įtampa"
+      },
+      "ac_3_o_c": {
+        "name": "AC išėjimo 3 fazės srovė"
+      },
+      "d_inverter_phase_count": {
+        "name": "Inverterio fazių skaičius"
+      },
+      "d_inverter_1_status": {
+        "name": "1 inverterio būsena",
+        "state": {
+          "stop": "Sustabdytas",
+          "off_grid": "Autonominis režimas",
+          "grid_connected_load": "Prijungto prie tinklo apkrova",
+          "grid_connected_operation": "Darbas prijungus prie tinklo",
+          "grid_connected_charging": "Įkrovimas prijungus prie tinklo",
+          "grid_connected_discharging": "Iškrovimas prijungus prie tinklo",
+          "inverter_fault": "Inverterio gedimas",
+          "abnormal_off_grid": "Neįprastas autonominis režimas"
+        }
+      },
+      "d_inverter_1_p": {
+        "name": "1 inverterio galia"
+      },
+      "d_inverter_1_v": {
+        "name": "1 inverterio įtampa"
+      },
+      "d_inverter_1_c": {
+        "name": "1 inverterio srovė"
+      },
+      "d_inverter_2_status": {
+        "name": "2 inverterio būsena",
+        "state": {
+          "stop": "Sustabdytas",
+          "off_grid": "Autonominis režimas",
+          "grid_connected_load": "Prijungto prie tinklo apkrova",
+          "grid_connected_operation": "Darbas prijungus prie tinklo",
+          "grid_connected_charging": "Įkrovimas prijungus prie tinklo",
+          "grid_connected_discharging": "Iškrovimas prijungus prie tinklo",
+          "inverter_fault": "Inverterio gedimas",
+          "abnormal_off_grid": "Neįprastas autonominis režimas"
+        }
+      },
+      "d_inverter_2_p": {
+        "name": "2 inverterio galia"
+      },
+      "d_inverter_2_v": {
+        "name": "2 inverterio įtampa"
+      },
+      "d_inverter_2_c": {
+        "name": "2 inverterio srovė"
+      },
+      "d_inverter_3_status": {
+        "name": "3 inverterio būsena",
+        "state": {
+          "stop": "Sustabdytas",
+          "off_grid": "Autonominis režimas",
+          "grid_connected_load": "Prijungto prie tinklo apkrova",
+          "grid_connected_operation": "Darbas prijungus prie tinklo",
+          "grid_connected_charging": "Įkrovimas prijungus prie tinklo",
+          "grid_connected_discharging": "Iškrovimas prijungus prie tinklo",
+          "inverter_fault": "Inverterio gedimas",
+          "abnormal_off_grid": "Neįprastas autonominis režimas"
+        }
+      },
+      "d_inverter_3_p": {
+        "name": "3 inverterio galia"
+      },
+      "d_inverter_3_v": {
+        "name": "3 inverterio įtampa"
+      },
+      "d_inverter_3_c": {
+        "name": "3 inverterio srovė"
+      },
+      "pv_dc_count": {
+        "name": "DC PV grandinių skaičius"
+      },
+      "pv_ac_count": {
+        "name": "AC PV grandinių skaičius"
+      },
+      "b_status": {
+        "name": "Baterijos būsena",
+        "state": {
+          "idle": "Neveikia",
+          "charging": "Įkraunama",
+          "discharging": "Iškraunama"
+        }
+      },
+      "b_time_to_full_total": {
+        "name": "Bendras laikas iki pilno įkrovimo"
+      },
+      "b_time_to_empty_total": {
+        "name": "Bendras laikas iki išsikrovimo"
+      },
+      "b_ver_count": {
+        "name": "Baterijos programinės įrangos versijų vietos"
+      },
+      "b_ver_2": {
+        "name": "Baterijos programinės įrangos versija 2"
+      },
+      "b_ver_3": {
+        "name": "Baterijos programinės įrangos versija 3"
+      },
+      "b_ver_4": {
+        "name": "Baterijos programinės įrangos versija 4"
+      },
+      "b_protect": {
+        "name": "Baterijos apsaugos būsena"
+      },
+      "b_error": {
+        "name": "Baterijos sistemos klaida"
+      },
+      "b_alarm_residential": {
+        "name": "Baterijos namų kaupiklio aliarmas"
+      },
+      "b_alarm_portable": {
+        "name": "Baterijos nešiojamosios stotelės aliarmas"
+      },
+      "b_time_to_full": {
+        "name": "Laikas iki pilno įkrovimo"
+      },
+      "b_time_to_empty": {
+        "name": "Laikas iki išsikrovimo"
+      },
+      "d_iot_model": {
+        "name": "IoT modulio modelis"
+      },
+      "d_iot_serial": {
+        "name": "IoT serijos numeris"
+      },
+      "pack_b_type": {
+        "name": "Baterijos tipas"
+      },
+      "pack_b_v": {
+        "name": "Baterijos įtampa"
+      },
+      "pack_b_c": {
+        "name": "Baterijos srovė"
+      },
+      "pack_b_soc": {
+        "name": "Baterijos SoC"
+      },
+      "pack_b_soh": {
+        "name": "Baterijos SoH"
+      },
+      "pack_b_cycle_count": {
+        "name": "Baterijos ciklų skaičius"
+      },
+      "pack_b_t_avg": {
+        "name": "Vidutinė baterijos temperatūra"
+      },
+      "pack_b_cell_count": {
+        "name": "Elementų skaičius"
+      },
+      "pack_b_ntc_count": {
+        "name": "Temperatūros jutiklių skaičius"
+      },
+      "pack_b_i_e": {
+        "name": "Bendra į bateriją įkrauta energija"
+      },
+      "pack_b_o_e": {
+        "name": "Bendra iš baterijos iškrauta energija"
+      },
+      "d_timestamp": {
+        "name": "Laiko žyma"
+      },
+      "ac_a_v": {
+        "name": "A fazės įtampa"
+      },
+      "ac_b_v": {
+        "name": "B fazės įtampa"
+      },
+      "ac_c_v": {
+        "name": "C fazės įtampa"
+      },
+      "ac_a_c": {
+        "name": "A fazės srovė"
+      },
+      "ac_b_c": {
+        "name": "B fazės srovė"
+      },
+      "ac_c_c": {
+        "name": "C fazės srovė"
+      },
+      "ac_a_p": {
+        "name": "A fazės galia"
+      },
+      "ac_b_p": {
+        "name": "B fazės galia"
+      },
+      "ac_c_p": {
+        "name": "C fazės galia"
+      },
+      "ac_a_p_reactive": {
+        "name": "A fazės reaktyvioji galia"
+      },
+      "ac_b_p_reactive": {
+        "name": "B fazės reaktyvioji galia"
+      },
+      "ac_c_p_reactive": {
+        "name": "C fazės reaktyvioji galia"
+      },
+      "ac_a_p_apparent": {
+        "name": "A fazės pilnutinė galia"
+      },
+      "ac_b_p_apparent": {
+        "name": "B fazės pilnutinė galia"
+      },
+      "ac_c_p_apparent": {
+        "name": "C fazės pilnutinė galia"
+      },
+      "ac_a_pf": {
+        "name": "A fazės galios koeficientas"
+      },
+      "ac_b_pf": {
+        "name": "B fazės galios koeficientas"
+      },
+      "ac_c_pf": {
+        "name": "C fazės galios koeficientas"
+      },
+      "ac_v_avg": {
+        "name": "Vidutinė fazės įtampa"
+      },
+      "ac_c_avg": {
+        "name": "Vidutinė linijos srovė"
+      },
+      "ac_c_unbalance": {
+        "name": "Linijų srovių asimetrija"
+      },
+      "ac_c_total": {
+        "name": "Bendra linijos srovė"
+      },
+      "ac_p_total": {
+        "name": "Bendra aktyvioji galia"
+      },
+      "ac_p_reactive_total": {
+        "name": "Bendra reaktyvioji galia"
+      },
+      "ac_p_apparent_total": {
+        "name": "Bendra pilnutinė galia"
+      },
+      "ac_pf_total": {
+        "name": "Bendras galios koeficientas"
+      },
+      "b_p": {
+        "name": "Baterijos galia"
+      },
+      "d_manufacturer": {
+        "name": "Gamintojas"
+      },
+      "d_reactive_p_total": {
+        "name": "Bendra reaktyvioji galia"
+      },
+      "d_apparent_p_total": {
+        "name": "Bendra pilnutinė galia"
+      },
+      "d_rated_p_max": {
+        "name": "Vardinė maksimali aktyvioji galia"
+      },
+      "d_rated_p_max_continuous": {
+        "name": "Vardinė nuolatinė aktyvioji galia"
+      },
+      "d_rated_va_max_continuous": {
+        "name": "Vardinė nuolatinė pilnutinė galia"
+      },
+      "d_rated_var_max_continuous": {
+        "name": "Vardinė nuolatinė reaktyvioji galia (atiduodama)"
+      },
+      "d_rated_var_max_continuous_neg": {
+        "name": "Vardinė nuolatinė reaktyvioji galia (vartojama)"
+      },
+      "d_rated_pf_min_over_excited": {
+        "name": "Min. galios koeficientas (atiduodant reaktyviąją)"
+      },
+      "d_rated_pf_min_under_excited": {
+        "name": "Min. galios koeficientas (vartojant reaktyviąją)"
+      },
+      "d_online_component": {
+        "name": "Prijungti priedai"
+      },
+      "d_rated_v": {
+        "name": "Vardinė įtampa"
+      },
+      "d_rated_f": {
+        "name": "Vardinis dažnis"
+      },
+      "d_hw_ver": {
+        "name": "Aparatinės įrangos versija"
+      },
+      "d_p_active": {
+        "name": "DER aktyvioji galia"
+      },
+      "d_p_reactive": {
+        "name": "DER reaktyvioji galia"
+      },
+      "d_f": {
+        "name": "DER dažnis"
+      },
+      "d_operational_mode_status": {
+        "name": "DER darbo režimas"
+      },
+      "d_connection_status": {
+        "name": "DER prijungimo būsena"
+      },
+      "d_alarm_status": {
+        "name": "DER aliarmo būsena"
+      },
+      "d_inverter_der_status": {
+        "name": "DER inverterio būsena"
+      },
+      "d_local_control_mode_status": {
+        "name": "DER valdymo režimas"
+      },
+      "d_storage_mode_status": {
+        "name": "DER kaupimo režimas"
+      },
+      "d_ems_ctrl": {
+        "name": "Nuotolinis valdymas"
+      },
+      "d_p_output_level_pct": {
+        "name": "Aktyviosios galios išėjimo lygis"
+      },
+      "d_p_limit_timeout": {
+        "name": "Galios ribojimo laiko limitas"
+      },
+      "d_p_limit_ramp_time": {
+        "name": "Galios ribojimo kitimo laikas"
+      },
+      "d_p_limit_ramp_rate_pct": {
+        "name": "Galios ribojimo kitimo greitis"
+      },
+      "d_battery_control": {
+        "name": "Baterijos valdymo režimas"
+      },
+      "d_export_limit": {
+        "name": "Atidavimo į tinklą riba"
+      },
+      "d_storage_set_point": {
+        "name": "Priverstinė įkrovimo / iškrovimo galia"
+      },
+      "d_op_mod_connect": {
+        "name": "Prijungimo / įjungimo būsena"
+      },
+      "d_op_mod_gen_lim_w": {
+        "name": "Įkrovimo (gavimo) galios riba"
+      },
+      "d_op_mod_load_lim_w": {
+        "name": "Iškrovimo (atidavimo) galios riba"
+      },
+      "d_ramp_rate": {
+        "name": "Kitimo greitis"
+      },
+      "g_1_p_active": {
+        "name": "Tinklo 1 fazės aktyvioji galia"
+      },
+      "g_1_p_reactive": {
+        "name": "Tinklo 1 fazės reaktyvioji galia"
+      },
+      "g_1_p_apparent": {
+        "name": "Tinklo 1 fazės pilnutinė galia"
+      },
+      "d_inverter_1_p_active_internal": {
+        "name": "1 inverterio vidinė aktyvioji galia"
+      },
+      "d_p_active_target_l1": {
+        "name": "1 fazės aktyviosios galios tikslas"
+      },
+      "d_p_reactive_target_l1": {
+        "name": "1 fazės reaktyviosios galios tikslas"
+      },
+      "d_p_apparent_target_l1": {
+        "name": "1 fazės pilnutinės galios tikslas"
+      },
+      "g_2_p_active": {
+        "name": "Tinklo 2 fazės aktyvioji galia"
+      },
+      "g_2_p_reactive": {
+        "name": "Tinklo 2 fazės reaktyvioji galia"
+      },
+      "g_2_p_apparent": {
+        "name": "Tinklo 2 fazės pilnutinė galia"
+      },
+      "d_inverter_2_p_active_internal": {
+        "name": "2 inverterio vidinė aktyvioji galia"
+      },
+      "d_p_active_target_l2": {
+        "name": "2 fazės aktyviosios galios tikslas"
+      },
+      "d_p_reactive_target_l2": {
+        "name": "2 fazės reaktyviosios galios tikslas"
+      },
+      "d_p_apparent_target_l2": {
+        "name": "2 fazės pilnutinės galios tikslas"
+      },
+      "g_3_p_active": {
+        "name": "Tinklo 3 fazės aktyvioji galia"
+      },
+      "g_3_p_reactive": {
+        "name": "Tinklo 3 fazės reaktyvioji galia"
+      },
+      "g_3_p_apparent": {
+        "name": "Tinklo 3 fazės pilnutinė galia"
+      },
+      "d_inverter_3_p_active_internal": {
+        "name": "3 inverterio vidinė aktyvioji galia"
+      },
+      "d_p_active_target_l3": {
+        "name": "3 fazės aktyviosios galios tikslas"
+      },
+      "d_p_reactive_target_l3": {
+        "name": "3 fazės reaktyviosios galios tikslas"
+      },
+      "d_p_apparent_target_l3": {
+        "name": "3 fazės pilnutinės galios tikslas"
+      },
+      "wifi_rssi": {
+        "name": "Wi-Fi signalas"
+      },
+      "d_inverter_fault": {
+        "name": "Inverterio gedimai"
+      },
+      "d_inverter_warning": {
+        "name": "Inverterio įspėjimai"
+      },
+      "soc": {
+        "name": "SoC"
+      },
+      "soh": {
+        "name": "SoH"
+      },
+      "cycle_count": {
+        "name": "Ciklų skaičius"
+      },
+      "total_charged_energy": {
+        "name": "Bendra įkrauta energija"
+      },
+      "total_discharged_energy": {
+        "name": "Bendra iškrauta energija"
+      },
+      "type": {
+        "name": "Tipas"
+      },
+      "protection_status": {
+        "name": "Apsaugos būsena"
+      },
+      "system_error": {
+        "name": "Sistemos klaida"
+      },
+      "residential_alarm": {
+        "name": "Namų kaupiklio aliarmas"
+      },
+      "portable_alarm": {
+        "name": "Nešiojamosios stotelės aliarmas"
+      },
+      "firmware_version_slots": {
+        "name": "Programinės įrangos versijų vietos"
+      },
+      "input_power": {
+        "name": "Įėjimo galia"
+      },
+      "input_voltage": {
+        "name": "Įėjimo įtampa"
+      },
+      "input_current": {
+        "name": "Įėjimo srovė"
+      },
+      "input_type": {
+        "name": "Įėjimo tipas",
+        "state": {
+          "reserve": "Rezervuota",
+          "car": "Automobilis",
+          "adapter": "Adapteris",
+          "other": "Kita",
+          "dc_pv": "DC PV",
+          "ac_pv": "AC PV"
+        }
+      }
+    },
+    "binary_sensor": {
+      "d_status": {
+        "name": "Prisijungęs"
+      },
+      "cloud_connected": {
+        "name": "BLUETTI debesies ryšys"
+      },
+      "wifi_connected": {
+        "name": "Wi-Fi prijungtas"
+      },
+      "lan_reachable": {
+        "name": "Vietinis tinklas pasiekiamas"
+      },
+      "wan_reachable": {
+        "name": "Internetas pasiekiamas"
+      }
+    },
+    "number": {
+      "b_soc_low": {
+        "name": "Minimali iškrovimo riba (SoC žema)"
+      },
+      "b_soc_high": {
+        "name": "Maksimali įkrovimo riba (SoC aukšta)"
+      }
+    },
+    "switch": {
+      "ac_o_switch": {
+        "name": "AC išėjimo jungiklis"
+      },
+      "dc_o_switch": {
+        "name": "DC išėjimo jungiklis"
+      },
+      "g_i_switch": {
+        "name": "Įkrovimo iš tinklo jungiklis"
+      },
+      "g_o_switch": {
+        "name": "Atidavimo į tinklą jungiklis"
+      },
+      "ac_eco_switch": {
+        "name": "AC ECO jungiklis"
+      },
+      "ac_power_lifting_switch": {
+        "name": "AC Power Lifting jungiklis"
+      }
+    }
+  },
+  "exceptions": {
+    "communication_error": {
+      "message": "Ryšio su įrenginiu klaida: {error}"
+    },
+    "wrong_device": {
+      "message": "Adresu {address} atsako įrenginys su kitu serijos numeriu; objektai liks nepasiekiami, kol ten vėl atsakys šio įrašo įrenginys"
+    },
+    "write_failed": {
+      "message": "Nepavyko įrašyti į {device} {field}: {error}"
+    }
+  }
+}
