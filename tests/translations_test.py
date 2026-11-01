@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -25,6 +26,23 @@ _TRANSLATIONS_PATH = (
     / "translations"
     / "en.json"
 )
+
+# Every language the integration ships, English first.
+_LANGUAGES = ("en", *sorted(p.stem for p in _TRANSLATIONS_PATH.parent.glob("*.json") if p.stem != "en"))
+
+
+def _translations(lang):
+    return json.loads(_TRANSLATIONS_PATH.with_name(f"{lang}.json").read_text())
+
+
+def _flatten(node, prefix=""):
+    if not isinstance(node, dict):
+        return {prefix: node}
+    flat = {}
+    for key, value in node.items():
+        flat.update(_flatten(value, f"{prefix}.{key}" if prefix else key))
+    return flat
+
 
 # Every device type the integration knows, gated or not: a gated model is
 # what an owner tests from a prerelease, and an untranslated field there
@@ -89,9 +107,11 @@ class TestNoDuplicateSensorNames(unittest.TestCase):
     are (same bug hit pv_ac_e/pv_ac_e_local)."""
 
     def test_every_sensor_field_has_a_distinct_translated_name(self):
-        translations = json.loads(_TRANSLATIONS_PATH.read_text())
-        sensor_names = translations["entity"]["sensor"]
+        for lang in _LANGUAGES:
+            with self.subTest(lang=lang):
+                self._assert_distinct_names(_translations(lang)["entity"]["sensor"])
 
+    def _assert_distinct_names(self, sensor_names):
         duplicates = []
         for dev_type in _DEV_TYPES:
             device = get_device(dev_type)
@@ -134,8 +154,8 @@ class TestPvInputNames(unittest.TestCase):
     """Each PV input's child device and its entities (sensor.py)."""
 
     def test_the_devices_and_keys_have_a_name_in_every_language(self):
-        for lang in ("en", "de"):
-            translations = json.loads(_TRANSLATIONS_PATH.with_name(f"{lang}.json").read_text())
+        for lang in _LANGUAGES:
+            translations = _translations(lang)
             for device in ("pv_input", "mppt"):
                 self.assertIn("{input}", translations["device"][device]["name"], lang)
             sensor = translations["entity"]["sensor"]
@@ -152,14 +172,38 @@ class TestBuiltInBatteryNames(unittest.TestCase):
 
     def test_the_child_device_and_its_keys_have_a_name_in_every_language(self):
         keys = {key for key in _CHILD_BATTERY_TRANSLATION_KEYS.values() if key is not None}
-        for lang in ("en", "de"):
-            translations = json.loads(_TRANSLATIONS_PATH.with_name(f"{lang}.json").read_text())
+        for lang in _LANGUAGES:
+            translations = _translations(lang)
             self.assertIn("name", translations["device"]["built_in_battery"], lang)
             self.assertEqual(keys - set(translations["entity"]["sensor"]), set(), lang)
 
     def test_the_child_device_names_are_distinct(self):
-        sensor = json.loads(_TRANSLATIONS_PATH.read_text())["entity"]["sensor"]
-        names = [
-            sensor[key]["name"] for key in _CHILD_BATTERY_TRANSLATION_KEYS.values() if key is not None
-        ]
-        self.assertEqual(len(names), len(set(names)))
+        for lang in _LANGUAGES:
+            sensor = _translations(lang)["entity"]["sensor"]
+            names = [
+                sensor[key]["name"]
+                for key in _CHILD_BATTERY_TRANSLATION_KEYS.values()
+                if key is not None
+            ]
+            self.assertEqual(len(names), len(set(names)), lang)
+
+
+class TestEveryLanguageMatchesEnglish(unittest.TestCase):
+    """A language that misses a key shows English there; one with another
+    placeholder fails to format the message at all."""
+
+    def test_every_language_has_exactly_the_english_keys(self):
+        english = set(_flatten(_translations("en")))
+        for lang in _LANGUAGES[1:]:
+            with self.subTest(lang=lang):
+                self.assertEqual(set(_flatten(_translations(lang))) ^ english, set())
+
+    def test_every_language_keeps_the_english_placeholders(self):
+        english = _flatten(_translations("en"))
+        for lang in _LANGUAGES[1:]:
+            for key, text in _flatten(_translations(lang)).items():
+                with self.subTest(lang=lang, key=key):
+                    self.assertEqual(
+                        sorted(re.findall(r"\{\w+\}", text)),
+                        sorted(re.findall(r"\{\w+\}", english[key])),
+                    )

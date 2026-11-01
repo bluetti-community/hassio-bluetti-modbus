@@ -1,0 +1,790 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "address": "IP-adres",
+          "port": "Poort",
+          "type": "Apparaattype"
+        }
+      },
+      "zeroconf_confirm": {
+        "title": "Gevonden apparaat",
+        "description": "Wil je {name} op {address} instellen?"
+      },
+      "reconfigure": {
+        "title": "Adres van het apparaat wijzigen",
+        "description": "Het apparaat wordt op het nieuwe adres gecontroleerd voordat de vermelding daarheen verhuist.",
+        "data": {
+          "address": "IP-adres",
+          "port": "Poort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbinden met het apparaat mislukt: {error}. Controleer of Modbus TCP is ingeschakeld in de webinstellingen van het apparaat; als die pagina in een browser openstaat, sluit deze dan voor je het opnieuw probeert, want ze kan verhinderen dat deze controle de instelling leest.",
+      "modbus_tcp_disabled": "Modbus TCP staat uit op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Enable aan met poort 502 en sla op, sluit dan die pagina en probeer het opnieuw.",
+      "modbus_tcp_encrypted": "Modbus TCP is versleuteld op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Crypt Enable uit en sla op, sluit dan die pagina en probeer het opnieuw."
+    },
+    "abort": {
+      "no_unconfigured_devices": "Geen apparaten gevonden",
+      "already_configured": "Apparaat is al geconfigureerd",
+      "cannot_connect": "Verbinden met het apparaat mislukt",
+      "modbus_tcp_disabled": "Modbus TCP staat uit op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Enable aan met poort 502 en sla op, sluit dan die pagina en probeer het opnieuw.",
+      "modbus_tcp_encrypted": "Modbus TCP is versleuteld op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Crypt Enable uit en sla op, sluit dan die pagina en probeer het opnieuw.",
+      "wrong_device": "Op dat adres antwoordt een ander apparaat: het serienummer is niet dat van deze vermelding",
+      "reconfigure_successful": "Het adres van het apparaat is bijgewerkt"
+    }
+  },
+  "device": {
+    "built_in_battery": {
+      "name": "Ingebouwde batterij"
+    },
+    "pv_input": {
+      "name": "PV {input}"
+    },
+    "mppt": {
+      "name": "MPPT {input}"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "d_num_inverters": {
+        "name": "Aantal omvormers"
+      },
+      "ac_o_p_total": {
+        "name": "Totaal AC-uitgangsvermogen"
+      },
+      "pv_i_p_total": {
+        "name": "Totaal PV-ingangsvermogen"
+      },
+      "g_i_p_total": {
+        "name": "Totaal netvermogen"
+      },
+      "d_inverter_total": {
+        "name": "Totaal omvormervermogen"
+      },
+      "pv_ac_p": {
+        "name": "Totaal PV-AC-vermogen"
+      },
+      "ac_o_e_total": {
+        "name": "Totale AC-uitgangsenergie"
+      },
+      "pv_i_e_total": {
+        "name": "Totale PV-ingangsenergie"
+      },
+      "g_i_e_total": {
+        "name": "Totale netafname"
+      },
+      "g_o_e_total": {
+        "name": "Totale netteruglevering"
+      },
+      "pv_ac_e": {
+        "name": "Totale PV-AC-energie"
+      },
+      "d_inverter_status": {
+        "name": "Omvormerstatus",
+        "state": {
+          "stop": "Gestopt",
+          "off_grid": "Off-grid bedrijf",
+          "grid_connected_load": "Netgekoppelde belasting",
+          "grid_connected_operation": "Netgekoppeld bedrijf",
+          "grid_connected_charging": "Netgekoppeld laden",
+          "grid_connected_discharging": "Netgekoppeld ontladen",
+          "inverter_fault": "Omvormerstoring",
+          "abnormal_off_grid": "Abnormaal off-grid"
+        }
+      },
+      "d_inverter_type": {
+        "name": "Omvormertype"
+      },
+      "g_i_f": {
+        "name": "Netfrequentie"
+      },
+      "ac_o_switch": {
+        "name": "AC-uitgang schakelaar"
+      },
+      "dc_o_switch": {
+        "name": "DC-uitgang schakelaar"
+      },
+      "g_i_switch": {
+        "name": "Laden van net schakelaar"
+      },
+      "g_o_switch": {
+        "name": "Teruglevering schakelaar"
+      },
+      "b_soc_low": {
+        "name": "Minimale ontlaadgrens (SoC laag)"
+      },
+      "b_soc_high": {
+        "name": "Maximale laadgrens (SoC hoog)"
+      },
+      "d_num_battery_packs": {
+        "name": "Aantal batterijpakketten"
+      },
+      "b_v_total": {
+        "name": "Totale batterijspanning"
+      },
+      "b_c_total": {
+        "name": "Totale batterijstroom"
+      },
+      "b_soc_total": {
+        "name": "Totale batterij-SoC"
+      },
+      "b_soh_total": {
+        "name": "Totale batterij-SoH"
+      },
+      "b_type": {
+        "name": "Batterijtype"
+      },
+      "b_v": {
+        "name": "Batterijspanning"
+      },
+      "b_c": {
+        "name": "Batterijstroom"
+      },
+      "b_soc": {
+        "name": "Batterij-SoC"
+      },
+      "b_soh": {
+        "name": "Batterij-SoH"
+      },
+      "b_cycle_count": {
+        "name": "Batterij laadcycli"
+      },
+      "b_t_avg": {
+        "name": "Gemiddelde batterijtemperatuur"
+      },
+      "b_cell_count": {
+        "name": "Aantal cellen"
+      },
+      "b_ntc_count": {
+        "name": "Aantal temperatuursensoren"
+      },
+      "b_i_e": {
+        "name": "Totale geladen batterijenergie"
+      },
+      "b_o_e": {
+        "name": "Totale ontladen batterijenergie"
+      },
+      "g_i_p_local": {
+        "name": "Netingangsvermogen"
+      },
+      "ac_o_p_local": {
+        "name": "AC-uitgangsvermogen"
+      },
+      "pv_i_p_local": {
+        "name": "PV-ingangsvermogen"
+      },
+      "pv_ac_p_local": {
+        "name": "PV-AC-vermogen"
+      },
+      "g_i_e_local": {
+        "name": "Netafname"
+      },
+      "g_o_e_local": {
+        "name": "Netteruglevering"
+      },
+      "ac_o_e_local": {
+        "name": "AC-uitgangsenergie"
+      },
+      "pv_i_e_local": {
+        "name": "PV-ingangsenergie"
+      },
+      "pv_ac_e_local": {
+        "name": "PV-AC-energie"
+      },
+      "d_self_consumption": {
+        "name": "Eigenverbruikspercentage"
+      },
+      "d_phase_count": {
+        "name": "Aantal netfasen"
+      },
+      "g_1_i_p": {
+        "name": "Net fase 1 vermogen"
+      },
+      "g_1_i_v": {
+        "name": "Net fase 1 spanning"
+      },
+      "g_1_i_c": {
+        "name": "Net fase 1 stroom"
+      },
+      "g_2_i_p": {
+        "name": "Net fase 2 vermogen"
+      },
+      "g_2_i_v": {
+        "name": "Net fase 2 spanning"
+      },
+      "g_2_i_c": {
+        "name": "Net fase 2 stroom"
+      },
+      "g_3_i_p": {
+        "name": "Net fase 3 vermogen"
+      },
+      "g_3_i_v": {
+        "name": "Net fase 3 spanning"
+      },
+      "g_3_i_c": {
+        "name": "Net fase 3 stroom"
+      },
+      "ac_phase_count": {
+        "name": "Aantal AC-uitgangsfasen"
+      },
+      "ac_1_o_p": {
+        "name": "AC-uitgang fase 1 vermogen"
+      },
+      "ac_1_o_v": {
+        "name": "AC-uitgang fase 1 spanning"
+      },
+      "ac_1_o_c": {
+        "name": "AC-uitgang fase 1 stroom"
+      },
+      "ac_2_o_p": {
+        "name": "AC-uitgang fase 2 vermogen"
+      },
+      "ac_2_o_v": {
+        "name": "AC-uitgang fase 2 spanning"
+      },
+      "ac_2_o_c": {
+        "name": "AC-uitgang fase 2 stroom"
+      },
+      "ac_3_o_p": {
+        "name": "AC-uitgang fase 3 vermogen"
+      },
+      "ac_3_o_v": {
+        "name": "AC-uitgang fase 3 spanning"
+      },
+      "ac_3_o_c": {
+        "name": "AC-uitgang fase 3 stroom"
+      },
+      "d_inverter_phase_count": {
+        "name": "Aantal omvormerfasen"
+      },
+      "d_inverter_1_status": {
+        "name": "Omvormer 1 status",
+        "state": {
+          "stop": "Gestopt",
+          "off_grid": "Off-grid bedrijf",
+          "grid_connected_load": "Netgekoppelde belasting",
+          "grid_connected_operation": "Netgekoppeld bedrijf",
+          "grid_connected_charging": "Netgekoppeld laden",
+          "grid_connected_discharging": "Netgekoppeld ontladen",
+          "inverter_fault": "Omvormerstoring",
+          "abnormal_off_grid": "Abnormaal off-grid"
+        }
+      },
+      "d_inverter_1_p": {
+        "name": "Omvormer 1 vermogen"
+      },
+      "d_inverter_1_v": {
+        "name": "Omvormer 1 spanning"
+      },
+      "d_inverter_1_c": {
+        "name": "Omvormer 1 stroom"
+      },
+      "d_inverter_2_status": {
+        "name": "Omvormer 2 status",
+        "state": {
+          "stop": "Gestopt",
+          "off_grid": "Off-grid bedrijf",
+          "grid_connected_load": "Netgekoppelde belasting",
+          "grid_connected_operation": "Netgekoppeld bedrijf",
+          "grid_connected_charging": "Netgekoppeld laden",
+          "grid_connected_discharging": "Netgekoppeld ontladen",
+          "inverter_fault": "Omvormerstoring",
+          "abnormal_off_grid": "Abnormaal off-grid"
+        }
+      },
+      "d_inverter_2_p": {
+        "name": "Omvormer 2 vermogen"
+      },
+      "d_inverter_2_v": {
+        "name": "Omvormer 2 spanning"
+      },
+      "d_inverter_2_c": {
+        "name": "Omvormer 2 stroom"
+      },
+      "d_inverter_3_status": {
+        "name": "Omvormer 3 status",
+        "state": {
+          "stop": "Gestopt",
+          "off_grid": "Off-grid bedrijf",
+          "grid_connected_load": "Netgekoppelde belasting",
+          "grid_connected_operation": "Netgekoppeld bedrijf",
+          "grid_connected_charging": "Netgekoppeld laden",
+          "grid_connected_discharging": "Netgekoppeld ontladen",
+          "inverter_fault": "Omvormerstoring",
+          "abnormal_off_grid": "Abnormaal off-grid"
+        }
+      },
+      "d_inverter_3_p": {
+        "name": "Omvormer 3 vermogen"
+      },
+      "d_inverter_3_v": {
+        "name": "Omvormer 3 spanning"
+      },
+      "d_inverter_3_c": {
+        "name": "Omvormer 3 stroom"
+      },
+      "pv_dc_count": {
+        "name": "Aantal DC-PV-strings"
+      },
+      "pv_ac_count": {
+        "name": "Aantal AC-PV-strings"
+      },
+      "b_status": {
+        "name": "Batterijstatus",
+        "state": {
+          "idle": "Inactief",
+          "charging": "Laden",
+          "discharging": "Ontladen"
+        }
+      },
+      "b_time_to_full_total": {
+        "name": "Totale tijd tot vol"
+      },
+      "b_time_to_empty_total": {
+        "name": "Totale tijd tot leeg"
+      },
+      "b_ver_count": {
+        "name": "Batterij firmwareversie-slots"
+      },
+      "b_ver_2": {
+        "name": "Batterij firmwareversie 2"
+      },
+      "b_ver_3": {
+        "name": "Batterij firmwareversie 3"
+      },
+      "b_ver_4": {
+        "name": "Batterij firmwareversie 4"
+      },
+      "b_protect": {
+        "name": "Batterij beveiligingsstatus"
+      },
+      "b_error": {
+        "name": "Batterij systeemfout"
+      },
+      "b_alarm_residential": {
+        "name": "Batterij alarm thuisopslag"
+      },
+      "b_alarm_portable": {
+        "name": "Batterij alarm draagbaar"
+      },
+      "b_time_to_full": {
+        "name": "Tijd tot vol"
+      },
+      "b_time_to_empty": {
+        "name": "Tijd tot leeg"
+      },
+      "d_iot_model": {
+        "name": "IoT-module model"
+      },
+      "d_iot_serial": {
+        "name": "IoT-serienummer"
+      },
+      "pack_b_type": {
+        "name": "Batterijtype"
+      },
+      "pack_b_v": {
+        "name": "Batterijspanning"
+      },
+      "pack_b_c": {
+        "name": "Batterijstroom"
+      },
+      "pack_b_soc": {
+        "name": "Batterij-SoC"
+      },
+      "pack_b_soh": {
+        "name": "Batterij-SoH"
+      },
+      "pack_b_cycle_count": {
+        "name": "Batterij laadcycli"
+      },
+      "pack_b_t_avg": {
+        "name": "Gemiddelde batterijtemperatuur"
+      },
+      "pack_b_cell_count": {
+        "name": "Aantal cellen"
+      },
+      "pack_b_ntc_count": {
+        "name": "Aantal temperatuursensoren"
+      },
+      "pack_b_i_e": {
+        "name": "Totale geladen batterijenergie"
+      },
+      "pack_b_o_e": {
+        "name": "Totale ontladen batterijenergie"
+      },
+      "d_timestamp": {
+        "name": "Tijdstempel"
+      },
+      "ac_a_v": {
+        "name": "Fase A spanning"
+      },
+      "ac_b_v": {
+        "name": "Fase B spanning"
+      },
+      "ac_c_v": {
+        "name": "Fase C spanning"
+      },
+      "ac_a_c": {
+        "name": "Fase A stroom"
+      },
+      "ac_b_c": {
+        "name": "Fase B stroom"
+      },
+      "ac_c_c": {
+        "name": "Fase C stroom"
+      },
+      "ac_a_p": {
+        "name": "Fase A vermogen"
+      },
+      "ac_b_p": {
+        "name": "Fase B vermogen"
+      },
+      "ac_c_p": {
+        "name": "Fase C vermogen"
+      },
+      "ac_a_p_reactive": {
+        "name": "Fase A blindvermogen"
+      },
+      "ac_b_p_reactive": {
+        "name": "Fase B blindvermogen"
+      },
+      "ac_c_p_reactive": {
+        "name": "Fase C blindvermogen"
+      },
+      "ac_a_p_apparent": {
+        "name": "Fase A schijnbaar vermogen"
+      },
+      "ac_b_p_apparent": {
+        "name": "Fase B schijnbaar vermogen"
+      },
+      "ac_c_p_apparent": {
+        "name": "Fase C schijnbaar vermogen"
+      },
+      "ac_a_pf": {
+        "name": "Fase A arbeidsfactor"
+      },
+      "ac_b_pf": {
+        "name": "Fase B arbeidsfactor"
+      },
+      "ac_c_pf": {
+        "name": "Fase C arbeidsfactor"
+      },
+      "ac_v_avg": {
+        "name": "Gemiddelde fasespanning"
+      },
+      "ac_c_avg": {
+        "name": "Gemiddelde lijnstroom"
+      },
+      "ac_c_unbalance": {
+        "name": "Lijnstroom-onbalans"
+      },
+      "ac_c_total": {
+        "name": "Totale lijnstroom"
+      },
+      "ac_p_total": {
+        "name": "Totaal actief vermogen"
+      },
+      "ac_p_reactive_total": {
+        "name": "Totaal blindvermogen"
+      },
+      "ac_p_apparent_total": {
+        "name": "Totaal schijnbaar vermogen"
+      },
+      "ac_pf_total": {
+        "name": "Totale arbeidsfactor"
+      },
+      "b_p": {
+        "name": "Batterijvermogen"
+      },
+      "d_manufacturer": {
+        "name": "Fabrikant"
+      },
+      "d_reactive_p_total": {
+        "name": "Totaal blindvermogen"
+      },
+      "d_apparent_p_total": {
+        "name": "Totaal schijnbaar vermogen"
+      },
+      "d_rated_p_max": {
+        "name": "Nominaal max. actief vermogen"
+      },
+      "d_rated_p_max_continuous": {
+        "name": "Nominaal continu actief vermogen"
+      },
+      "d_rated_va_max_continuous": {
+        "name": "Nominaal continu schijnbaar vermogen"
+      },
+      "d_rated_var_max_continuous": {
+        "name": "Nominaal continu blindvermogen (geleverd)"
+      },
+      "d_rated_var_max_continuous_neg": {
+        "name": "Nominaal continu blindvermogen (opgenomen)"
+      },
+      "d_rated_pf_min_over_excited": {
+        "name": "Min. arbeidsfactor (blindvermogen leverend)"
+      },
+      "d_rated_pf_min_under_excited": {
+        "name": "Min. arbeidsfactor (blindvermogen opnemend)"
+      },
+      "d_online_component": {
+        "name": "Aangesloten accessoires"
+      },
+      "d_rated_v": {
+        "name": "Nominale spanning"
+      },
+      "d_rated_f": {
+        "name": "Nominale frequentie"
+      },
+      "d_hw_ver": {
+        "name": "Hardwareversie"
+      },
+      "d_p_active": {
+        "name": "DER actief vermogen"
+      },
+      "d_p_reactive": {
+        "name": "DER blindvermogen"
+      },
+      "d_f": {
+        "name": "DER frequentie"
+      },
+      "d_operational_mode_status": {
+        "name": "DER bedrijfsmodus"
+      },
+      "d_connection_status": {
+        "name": "DER verbindingsstatus"
+      },
+      "d_alarm_status": {
+        "name": "DER alarmstatus"
+      },
+      "d_inverter_der_status": {
+        "name": "DER omvormerstatus"
+      },
+      "d_local_control_mode_status": {
+        "name": "DER besturingsmodus"
+      },
+      "d_storage_mode_status": {
+        "name": "DER opslagmodus"
+      },
+      "d_ems_ctrl": {
+        "name": "Bediening op afstand"
+      },
+      "d_p_output_level_pct": {
+        "name": "Niveau actief uitgangsvermogen"
+      },
+      "d_p_limit_timeout": {
+        "name": "Vermogenslimiet time-out"
+      },
+      "d_p_limit_ramp_time": {
+        "name": "Vermogenslimiet hellingstijd"
+      },
+      "d_p_limit_ramp_rate_pct": {
+        "name": "Vermogenslimiet hellingssnelheid"
+      },
+      "d_battery_control": {
+        "name": "Batterijbesturingsmodus"
+      },
+      "d_export_limit": {
+        "name": "Limiet netteruglevering"
+      },
+      "d_storage_set_point": {
+        "name": "Geforceerd laad-/ontlaadvermogen"
+      },
+      "d_op_mod_connect": {
+        "name": "Verbindings-/inschakelstatus"
+      },
+      "d_op_mod_gen_lim_w": {
+        "name": "Laadvermogenslimiet (afname)"
+      },
+      "d_op_mod_load_lim_w": {
+        "name": "Ontlaadvermogenslimiet (teruglevering)"
+      },
+      "d_ramp_rate": {
+        "name": "Hellingssnelheid"
+      },
+      "g_1_p_active": {
+        "name": "Net fase 1 actief vermogen"
+      },
+      "g_1_p_reactive": {
+        "name": "Net fase 1 blindvermogen"
+      },
+      "g_1_p_apparent": {
+        "name": "Net fase 1 schijnbaar vermogen"
+      },
+      "d_inverter_1_p_active_internal": {
+        "name": "Omvormer 1 intern actief vermogen"
+      },
+      "d_p_active_target_l1": {
+        "name": "Fase 1 doelwaarde actief vermogen"
+      },
+      "d_p_reactive_target_l1": {
+        "name": "Fase 1 doelwaarde blindvermogen"
+      },
+      "d_p_apparent_target_l1": {
+        "name": "Fase 1 doelwaarde schijnbaar vermogen"
+      },
+      "g_2_p_active": {
+        "name": "Net fase 2 actief vermogen"
+      },
+      "g_2_p_reactive": {
+        "name": "Net fase 2 blindvermogen"
+      },
+      "g_2_p_apparent": {
+        "name": "Net fase 2 schijnbaar vermogen"
+      },
+      "d_inverter_2_p_active_internal": {
+        "name": "Omvormer 2 intern actief vermogen"
+      },
+      "d_p_active_target_l2": {
+        "name": "Fase 2 doelwaarde actief vermogen"
+      },
+      "d_p_reactive_target_l2": {
+        "name": "Fase 2 doelwaarde blindvermogen"
+      },
+      "d_p_apparent_target_l2": {
+        "name": "Fase 2 doelwaarde schijnbaar vermogen"
+      },
+      "g_3_p_active": {
+        "name": "Net fase 3 actief vermogen"
+      },
+      "g_3_p_reactive": {
+        "name": "Net fase 3 blindvermogen"
+      },
+      "g_3_p_apparent": {
+        "name": "Net fase 3 schijnbaar vermogen"
+      },
+      "d_inverter_3_p_active_internal": {
+        "name": "Omvormer 3 intern actief vermogen"
+      },
+      "d_p_active_target_l3": {
+        "name": "Fase 3 doelwaarde actief vermogen"
+      },
+      "d_p_reactive_target_l3": {
+        "name": "Fase 3 doelwaarde blindvermogen"
+      },
+      "d_p_apparent_target_l3": {
+        "name": "Fase 3 doelwaarde schijnbaar vermogen"
+      },
+      "wifi_rssi": {
+        "name": "Wifi-signaal"
+      },
+      "d_inverter_fault": {
+        "name": "Omvormerstoringen"
+      },
+      "d_inverter_warning": {
+        "name": "Omvormerwaarschuwingen"
+      },
+      "soc": {
+        "name": "SoC"
+      },
+      "soh": {
+        "name": "SoH"
+      },
+      "cycle_count": {
+        "name": "Laadcycli"
+      },
+      "total_charged_energy": {
+        "name": "Totale geladen energie"
+      },
+      "total_discharged_energy": {
+        "name": "Totale ontladen energie"
+      },
+      "type": {
+        "name": "Type"
+      },
+      "protection_status": {
+        "name": "Beveiligingsstatus"
+      },
+      "system_error": {
+        "name": "Systeemfout"
+      },
+      "residential_alarm": {
+        "name": "Alarm thuisopslag"
+      },
+      "portable_alarm": {
+        "name": "Alarm draagbaar"
+      },
+      "firmware_version_slots": {
+        "name": "Firmwareversie-slots"
+      },
+      "input_power": {
+        "name": "Ingangsvermogen"
+      },
+      "input_voltage": {
+        "name": "Ingangsspanning"
+      },
+      "input_current": {
+        "name": "Ingangsstroom"
+      },
+      "input_type": {
+        "name": "Ingangstype",
+        "state": {
+          "reserve": "Gereserveerd",
+          "car": "Auto",
+          "adapter": "Adapter",
+          "other": "Overig",
+          "dc_pv": "DC-PV",
+          "ac_pv": "AC-PV"
+        }
+      }
+    },
+    "binary_sensor": {
+      "d_status": {
+        "name": "Online"
+      },
+      "cloud_connected": {
+        "name": "BLUETTI-cloudverbinding"
+      },
+      "wifi_connected": {
+        "name": "Wifi verbonden"
+      },
+      "lan_reachable": {
+        "name": "Lokaal netwerk bereikbaar"
+      },
+      "wan_reachable": {
+        "name": "Internet bereikbaar"
+      }
+    },
+    "number": {
+      "b_soc_low": {
+        "name": "Minimale ontlaadgrens (SoC laag)"
+      },
+      "b_soc_high": {
+        "name": "Maximale laadgrens (SoC hoog)"
+      }
+    },
+    "switch": {
+      "ac_o_switch": {
+        "name": "AC-uitgang schakelaar"
+      },
+      "dc_o_switch": {
+        "name": "DC-uitgang schakelaar"
+      },
+      "g_i_switch": {
+        "name": "Laden van net schakelaar"
+      },
+      "g_o_switch": {
+        "name": "Teruglevering schakelaar"
+      },
+      "ac_eco_switch": {
+        "name": "AC ECO schakelaar"
+      },
+      "ac_power_lifting_switch": {
+        "name": "AC Power Lifting schakelaar"
+      }
+    }
+  },
+  "exceptions": {
+    "communication_error": {
+      "message": "Fout bij communicatie met het apparaat: {error}"
+    },
+    "wrong_device": {
+      "message": "Op {address} antwoordt een apparaat met een ander serienummer; de entiteiten blijven onbeschikbaar tot het apparaat van deze vermelding daar weer antwoordt"
+    },
+    "write_failed": {
+      "message": "Schrijven naar {device} {field} mislukt: {error}"
+    }
+  }
+}
