@@ -509,7 +509,9 @@ async def async_setup_entry(
     if entry.data.get(CONF_SLOTS_BEYOND_COUNT_PENDING) is True:
         _disable_registered_beyond_count(hass, entry, sensors_beyond_count)
     if unique_ids_not_served:
-        _remove_slots_not_served(hass, config.address, unique_ids_not_served, pv_inputs_not_served)
+        _remove_slots_not_served(
+            hass, entry, config.address, unique_ids_not_served, pv_inputs_not_served
+        )
 
     async_add_entities(sensors_to_add)
 
@@ -648,11 +650,15 @@ def _disable_registered_beyond_count(
 
 
 def _remove_slots_not_served(
-    hass: HomeAssistant, address: str, unique_ids: list[str], input_nums: set[int]
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    address: str,
+    unique_ids: list[str],
+    input_nums: set[int],
 ) -> None:
     """Remove what an earlier version registered beyond the counts: the
     entities of phases, inverters and PV inputs the unit does not have, and
-    those PV inputs' devices.
+    those PV inputs' child devices.
     """
     entity_registry = er.async_get(hass)
     for unique_id in unique_ids:
@@ -661,8 +667,8 @@ def _remove_slots_not_served(
             entity_registry.async_remove(entity_id)
     device_registry = dr.async_get(hass)
     for input_num in sorted(input_nums):
-        device = device_registry.async_get_device(
-            identifiers={(DOMAIN, f"{address}-pv-{input_num}")}
+        device = device_registry.async_get_child_device_by_identifier(
+            (DOMAIN, f"{address}-pv-{input_num}"), entry.entry_id
         )
         if device is not None:
             device_registry.async_remove_device(device.id)

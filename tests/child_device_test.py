@@ -366,8 +366,11 @@ class TestPvInputChildDevices(_RealRegistries):
         main = self.devices.async_get_or_create(
             config_entry_id=entry.entry_id, identifiers={(DOMAIN, ADDRESS)}, name="Balco 260"
         )
-        pv_3 = self.devices.async_get_or_create(
-            config_entry_id=entry.entry_id, identifiers={(DOMAIN, f"{ADDRESS}-pv-3")}, name="PV 3"
+        pv_3 = self.devices.async_get_or_create_child(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, f"{ADDRESS}-pv-3")},
+            name="PV 3",
+            parent_device_id=main.id,
         )
         on_pv_3 = self.entities.async_get_or_create(
             "sensor", DOMAIN, f"{SERIAL}_pv_3_i_p", config_entry=entry, device_id=pv_3.id
