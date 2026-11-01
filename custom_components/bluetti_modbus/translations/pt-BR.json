@@ -785,6 +785,32 @@
     },
     "write_failed": {
       "message": "Falha ao gravar em {device} {field}: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} não suporta a leitura direta de registradores"
+    },
+    "invalid_register_request": {
+      "message": "Solicitação de registrador inválida: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Ler registradores",
+      "description": "Lê registradores holding brutos de um dispositivo BLUETTI, dentro das faixas que o perfil dele já lê.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Dispositivo",
+          "description": "A entrada BLUETTI Modbus a ser lida."
+        },
+        "address": {
+          "name": "Endereço",
+          "description": "Primeiro registrador holding a ler."
+        },
+        "count": {
+          "name": "Quantidade",
+          "description": "Número de registradores a ler, no máximo o tamanho de bloco do dispositivo (20 em um Balco 260 ou FridgePower, 10 em um Transfer Hub, 50 nos demais)."
+        }
+      }
     }
   }
 }

@@ -785,6 +785,32 @@
     },
     "write_failed": {
       "message": "Не вдалося записати в {device} {field}: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} не підтримує пряме зчитування регістрів"
+    },
+    "invalid_register_request": {
+      "message": "Недійсний запит регістрів: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Читати регістри",
+      "description": "Зчитує сирі holding-регістри пристрою BLUETTI в межах діапазонів, які вже читає його профіль.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Пристрій",
+          "description": "Запис BLUETTI Modbus, з якого зчитувати."
+        },
+        "address": {
+          "name": "Адреса",
+          "description": "Перший holding-регістр для зчитування."
+        },
+        "count": {
+          "name": "Кількість",
+          "description": "Кількість регістрів для зчитування, не більше розміру блоку пристрою (20 для Balco 260 або FridgePower, 10 для Transfer Hub, інакше 50)."
+        }
+      }
     }
   }
 }

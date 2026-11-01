@@ -785,6 +785,32 @@
     },
     "write_failed": {
       "message": "Nepavyko įrašyti į {device} {field}: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} nepalaiko tiesioginio registrų skaitymo"
+    },
+    "invalid_register_request": {
+      "message": "Netinkama registrų užklausa: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Skaityti registrus",
+      "description": "Nuskaito neapdorotus BLUETTI įrenginio holding registrus, tik tuose intervaluose, kuriuos jau skaito jo profilis.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Įrenginys",
+          "description": "BLUETTI Modbus įrašas, iš kurio skaitoma."
+        },
+        "address": {
+          "name": "Adresas",
+          "description": "Pirmasis skaitomas holding registras."
+        },
+        "count": {
+          "name": "Kiekis",
+          "description": "Skaitomų registrų skaičius, ne daugiau nei įrenginio bloko dydis (20 Balco 260 arba FridgePower, 10 Transfer Hub, kitais atvejais 50)."
+        }
+      }
     }
   }
 }
