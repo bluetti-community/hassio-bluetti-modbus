@@ -82,8 +82,8 @@ Have a different BLUETTI model? Register data is welcome - see
 - The SoC limits refuse writes on this model and stay read-only; the AC output switch
   is left untried (it powers the fridge).
 - No grid feed-in switch: the unit is off-grid only.
-- One PV input and one inverter: there is no PV 2-4, and inverters 2-3 start
-  disabled. No feed-in energy, AC-coupled PV or inverter phase count either.
+- One PV input, one inverter and one phase: there is no PV 2-4, inverter 2-3 or
+  phase 2-3. No feed-in energy, AC-coupled PV or inverter phase count either.
 
 **AC500, EP500Pro, AC200L, Apex 300** - one shared register layout. An AC200PL reads
 with the AC200L profile.
@@ -176,6 +176,9 @@ From version 3.0.0: requires **Home Assistant 2026.10.1 or newer**.
 >
 > From 3.2.0-rc.2, a PV input beyond the count the unit reports has no sub-device,
 > and the battery's and packs' **Type** sensors are gone: a pack's type is its model.
+>
+> From 3.2.0-rc.3, a grid or AC output phase, or an inverter, beyond the count the
+> unit reports has no entity; the disabled ones an earlier version created are removed.
 
 ### Via HACS (recommended)
 

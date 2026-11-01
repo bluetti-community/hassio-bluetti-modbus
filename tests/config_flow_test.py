@@ -253,7 +253,8 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         labels = {o["value"]: o["label"] for o in options}
         self.assertEqual(labels.get("pa030"), "Apex 300")
 
-    async def test_balco500_offered_on_the_beta_line(self):
+    @patch("custom_components.bluetti_modbus.config_flow.BALCO500_CONFIRMED", True)
+    async def test_balco500_offered_once_confirmed(self):
         flow = _flow()
         with patch.object(flow, "async_show_form", return_value="form") as show_form:
             await flow.async_step_user()

@@ -423,3 +423,56 @@ class TestPvInputChildDevices(_RealRegistries):
                 self.assertEqual(self._pv_input(entry, n).name, f"MPPT {n}")
         self.assertIsNone(self._pv_input(entry, 3))
         self.assertEqual(self._entity("pv_1_i_p").entity_id, "sensor.ep2000_mppt_1_input_power")
+
+
+# The counts four FridgePowers report (bluetti-registers#38): one grid phase,
+# one AC output phase, one inverter, and an inverter phase count of 0.
+FP_DATA = {
+    **BALCO260_DATA,
+    "d_phase_count": 1,
+    "ac_phase_count": 1,
+    "d_inverter_phase_count": 0,
+    "d_num_inverters": 1,
+}
+_NOT_SERVED = ("g_2_i_p", "g_3_i_v", "ac_2_o_c", "ac_3_o_p", "d_inverter_2_status", "d_inverter_3_p")
+
+
+class TestSlotsBeyondTheCount(_RealRegistries):
+    async def test_phases_and_inverters_beyond_the_count_have_no_entity(self):
+        entry = self._entry("fp", "FridgePower")
+
+        await self._setup(entry, FP_DATA)
+
+        for field in ("g_1_i_p", "ac_1_o_p", "d_inverter_1_p"):
+            self.assertIsNotNone(self._entity(field))
+        for field in _NOT_SERVED:
+            with self.subTest(field=field):
+                self.assertIsNone(
+                    self.entities.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_{field}")
+                )
+
+    async def test_what_was_registered_beyond_the_count_is_removed(self):
+        # 3.2.0-rc.2 and earlier registered them disabled on the station.
+        entry = self._entry("fp", "FridgePower")
+        main = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id, identifiers={(DOMAIN, ADDRESS)}, name="FridgePower"
+        )
+        registered = [
+            self.entities.async_get_or_create(
+                "sensor",
+                DOMAIN,
+                f"{SERIAL}_{field}",
+                config_entry=entry,
+                device_id=main.id,
+                disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+            )
+            for field in _NOT_SERVED
+        ]
+        self.devices.async_config_entry_unloaded(entry.entry_id)
+
+        await self._setup(entry, FP_DATA)
+
+        for entity in registered:
+            with self.subTest(entity=entity.entity_id):
+                self.assertIsNone(self.entities.async_get(entity.entity_id))
+        self.assertIsNotNone(self._entity("g_1_i_p"))

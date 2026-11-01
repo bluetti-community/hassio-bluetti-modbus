@@ -141,9 +141,9 @@ PV_INPUT_TRANSLATION_KEYS = {
 
 # Numbered fields and the count the unit reports for their group: a number
 # above the count is a phase, inverter, PV input or firmware slot the unit
-# says it does not have, so its entity is created disabled - or, for a PV
-# input, not created at all, since each input is a device of its own. The
-# registers are still read - they sit inside the same block reads as their
+# says it does not have, so the station gets no entity for it, and a PV
+# input no device. An expansion pack's firmware slots beyond its own count
+# are created disabled instead. The registers are still read - they sit inside the same block reads as their
 # neighbours. On the EP2000 d_inverter_1..3 are the three phases of one
 # inverter (d_num_inverters reads 1), hence d_inverter_phase_count; the
 # FridgePower reads that one 0, so its inverter count stands in. A count
@@ -343,7 +343,8 @@ async def async_setup_entry(
     data = coordinator.data or {}
     # Each PV input's child device, built once for the fields it has.
     pv_device_infos: dict[int, ChildDeviceInfo] = {}
-    # The PV inputs beyond the count, and the unique_ids their fields had.
+    # The PV inputs beyond the count, and the unique_ids every field beyond
+    # a count had.
     pv_inputs_not_served: set[int] = set()
     unique_ids_not_served: list[str] = []
 
@@ -390,23 +391,21 @@ async def async_setup_entry(
             metadata = dataclasses.replace(metadata, enabled_by_default=False)
         if config.dev_type in _REAL_PACK_TEMPERATURE and field.name == "b_t_avg":
             metadata = dataclasses.replace(metadata, enabled_by_default=True)
-        beyond_count = beyond_reported_count(field.name, data)
-        if beyond_count:
-            metadata = dataclasses.replace(metadata, enabled_by_default=False)
         translation_key = None
         field_device_info: DeviceInfo | ChildDeviceInfo = device_info
         device_name = device_info.get("name")
         field_phase = _PHASE_FOR_FIELD.get(field.name)
         pv_input = PV_INPUT_FIELD.match(field.name)
-        if field_phase:
-            field_device_info = phase_device_infos[field_phase]
-            device_name = field_device_info.get("name")
-        elif pv_input and beyond_count:
-            pv_inputs_not_served.add(int(pv_input.group(1)))
+        if beyond_reported_count(field.name, data):
+            if pv_input:
+                pv_inputs_not_served.add(int(pv_input.group(1)))
             unique_ids_not_served.append(
                 _unique_id_for(coordinator, device_name, field.name, "sensor")
             )
             continue
+        if field_phase:
+            field_device_info = phase_device_infos[field_phase]
+            device_name = field_device_info.get("name")
         elif pv_input:
             input_num = int(pv_input.group(1))
             if input_num not in pv_device_infos:
@@ -434,8 +433,6 @@ async def async_setup_entry(
             zero_is_unknown=(config.dev_type, field.name) in _ZERO_IS_UNKNOWN,
         )
         sensors_to_add.append(sensor)
-        if beyond_count:
-            sensors_beyond_count.append(sensor)
 
     for pack_num, pack_info in pack_device_infos.items():
         for name in PACK_INFO_FIELDS:
@@ -511,10 +508,8 @@ async def async_setup_entry(
 
     if entry.data.get(CONF_SLOTS_BEYOND_COUNT_PENDING) is True:
         _disable_registered_beyond_count(hass, entry, sensors_beyond_count)
-    if pv_inputs_not_served:
-        _remove_pv_inputs_not_served(
-            hass, config.address, unique_ids_not_served, pv_inputs_not_served
-        )
+    if unique_ids_not_served:
+        _remove_slots_not_served(hass, config.address, unique_ids_not_served, pv_inputs_not_served)
 
     async_add_entities(sensors_to_add)
 
@@ -652,12 +647,12 @@ def _disable_registered_beyond_count(
     hass.config_entries.async_update_entry(entry, data=new_data)
 
 
-def _remove_pv_inputs_not_served(
+def _remove_slots_not_served(
     hass: HomeAssistant, address: str, unique_ids: list[str], input_nums: set[int]
 ) -> None:
-    """Remove what an earlier version registered for PV inputs beyond the
-    count: their entities, on the station or on their own device, and those
-    devices.
+    """Remove what an earlier version registered beyond the counts: the
+    entities of phases, inverters and PV inputs the unit does not have, and
+    those PV inputs' devices.
     """
     entity_registry = er.async_get(hass)
     for unique_id in unique_ids:

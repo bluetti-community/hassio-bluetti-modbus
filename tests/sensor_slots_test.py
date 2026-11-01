@@ -97,7 +97,7 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
-    async def test_entities_beyond_the_counts_are_created_disabled(
+    async def test_entities_beyond_the_counts_are_not_created(
         self, dev_info_fn, get_device_fn, battery_device_info_fn, pack_device_info_fn
     ):
         dev_info_fn.return_value = {"name": "Balco 260"}
@@ -120,7 +120,7 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
 
         enabled = {s._response_key: s._attr_entity_registry_enabled_default for s in added}
         self.assertTrue(enabled["ac_2_o_v"])
-        self.assertFalse(enabled["ac_3_o_v"])
+        self.assertNotIn("ac_3_o_v", enabled)
         # The built-in battery's firmware slots are on its device page, not
         # sensors; an expansion pack's stay sensors, hidden beyond its count.
         self.assertNotIn("b_ver_2", enabled)
@@ -129,19 +129,24 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         # No migration pending: nothing touches the registry.
         hass.config_entries.async_update_entry.assert_not_called()
 
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.sensor.pack_device_info")
     @patch("custom_components.bluetti_modbus.sensor.er")
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     async def test_a_migrated_entry_disables_its_registered_entities_once(
-        self, dev_info_fn, get_device_fn, battery_device_info_fn, er_module
+        self, dev_info_fn, get_device_fn, battery_device_info_fn, er_module, pack_device_info_fn
     ):
+        # An expansion pack's firmware slots: the only entities still
+        # created disabled beyond a count.
         dev_info_fn.return_value = {"name": "Balco 260"}
         battery_device_info_fn.return_value = {"name": "Battery"}
+        pack_device_info_fn.return_value = {"name": "Pack 2"}
         hass, entry, bluetti_device = self._setup(
-            {"ac_phase_count": 1},
+            {"d_num_battery_packs": 2, "pack_2_b_ver_count": 1},
             entry_data={**_ENTRY_DATA, CONF_SLOTS_BEYOND_COUNT_PENDING: True},
-            sensors=("ac_1_o_v", "ac_2_o_v", "ac_3_o_v", "ac_4_o_v"),
+            sensors=(),
         )
         get_device_fn.return_value = bluetti_device
         registry = MagicMock()
@@ -149,19 +154,19 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         entries = {}
 
         def entity_id_for(domain, platform, unique_id):
-            # ac_2 registered and enabled, ac_3 never registered, ac_4
+            # Slot 2 registered and enabled, slot 3 never registered, slot 4
             # disabled by the user.
             for key, entity_id in (
-                ("ac_2_o_v", "sensor.ac_2"),
-                ("ac_4_o_v", "sensor.ac_4"),
+                ("pack_2_b_ver_2", "sensor.ver_2"),
+                ("pack_2_b_ver_4", "sensor.ver_4"),
             ):
                 if unique_id == unique_ids[key]:
                     return entity_id
             return None
 
         registry.async_get_entity_id.side_effect = entity_id_for
-        entries["sensor.ac_2"] = MagicMock(disabled_by=None)
-        entries["sensor.ac_4"] = MagicMock(disabled_by="user")
+        entries["sensor.ver_2"] = MagicMock(disabled_by=None)
+        entries["sensor.ver_4"] = MagicMock(disabled_by="user")
         registry.async_get.side_effect = entries.get
         unique_ids = {}
         added = []
@@ -184,33 +189,37 @@ class TestSetupHidesSlotsBeyondCount(unittest.IsolatedAsyncioTestCase):
         ):
             await async_setup_entry(hass, entry, add)
 
-        # Every entity beyond a count is checked, ac_1 never is.
-        self.assertEqual(set(unique_ids), {"ac_2_o_v", "ac_3_o_v", "ac_4_o_v"})
+        # Every entity beyond a count is checked, slot 1 never is.
+        self.assertEqual(set(unique_ids), {"pack_2_b_ver_2", "pack_2_b_ver_3", "pack_2_b_ver_4"})
         disabled = {call.args[0] for call in registry.async_update_entity.call_args_list}
-        self.assertEqual(disabled, {"sensor.ac_2"})
+        self.assertEqual(disabled, {"sensor.ver_2"})
         for call in registry.async_update_entity.call_args_list:
             self.assertEqual(
                 call.kwargs, {"disabled_by": er_module.RegistryEntryDisabler.INTEGRATION}
             )
         hass.config_entries.async_update_entry.assert_called_once_with(entry, data=_ENTRY_DATA)
 
+    @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
+    @patch("custom_components.bluetti_modbus.sensor.pack_device_info")
     @patch("custom_components.bluetti_modbus.sensor.er")
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     async def test_an_entity_whose_registry_entry_vanished_is_skipped(
-        self, dev_info_fn, get_device_fn, battery_device_info_fn, er_module
+        self, dev_info_fn, get_device_fn, battery_device_info_fn, er_module, pack_device_info_fn
     ):
         dev_info_fn.return_value = {"name": "Balco 260"}
         battery_device_info_fn.return_value = {"name": "Battery"}
+        pack_device_info_fn.return_value = {"name": "Pack 2"}
         hass, entry, bluetti_device = self._setup(
-            {"ac_phase_count": 1},
+            {"d_num_battery_packs": 2, "pack_2_b_ver_count": 1},
             entry_data={**_ENTRY_DATA, CONF_SLOTS_BEYOND_COUNT_PENDING: True},
+            sensors=(),
         )
         get_device_fn.return_value = bluetti_device
         registry = MagicMock()
         er_module.async_get.return_value = registry
-        registry.async_get_entity_id.return_value = "sensor.ac_2"
+        registry.async_get_entity_id.return_value = "sensor.ver_2"
         registry.async_get.return_value = None
 
         await async_setup_entry(hass, entry, lambda sensors: None)
