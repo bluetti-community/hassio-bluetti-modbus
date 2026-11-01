@@ -135,7 +135,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=str(serial))
 
 
-_CURRENT_VERSION = 29
+_CURRENT_VERSION = 30
 
 # The 27 -> 28 step: fields no longer shown, per device type, matched as
 # unique_id suffixes. The PV inputs the AC200L and EP500P profiles dropped
@@ -769,6 +769,17 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 if device is not None:
                     device_registry.async_remove_device(device.id)
         version = 29
+
+    if version == 29:
+        # The EP2000's AC output switch took a write on a real unit
+        # (bluetti-registers#42): the read-only sensor gives way to the switch.
+        if config is not None and config.dev_type == "ep2000":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.domain == "sensor" and entity_entry.unique_id.endswith(
+                    "_ac_o_switch"
+                ):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 30
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:
