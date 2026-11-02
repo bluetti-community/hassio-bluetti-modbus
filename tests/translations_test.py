@@ -10,6 +10,7 @@ from custom_components.bluetti_modbus.const import (
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
     FIELDS_SHOWN_VIA_DEVICE_INFO,
     FIELDS_SHOWN_VIA_NUMBER,
+    FIELDS_SHOWN_VIA_SELECT,
     FIELDS_SHOWN_VIA_SWITCH,
 )
 from custom_components.bluetti_modbus.sensor import (
@@ -68,6 +69,7 @@ class TestTranslationsCoverAllShownFields(unittest.TestCase):
         sensor_translated = set(translations["entity"]["sensor"])
         number_translated = set(translations["entity"].get("number", {}))
         switch_translated = set(translations["entity"].get("switch", {}))
+        select_translated = set(translations["entity"].get("select", {}))
 
         missing = []
         for dev_type in _DEV_TYPES:
@@ -91,6 +93,10 @@ class TestTranslationsCoverAllShownFields(unittest.TestCase):
                 if name in FIELDS_SHOWN_VIA_SWITCH and field.writable:
                     if name not in switch_translated:
                         missing.append(f"{dev_type}.{name} (switch)")
+                    continue
+                if name in FIELDS_SHOWN_VIA_SELECT and field.writable:
+                    if name not in select_translated:
+                        missing.append(f"{dev_type}.{name} (select)")
                     continue
                 if _sensor_key(name) not in sensor_translated:
                     missing.append(f"{dev_type}.{name} (sensor)")

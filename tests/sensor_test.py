@@ -603,6 +603,40 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(added, [])
 
+    @patch("custom_components.bluetti_modbus.sensor.phase_device_info")
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_writable_d_charging_mode_is_skipped_select_py_handles_it(
+        self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
+    ):
+        # smeter for the same reason as the ac_o_switch test above.
+        config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+            "name": f"Test Device Phase {phase.upper()}"
+        }
+
+        field = MagicMock(address=57023, unit=None, writable=True)
+        field.name = "d_charging_mode"
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = ["d_charging_mode"]
+        bluetti_device.get_field.return_value = field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {}
+        hass = MagicMock()
+        entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        self.assertEqual(added, [])
+
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")

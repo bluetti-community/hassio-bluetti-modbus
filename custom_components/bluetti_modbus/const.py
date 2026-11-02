@@ -273,6 +273,14 @@ FIELDS_SHOWN_VIA_SWITCH = {
     "ac_power_lifting_switch",
 }
 
+# d_charging_mode (57023, AC200L profile - read on an AC200PL,
+# bluetti-registers#48): the AC charging speed, Standard/Silent/Turbo - a
+# setting chosen from a fixed list, not a reading. Routed to select.py
+# instead of sensor.py where bluetti_modbus_lib marks the field writable,
+# same gating as FIELDS_SHOWN_VIA_SWITCH above. Its entity is disabled by
+# default: no write to this register has been confirmed on a real unit yet.
+FIELDS_SHOWN_VIA_SELECT = {"d_charging_mode"}
+
 # d_ver_arm/d_ver_dsp/d_iot_ver/d_serial (Balco260/EP2000 only - S Meter's
 # address range doesn't include these): the main unit's own identity, not
 # readings - fed into the main DeviceInfo (serial_number/sw_version, see

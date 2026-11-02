@@ -755,6 +755,16 @@
         "name": "Maksimali įkrovimo riba (SoC aukšta)"
       }
     },
+    "select": {
+      "d_charging_mode": {
+        "name": "Įkrovimo režimas",
+        "state": {
+          "standard": "Standartinis",
+          "silent": "Tylus",
+          "turbo": "Turbo"
+        }
+      }
+    },
     "switch": {
       "ac_o_switch": {
         "name": "AC išėjimo jungiklis"

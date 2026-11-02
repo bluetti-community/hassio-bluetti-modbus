@@ -755,6 +755,16 @@
         "name": "Max Charge Limit (SoC High)"
       }
     },
+    "select": {
+      "d_charging_mode": {
+        "name": "Charging Mode",
+        "state": {
+          "standard": "Standard",
+          "silent": "Silent",
+          "turbo": "Turbo"
+        }
+      }
+    },
     "switch": {
       "ac_o_switch": {
         "name": "AC Output Switch"
