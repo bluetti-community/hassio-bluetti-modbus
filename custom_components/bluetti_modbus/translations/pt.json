@@ -728,6 +728,14 @@
           "dc_pv": "PV CC",
           "ac_pv": "PV CA"
         }
+      },
+      "d_charging_mode": {
+        "name": "Modo de carregamento",
+        "state": {
+          "standard": "Padrão",
+          "silent": "Silencioso",
+          "turbo": "Turbo"
+        }
       }
     },
     "binary_sensor": {

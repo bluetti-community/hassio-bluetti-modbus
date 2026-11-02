@@ -607,10 +607,12 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
-    async def test_writable_d_charging_mode_is_skipped_select_py_handles_it(
+    async def test_writable_d_charging_mode_stays_a_sensor_too(
         self, config_cls, dev_info_fn, get_device_fn, phase_device_info_fn
     ):
-        # smeter for the same reason as the ac_o_switch test above.
+        # select.py offers it, disabled by default, so the mode stays
+        # visible here without enabling an entity that writes. smeter for
+        # the same reason as the ac_o_switch test above.
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
         phase_device_info_fn.side_effect = lambda hass, entry, phase: {
@@ -635,7 +637,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_setup_entry(hass, entry, added.extend)
 
-        self.assertEqual(added, [])
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0]._attr_translation_key, "d_charging_mode")
 
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")

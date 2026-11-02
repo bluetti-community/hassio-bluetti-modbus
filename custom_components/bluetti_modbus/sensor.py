@@ -50,7 +50,6 @@ from .const import (
     FIELDS_SHOWN_VIA_BINARY_SENSOR,
     FIELDS_SHOWN_VIA_DEVICE_INFO,
     FIELDS_SHOWN_VIA_NUMBER,
-    FIELDS_SHOWN_VIA_SELECT,
     FIELDS_SHOWN_VIA_SWITCH,
     FP_FIELDS_NOT_SHOWN,
     INDIVIDUAL_BC260_PACKS_CONFIRMED,
@@ -329,15 +328,13 @@ async def async_setup_entry(
         # get_sensors() only yields names that are keys in this same
         # device's registered fields, so get_field() always finds them.
         assert field is not None
-        # Only skip if number.py/switch.py/select.py will actually create an
-        # entity for it on this device - a field in FIELDS_SHOWN_VIA_NUMBER/_SWITCH/_SELECT that
+        # Only skip if number.py/switch.py will actually create an entity for
+        # it on this device - a field in FIELDS_SHOWN_VIA_NUMBER/_SWITCH that
         # isn't writable here (e.g. EP2000 today) stays a normal read-only
         # sensor, same as before this field existed in that set at all.
         if f in FIELDS_SHOWN_VIA_NUMBER and field.writable:
             continue
         if f in FIELDS_SHOWN_VIA_SWITCH and field.writable:
-            continue
-        if f in FIELDS_SHOWN_VIA_SELECT and field.writable:
             continue
         sensor_fields.append(field)
 

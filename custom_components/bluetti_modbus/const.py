@@ -275,10 +275,11 @@ FIELDS_SHOWN_VIA_SWITCH = {
 
 # d_charging_mode (57023, AC200L profile - read on an AC200PL,
 # bluetti-registers#48): the AC charging speed, Standard/Silent/Turbo - a
-# setting chosen from a fixed list, not a reading. Routed to select.py
-# instead of sensor.py where bluetti_modbus_lib marks the field writable,
-# same gating as FIELDS_SHOWN_VIA_SWITCH above. Its entity is disabled by
-# default: no write to this register has been confirmed on a real unit yet.
+# setting chosen from a fixed list. select.py offers it where
+# bluetti_modbus_lib marks the field writable, and sensor.py still shows it
+# as a read-only enum sensor: the select entity is disabled by default, since
+# no write to this register has been confirmed on a real unit yet, and the
+# mode should be visible without enabling something that writes.
 FIELDS_SHOWN_VIA_SELECT = {"d_charging_mode"}
 
 # d_ver_arm/d_ver_dsp/d_iot_ver/d_serial (Balco260/EP2000 only - S Meter's

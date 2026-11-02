@@ -728,6 +728,14 @@
           "dc_pv": "DC PV",
           "ac_pv": "AC PV"
         }
+      },
+      "d_charging_mode": {
+        "name": "Įkrovimo režimas",
+        "state": {
+          "standard": "Standartinis",
+          "silent": "Tylus",
+          "turbo": "Turbo"
+        }
       }
     },
     "binary_sensor": {
