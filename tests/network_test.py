@@ -181,6 +181,12 @@ class TestSetupAndUnload(unittest.IsolatedAsyncioTestCase):
         network_cls.return_value.async_refresh.assert_awaited_once()
         self.assertIs(coordinator.network, network_cls.return_value)
 
+    async def test_a_balco_500_reads_its_network_status_too(self):
+        coordinator, network_cls = await self._setup("balco500")
+
+        network_cls.assert_called_once()
+        self.assertIs(coordinator.network, network_cls.return_value)
+
     async def test_other_devices_do_not(self):
         _, network_cls = await self._setup("smeter")
 
