@@ -851,12 +851,12 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
-    async def test_balco500_hides_its_empty_totals_and_pack_temperature(
+    async def test_balco500_hides_its_empty_totals_and_shows_its_pack_temperature(
         self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
         # const.py's BALCO500_FIELDS_NOT_SHOWN: those totals read 0 on a real
-        # Balco 500 and its pack temperature is not decoded yet. A Balco 260
-        # keeps them.
+        # Balco 500. A Balco 260 keeps them. The Balco 500's pack temperature
+        # is a real reading, enabled; the Balco 260's starts disabled.
         dev_info_fn.return_value = _device_info()
         battery_device_info_fn.return_value = {"name": "Test Device Battery"}
         hidden = [
@@ -865,7 +865,6 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             "b_soh_total",
             "b_time_to_empty_total",
             "b_time_to_full_total",
-            "b_t_avg",
         ]
 
         def _field(name):
@@ -874,7 +873,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             return f
 
         bluetti_device = MagicMock()
-        bluetti_device.get_sensors.return_value = [*hidden, "d_num_inverters"]
+        bluetti_device.get_sensors.return_value = [*hidden, "d_num_inverters", "b_t_avg"]
         bluetti_device.get_field.side_effect = _field
         get_device_fn.return_value = bluetti_device
 
@@ -889,10 +888,13 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
             await async_setup_entry(hass, MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend)
 
-            keys = {s._response_key for s in added}
+            by_key = {s._response_key: s for s in added}
             for name in hidden:
-                self.assertEqual(name in keys, shown, (dev_type, name))
-            self.assertIn("d_num_inverters", keys, dev_type)
+                self.assertEqual(name in by_key, shown, (dev_type, name))
+            self.assertIn("d_num_inverters", by_key, dev_type)
+            self.assertEqual(
+                by_key["b_t_avg"]._attr_entity_registry_enabled_default, not shown, dev_type
+            )
 
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")

@@ -224,16 +224,13 @@ AC240_FIELDS_NOT_SHOWN = {"d_iot_serial", "d_num_battery_packs"}
 
 # Balco 500: the totals block reads 0 for the pack count, total SoC, total
 # SoH and the total times on a real unit, while the pack block holds the
-# real values (bluetti-registers#68), so those totals are not shown. The
-# pack temperature (51224) reads 65 there, most likely degrees C plus 40 as
-# on the EP2000; not shown until that is confirmed.
+# real values (bluetti-registers#68), so those totals are not shown.
 BALCO500_FIELDS_NOT_SHOWN = {
     "d_num_battery_packs",
     "b_soc_total",
     "b_soh_total",
     "b_time_to_empty_total",
     "b_time_to_full_total",
-    "b_t_avg",
 }
 
 # Devices whose built-in battery block (PACK_INFO_FIELDS) is a window on
