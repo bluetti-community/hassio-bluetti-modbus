@@ -30,6 +30,7 @@
       "no_unconfigured_devices": "Keine Geräte gefunden",
       "already_configured": "Gerät ist bereits eingerichtet",
       "cannot_connect": "Verbindung zum Gerät fehlgeschlagen",
+      "not_supported": "Dieses Gerät wird von dieser Version der Integration noch nicht unterstützt",
       "modbus_tcp_disabled": "Modbus TCP ist auf diesem Gerät ausgeschaltet. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Enable mit Port 502 einschalten und speichern, dann die Seite schließen und erneut versuchen.",
       "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Crypt Enable ausschalten und speichern, dann die Seite schließen und erneut versuchen.",
       "wrong_device": "Unter dieser Adresse antwortet ein anderes Gerät: seine Seriennummer ist nicht die dieses Eintrags",
