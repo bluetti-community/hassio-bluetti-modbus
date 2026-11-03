@@ -50,6 +50,7 @@ _INTERNAL_WRITE_ADDRESS: dict[str, dict[int, int]] = {
     },
     "AC200L": {
         57005: 3008,  # dc_o_switch - captured on a real AC200L
+        57022: 3066,  # ac_power_lifting_switch - captured on a real AC200PL, as on the AC240
         57023: 3065,  # d_charging_mode - captured on a real AC200PL, its BLE register
     },
     "AC500": {
