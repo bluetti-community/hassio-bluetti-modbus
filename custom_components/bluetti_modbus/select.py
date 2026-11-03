@@ -7,7 +7,6 @@ from enum import IntEnum
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -58,7 +57,8 @@ class BluettiSelectEntity(CoordinatorEntity[PollingCoordinator], SelectEntity):
     """A writable BLUETTI Modbus mode register, e.g. the AC charging mode."""
 
     _attr_has_entity_name = True
-    _attr_entity_category = EntityCategory.CONFIG
+    # No entity_category: a mode switched day to day, like the AC/DC output
+    # switches, so it sits under Controls rather than Configuration.
     # No write to a mode register has been confirmed on a real unit yet (see
     # FIELDS_SHOWN_VIA_SELECT): the owner turns it on from the device page.
     _attr_entity_registry_enabled_default = False

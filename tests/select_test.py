@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from homeassistant.const import EntityCategory
 from homeassistant.exceptions import HomeAssistantError
 from modbus_connection.exceptions import ModbusProtocolError
 
@@ -38,11 +37,12 @@ class TestBluettiSelectEntityInit(unittest.TestCase):
     def test_current_option_starts_unknown(self):
         self.assertIsNone(_select().current_option)
 
-    def test_is_a_config_entity_disabled_by_default(self):
-        # No write to a mode register confirmed on a real unit yet: the
-        # owner enables it from the device page.
+    def test_is_a_control_disabled_by_default(self):
+        # Shown under Controls, next to the output switches. No write to a
+        # mode register confirmed on a real unit yet: the owner enables it
+        # from the device page.
         select = _select()
-        self.assertEqual(select.entity_category, EntityCategory.CONFIG)
+        self.assertIsNone(select.entity_category)
         self.assertFalse(select.entity_registry_enabled_default)
 
 
