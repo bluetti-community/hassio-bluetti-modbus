@@ -38,9 +38,9 @@ class TestBluettiSelectEntityInit(unittest.TestCase):
         self.assertIsNone(_select().current_option)
 
     def test_is_a_control_disabled_by_default(self):
-        # Shown under Controls, next to the output switches. No write to a
-        # mode register confirmed on a real unit yet: the owner enables it
-        # from the device page.
+        # Shown under Controls, next to the output switches. Writes are
+        # confirmed on one unit and firmware only: the owner enables it from
+        # the device page.
         select = _select()
         self.assertIsNone(select.entity_category)
         self.assertFalse(select.entity_registry_enabled_default)

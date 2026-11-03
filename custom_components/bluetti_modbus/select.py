@@ -59,7 +59,7 @@ class BluettiSelectEntity(CoordinatorEntity[PollingCoordinator], SelectEntity):
     _attr_has_entity_name = True
     # No entity_category: a mode switched day to day, like the AC/DC output
     # switches, so it sits under Controls rather than Configuration.
-    # No write to a mode register has been confirmed on a real unit yet (see
+    # Writes confirmed on one unit and firmware only (see
     # FIELDS_SHOWN_VIA_SELECT): the owner turns it on from the device page.
     _attr_entity_registry_enabled_default = False
 
