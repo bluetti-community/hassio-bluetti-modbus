@@ -34,7 +34,9 @@ class AC200L(BluettiDevice):
         (57005, 57005),
         (57016, 57016),
         (57017, 57017),
+        (57022, 57022),
         (57023, 57023),
+        (57024, 57024),
     )
 
     ac_o_p_total = field(
@@ -192,5 +194,20 @@ class AC200L(BluettiDevice):
         t=FieldType.ENUM,
         address=57023,
         enum_type=ChargingMode,
+        writable=True,
+    )
+    # Not generated: added in this fork ahead of bluetti-registers, at the
+    # addresses and under the names the AC240 profile has them (57022/57024,
+    # bluetti-registers#65), whose settings block this one mirrors - 57023
+    # sits between them on both. Not yet checked against the BLUETTI app on
+    # an AC200PL.
+    ac_power_lifting_switch = field(
+        t=FieldType.UINT16,
+        address=57022,
+        writable=True,
+    )
+    ac_eco_switch = field(
+        t=FieldType.UINT16,
+        address=57024,
         writable=True,
     )
