@@ -23,7 +23,7 @@ from homeassistant.helpers import frame, restore_state, translation
 from homeassistant.helpers import label_registry as lr
 from homeassistant.helpers.entity_platform import EntityPlatform
 
-from custom_components.bluetti_modbus import async_setup_entry
+from custom_components.bluetti_modbus import async_migrate_entry, async_setup_entry
 from custom_components.bluetti_modbus.const import DOMAIN
 from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 from custom_components.bluetti_modbus.sensor import async_setup_entry as sensor_setup
@@ -161,6 +161,47 @@ class _RealRegistries(unittest.IsolatedAsyncioTestCase):
         entity = self.entities.async_get(entity_id)
         assert entity is not None
         return entity
+
+
+class TestBuiltInIntegrationSetup(_RealRegistries):
+    async def test_a_built_in_setup_keeps_its_device_and_entity_ids(self):
+        entry = ConfigEntry(
+            data={"host": ADDRESS, "port": 502, "unit_id": 1},
+            discovery_keys={},
+            domain=DOMAIN,
+            minor_version=1,
+            options={},
+            source="user",
+            subentries_data=None,
+            title="Balco 260",
+            unique_id=str(SERIAL),
+            version=1,
+        )
+        self.hass.config_entries._entries[entry.entry_id] = entry
+        device = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, str(SERIAL))},
+            name="Balco 260",
+        )
+        entity = self.entities.async_get_or_create(
+            "sensor",
+            DOMAIN,
+            f"{SERIAL}_b_v",
+            config_entry=entry,
+            device_id=device.id,
+            suggested_object_id="balco_260_battery_voltage",
+        )
+
+        self.assertTrue(await async_migrate_entry(self.hass, entry))
+        await self._setup(entry, BALCO260_DATA)
+
+        self.assertEqual(entry.version, 30)
+        self.assertEqual(entry.unique_id, str(SERIAL))
+        self.assertEqual(entry.title, "Balco 260")
+        self.assertEqual(self._main_device(entry).id, device.id)
+        self.assertEqual(self._entity("b_v").id, entity.id)
+        self.assertEqual(self._entity("b_v").entity_id, "sensor.balco_260_battery_voltage")
+        self.assertEqual(self._entity("b_v").device_id, self._battery(entry).id)
 
 
 class TestBuiltInBatteryChildDevice(_RealRegistries):
