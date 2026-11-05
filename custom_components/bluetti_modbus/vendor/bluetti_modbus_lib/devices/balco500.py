@@ -101,9 +101,7 @@ class Balco500(BluettiDevice):
         t=FieldType.UINT64,
         address=50206,
     )
-    d_ver_arm = dotted_version(50210)
-
-    d_ver_dsp = dotted_version(50212)
+    d_ver_dsp = dotted_version(50210)
 
     g_i_f = field(
         t=FieldType.UINT16,
@@ -474,6 +472,7 @@ class Balco500(BluettiDevice):
         t=FieldType.INT16,
         address=51224,
         unit="°C",
+        offset=-40,
     )
     b_cell_count = field(
         t=FieldType.UINT16,

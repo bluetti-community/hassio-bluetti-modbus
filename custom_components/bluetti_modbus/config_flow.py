@@ -41,7 +41,9 @@ from .const import (
 )
 from .smeter_ws import async_query_smeter
 from .types import InitialDeviceConfig
-from .vendor.bluetti_modbus_lib import get_device, read_values
+from .vendor.bluetti_modbus_lib import Balco260, Balco500, get_device, read_values
+from .vendor.bluetti_modbus_lib.base_devices import BluettiDevice
+from .vendor.bluetti_modbus_lib.fields import FieldType, field
 from .web_page import WEB_PAGE_DEV_TYPES, async_query_modbus_setting
 
 _LOGGER = logging.getLogger(__name__)
@@ -66,6 +68,30 @@ async def _async_probe(hass: HomeAssistant, host: str, port: int, dev_type: str)
         if device is None:
             raise ValueError(f"Unsupported device type: {dev_type!r}")
         return await read_values(device)
+
+
+class _InverterType(BluettiDevice):
+    """Only the device type string, at the address the Balco profiles share."""
+
+    d_inverter_type = field(t=FieldType.STRING, address=50200, length=6)
+
+
+async def _async_probe_hems(
+    hass: HomeAssistant, host: str, port: int
+) -> tuple[str, dict[str, Any]]:
+    """Read a device that announces itself as "Bluetti HEMS"; return its type and values.
+
+    A Balco 260 and a Balco 500 announce the same name. The type string at
+    50200 ("Balco260" or "Balco500") tells them apart; it is read first, on
+    the same link as the profile.
+    """
+    params = ModbusTcpParams(host=host, port=port)
+    async with async_get_temporary_unit(hass, params, 1) as unit:
+        model = _InverterType(unit)
+        await model.async_update_with_retry()
+        if str(model.values.get("d_inverter_type") or "").strip() == "Balco500":
+            return "balco500", await read_values(Balco500(unit))
+        return "balco260", await read_values(Balco260(unit))
 
 
 async def _async_failure_reason(
@@ -358,8 +384,9 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         - "_bluetti._tcp" + "smeter*": an S Meter. Confirmed against real
           hardware.
-        - "_http._tcp" + "bluetti hems*": a Balco260 on current firmware.
-          Confirmed against real hardware via an actual mDNS browser (not
+        - "_http._tcp" + "bluetti hems*": a Balco260 or a Balco 500 on
+          current firmware (both announce the same name). Confirmed
+          against real hardware via an actual mDNS browser (not
           just avahi-browse's own summary, which doesn't distinguish
           service types as clearly): it advertises under the generic
           "_http._tcp" service (shared with unrelated devices on the
@@ -388,7 +415,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         instance_name = discovery_info.name.split(".")[0].lower()
         if instance_name.startswith(("bluetti hems", "balco260")):
-            return await self._async_step_zeroconf_balco260(discovery_info)
+            return await self._async_step_zeroconf_hems(discovery_info)
         return await self._async_step_zeroconf_smeter(discovery_info)
 
     async def _async_step_zeroconf_smeter(
@@ -447,10 +474,13 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host, "smeter", serial, firmware_version=ws_info.firmware_version
         )
 
-    async def _async_step_zeroconf_balco260(
+    async def _async_step_zeroconf_hems(
         self, discovery_info: ZeroconfServiceInfo
     ) -> ConfigFlowResult:
-        """Handle a Balco260 discovered via mDNS.
+        """Handle a Balco260 or a Balco 500 discovered via mDNS.
+
+        Both announce "Bluetti HEMS[-N]"; which one it is comes from the
+        Modbus read (see _async_probe_hems).
 
         Unlike S Meter, the mDNS instance name here carries no usable
         identity of its own - "Bluetti HEMS[-N]" (confirmed against real
@@ -479,7 +509,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         serial: object = None
         try:
-            values = await _async_probe(self.hass, host, 502, "balco260")
+            dev_type, values = await _async_probe_hems(self.hass, host, 502)
             serial = values.get("d_serial")
         except PROBE_ERRORS:
             return self.async_abort(
@@ -488,6 +518,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
                 description_placeholders={"address": host},
             )
+        if dev_type == "balco500" and not BALCO500_CONFIRMED:
+            return self.async_abort(reason="not_supported")
 
         await self.async_set_unique_id(
             str(serial) if serial is not None else host, raise_on_progress=False
@@ -495,7 +527,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         return await self._async_zeroconf_discovered(
-            host, "balco260", str(serial) if serial is not None else host
+            host, dev_type, str(serial) if serial is not None else host
         )
 
     async def _async_zeroconf_discovered(

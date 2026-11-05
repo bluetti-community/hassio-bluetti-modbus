@@ -145,7 +145,8 @@ async def async_query_network_status(
     The page asks "getNetworkStatus" after its login and gets
     "networkStatusRsp", whose data carries rssi (dBm), mqtt_enabled and
     mqtt_connected (the link to BLUETTI's cloud), wifi_connected,
-    lan_reachable and wan_reachable (the internet), confirmed on a Balco 260.
+    lan_reachable and wan_reachable (the internet), confirmed on a Balco 260
+    and a Balco 500.
     Only those six are kept: the same answer holds the network's addresses
     and the access point's name.
     """

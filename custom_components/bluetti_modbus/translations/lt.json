@@ -30,6 +30,7 @@
       "no_unconfigured_devices": "Įrenginių nerasta",
       "already_configured": "Įrenginys jau sukonfigūruotas",
       "cannot_connect": "Nepavyko prisijungti prie įrenginio",
+      "not_supported": "Šis įrenginys dar nepalaikomas šios integracijos versijos",
       "modbus_tcp_disabled": "Šiame įrenginyje Modbus TCP išjungtas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, įjunkite Enable su prievadu 502 ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
       "modbus_tcp_encrypted": "Šiame įrenginyje Modbus TCP yra šifruotas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, išjunkite Crypt Enable ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
       "wrong_device": "Tuo adresu atsako kitas įrenginys: jo serijos numeris nėra šio įrašo",

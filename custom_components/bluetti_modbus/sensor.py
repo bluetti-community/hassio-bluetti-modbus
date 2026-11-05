@@ -89,11 +89,12 @@ _NO_PV_ENERGY_TOTAL = ("ac500", "ac200l", "ep500p")
 # The EP2000 has two MPPTs - terminals PV1+PV2 on one, PV3+PV4 on the other -
 # and reports them in the PV1 and PV2 slots, so their devices are named after
 # the tracker rather than a terminal. It fills none of the PV energy counters
-# (zero on every read so far), and its pack temperature is a real reading.
+# (zero on every read so far), and its pack temperature is a real reading,
+# as is the Balco 500's.
 _MPPT_SLOTS = ("ep2000",)
 _NO_PV_ENERGY_COUNTERS = ("ep2000",)
 _PV_ENERGY_COUNTERS = ("pv_i_e_total", "pv_ac_p", "pv_ac_e")
-_REAL_PACK_TEMPERATURE = ("ep2000",)
+_REAL_PACK_TEMPERATURE = ("balco500", "ep2000")
 
 # On the EP2000 the total grid power is the sum of the three phases without
 # their signs (324 W for phases of -318, 4 and 2 W), so it cannot tell export

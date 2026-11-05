@@ -9,7 +9,11 @@ from modbus_connection import ModbusTcpParams
 from modbus_connection.exceptions import ModbusConnectionError
 from modbus_connection.mock import MockModbusConnection
 
-from custom_components.bluetti_modbus.config_flow import BluettiConfigFlow, _async_probe
+from custom_components.bluetti_modbus.config_flow import (
+    BluettiConfigFlow,
+    _async_probe,
+    _async_probe_hems,
+)
 from custom_components.bluetti_modbus.smeter_ws import SmeterWsInfo
 from custom_components.bluetti_modbus.web_page import ModbusTcpSetting
 
@@ -68,6 +72,13 @@ def _patched_probe(read_side_effect=None, device_values=None):
     return patch(
         "custom_components.bluetti_modbus.config_flow._async_probe",
         new=AsyncMock(side_effect=read_side_effect, return_value=device_values or {}),
+    )
+
+
+def _patched_hems_probe(read_side_effect=None, device_values=None, dev_type="balco260"):
+    return patch(
+        "custom_components.bluetti_modbus.config_flow._async_probe_hems",
+        new=AsyncMock(side_effect=read_side_effect, return_value=(dev_type, device_values or {})),
     )
 
 
@@ -691,7 +702,7 @@ class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
     async def test_routes_a_bluetti_hems_name_to_the_balco260_flow(self):
         flow = _flow()
         with patch.object(
-            flow, "_async_step_zeroconf_balco260", new=AsyncMock(return_value="balco260")
+            flow, "_async_step_zeroconf_hems", new=AsyncMock(return_value="balco260")
         ) as balco260_step:
             result = await flow.async_step_zeroconf(_balco260_discovery_info())
 
@@ -704,7 +715,7 @@ class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
         # suffix at all (confirmed against real hardware).
         flow = _flow()
         with patch.object(
-            flow, "_async_step_zeroconf_balco260", new=AsyncMock(return_value="balco260")
+            flow, "_async_step_zeroconf_hems", new=AsyncMock(return_value="balco260")
         ) as balco260_step:
             await flow.async_step_zeroconf(
                 _balco260_discovery_info(name="Bluetti HEMS._http._tcp.local.")
@@ -718,7 +729,7 @@ class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
         # used mixed case ("Bluetti HEMS-2"), so this must not depend on it.
         flow = _flow()
         with patch.object(
-            flow, "_async_step_zeroconf_balco260", new=AsyncMock(return_value="balco260")
+            flow, "_async_step_zeroconf_hems", new=AsyncMock(return_value="balco260")
         ) as balco260_step:
             await flow.async_step_zeroconf(
                 _balco260_discovery_info(name="BLUETTI HEMS-2._http._tcp.local.")
@@ -742,7 +753,7 @@ class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
                 with (
                     patch.object(
                         flow,
-                        "_async_step_zeroconf_balco260",
+                        "_async_step_zeroconf_hems",
                         new=AsyncMock(return_value="balco260"),
                     ) as balco260_step,
                     patch.object(
@@ -776,7 +787,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         flow.context = {}
         with (
-            _patched_probe(device_values={"d_serial": 1234567890123}),
+            _patched_hems_probe(device_values={"d_serial": 1234567890123}),
             patch.object(flow, "_async_abort_entries_match") as abort_match,
             patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
             patch.object(flow, "_abort_if_unique_id_configured") as abort_check,
@@ -802,7 +813,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         flow.context = {}
         with (
-            _patched_probe(device_values={"d_serial": 1234567890123}) as probe,
+            _patched_hems_probe(device_values={"d_serial": 1234567890123}) as probe,
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
@@ -810,7 +821,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         ):
             await flow.async_step_zeroconf(_balco260_discovery_info())
 
-        probe.assert_awaited_once_with(flow.hass, "10.2.1.128", 502, "balco260")
+        probe.assert_awaited_once_with(flow.hass, "10.2.1.128", 502)
 
     async def test_a_working_probe_queries_no_web_page(self):
         # Everything this flow needs comes from the Modbus read; the page is
@@ -818,7 +829,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         flow.context = {}
         with (
-            _patched_probe(device_values={"d_serial": 1234567890123}),
+            _patched_hems_probe(device_values={"d_serial": 1234567890123}),
             patch(
                 "custom_components.bluetti_modbus.config_flow.async_query_smeter",
                 new=AsyncMock(),
@@ -842,7 +853,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             with self.subTest(reason=reason):
                 flow = _flow()
                 with (
-                    _patched_probe(read_side_effect=ModbusConnectionError("no route")),
+                    _patched_hems_probe(read_side_effect=ModbusConnectionError("no route")),
                     _patched_web_page(*setting) as web_page,
                     patch.object(flow, "_async_abort_entries_match"),
                     patch.object(flow, "async_abort", return_value="aborted") as async_abort,
@@ -857,7 +868,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
     async def test_aborts_when_modbus_does_not_respond(self):
         flow = _flow()
         with (
-            _patched_probe(read_side_effect=ModbusConnectionError("no route")),
+            _patched_hems_probe(read_side_effect=ModbusConnectionError("no route")),
             _patched_web_page(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
@@ -878,7 +889,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         flow.context = {}
         with (
-            _patched_probe(device_values={"d_serial": 1234567890123}) as probe,
+            _patched_hems_probe(device_values={"d_serial": 1234567890123}) as probe,
             patch.object(flow, "_async_abort_entries_match") as abort_match,
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
             patch.object(flow, "_abort_if_unique_id_configured"),
@@ -893,7 +904,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         flow = _flow()
         flow.context = {}
         with (
-            _patched_probe(device_values={}),
+            _patched_hems_probe(device_values={}),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
             patch.object(flow, "_abort_if_unique_id_configured"),
@@ -902,6 +913,43 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             await flow.async_step_zeroconf(_balco260_discovery_info())
 
         set_uid.assert_awaited_once_with("10.2.1.128", raise_on_progress=False)
+
+    async def test_a_balco_500_announcing_bluetti_hems_is_set_up_as_a_balco_500(self):
+        flow = _flow()
+        flow.context = {}
+        with (
+            _patched_hems_probe(device_values={"d_serial": 1234567890123}, dev_type="balco500"),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
+            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "async_show_form", return_value="form") as show_form,
+        ):
+            await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        set_uid.assert_awaited_once_with("1234567890123", raise_on_progress=False)
+        self.assertEqual(flow._discovered_dev_type, "balco500")
+        self.assertEqual(
+            flow.context["title_placeholders"], {"name": "Balco 500 1234567890123"}
+        )
+        self.assertEqual(
+            show_form.call_args.kwargs["description_placeholders"],
+            {"name": "Balco 500", "address": "10.2.1.128"},
+        )
+
+    @patch("custom_components.bluetti_modbus.config_flow.BALCO500_CONFIRMED", False)
+    async def test_a_balco_500_is_not_set_up_while_it_is_not_offered(self):
+        flow = _flow()
+        with (
+            _patched_hems_probe(device_values={"d_serial": 1234567890123}, dev_type="balco500"),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
+            patch.object(flow, "async_abort", return_value="aborted") as async_abort,
+        ):
+            result = await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        async_abort.assert_called_once_with(reason="not_supported")
+        set_uid.assert_not_awaited()
+        self.assertEqual(result, "aborted")
 
 
 class TestConfigFlowZeroconfConfirmStep(unittest.IsolatedAsyncioTestCase):
@@ -1035,6 +1083,31 @@ class TestProbe(unittest.IsolatedAsyncioTestCase):
             await _async_probe(MagicMock(), "10.2.1.60", 502, "nope")
 
         self.assertEqual(self.released, 1)
+
+    def _type_string(self, conn: MockModbusConnection, value: str) -> None:
+        # The first character of each pair in the register's low byte.
+        raw = value.encode("ascii").ljust(12, b"\x00")
+        for i in range(6):
+            conn.for_unit(1).holding[50200 + i] = int.from_bytes(raw[2 * i : 2 * i + 2], "little")
+
+    async def test_a_bluetti_hems_device_is_read_with_the_profile_its_type_names(self):
+        for type_string, expected in (
+            ("Balco500", "balco500"),
+            ("Balco260", "balco260"),
+            ("", "balco260"),
+        ):
+            with self.subTest(type_string=type_string):
+                conn = MockModbusConnection()
+                self._type_string(conn, type_string)
+                conn.for_unit(1).holding[50001] = 1  # d_num_inverters
+
+                with self._temporary_unit(conn):
+                    dev_type, values = await _async_probe_hems(MagicMock(), "10.2.1.60", 502)
+
+                self.assertEqual(dev_type, expected)
+                self.assertEqual(values["d_num_inverters"], 1)
+                self.assertEqual(len(self.held), 1)
+                self.assertEqual(self.released, 1)
 
     async def test_a_link_held_with_other_settings_is_a_connection_error_for_the_user(self):
         # async_get_temporary_unit raises HomeAssistantError when another
