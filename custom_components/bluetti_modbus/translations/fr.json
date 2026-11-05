@@ -786,6 +786,32 @@
     },
     "write_failed": {
       "message": "Échec de l'écriture sur {device} {field} : {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} ne permet pas de lire directement les registres"
+    },
+    "invalid_register_request": {
+      "message": "Requête de registres invalide : {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Lire des registres",
+      "description": "Lit des registres holding bruts d'un appareil BLUETTI, dans les plages que son profil lit déjà.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Appareil",
+          "description": "L'entrée BLUETTI Modbus à lire."
+        },
+        "address": {
+          "name": "Adresse",
+          "description": "Premier registre holding à lire."
+        },
+        "count": {
+          "name": "Nombre",
+          "description": "Nombre de registres à lire, au plus la taille de bloc de l'appareil (20 sur un Balco 260 ou un FridgePower, 10 sur un Transfer Hub, 50 sinon)."
+        }
+      }
     }
   }
 }

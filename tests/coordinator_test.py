@@ -208,6 +208,38 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         link.device.write.assert_awaited_once_with("b_soc_low", 42)
 
     @_shared
+    async def test_async_read_registers_reads_through_the_device(self, link):
+        link.device.read_registers = AsyncMock(return_value=[15, 95])
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        self.assertEqual(await coordinator.async_read_registers(57016, 2), [15, 95])
+        link.device.read_registers.assert_awaited_once_with(57016, 2)
+
+    @_shared
+    async def test_read_registers_waits_for_an_in_flight_poll_to_finish(self, link):
+        read_started = asyncio.Event()
+        release_read = asyncio.Event()
+
+        async def slow_read():
+            read_started.set()
+            await release_read.wait()
+            return {}
+
+        link.read = slow_read
+        link.device.read_registers = AsyncMock(return_value=[1])
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(), _config())
+
+        update_task = asyncio.ensure_future(coordinator._async_update_data())
+        await read_started.wait()
+        read_task = asyncio.ensure_future(coordinator.async_read_registers(57001, 1))
+        await asyncio.sleep(0)
+        self.assertFalse(link.device.read_registers.called)
+
+        release_read.set()
+        await update_task
+        self.assertEqual(await read_task, [1])
+
+    @_shared
     async def test_write_waits_for_an_in_flight_poll_to_finish(self, link):
         # Confirmed on real hardware: a write landing while the periodic
         # poll is mid-flight can come back as ModbusProtocolError("Expected

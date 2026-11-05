@@ -786,6 +786,32 @@
     },
     "write_failed": {
       "message": "Schrijven naar {device} {field} mislukt: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} ondersteunt het rechtstreeks lezen van registers niet"
+    },
+    "invalid_register_request": {
+      "message": "Ongeldige registeraanvraag: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Registers lezen",
+      "description": "Leest ruwe holding-registers van een BLUETTI-apparaat, binnen de bereiken die zijn profiel al leest.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Apparaat",
+          "description": "De BLUETTI Modbus-vermelding om uit te lezen."
+        },
+        "address": {
+          "name": "Adres",
+          "description": "Eerste holding-register om te lezen."
+        },
+        "count": {
+          "name": "Aantal",
+          "description": "Aantal te lezen registers, hoogstens de blokgrootte van het apparaat (20 op een Balco 260 of FridgePower, 10 op een Transfer Hub, anders 50)."
+        }
+      }
     }
   }
 }

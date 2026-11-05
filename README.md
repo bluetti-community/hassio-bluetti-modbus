@@ -24,6 +24,7 @@
 - [Setup](#setup)
 - [Data updates](#data-updates)
 - [Entities](#entities)
+- [Actions](#actions)
 - [Energy dashboard](#energy-dashboard)
 - [Automation example](#automation-example)
 - [Known limitations](#known-limitations)
@@ -236,6 +237,23 @@ The exact set depends on your model.
 
 > [!CAUTION]
 > Don't switch the AC output off and on again within a few seconds, by hand or from an automation. On a Balco 260, off and on 13 seconds apart under load was followed by an inverter fault that switched the output off. No safe minimum interval is known.
+
+## Actions
+
+### Read registers
+
+`bluetti_modbus.read_register`, from 3.5.0, reads raw holding registers while the integration keeps running, for tests and diagnostics. It returns the words as the device sent them:
+
+```yaml
+action: bluetti_modbus.read_register
+data:
+  config_entry_id: <your entry>
+  address: 57016
+  count: 2
+# response: {address: 57016, values: [15, 95]}
+```
+
+Only addresses the device's profile already reads are accepted, at most one block long: 20 registers on a Balco 260 or FridgePower, 10 on a Transfer Hub, 50 otherwise. It is not available on the S Meter.
 
 ## Energy dashboard
 
