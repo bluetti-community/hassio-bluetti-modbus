@@ -38,7 +38,7 @@
 - **Local.** Nothing leaves your network. It can run alongside the [cloud-based BLUETTI integration](https://github.com/bluetti-official/bluetti-home-assistant) on the same device.
 - **Set up from the UI.** The Balco 260, Balco 500 and S Meter are discovered on your network. Other models take an IP address and a device type.
 - **Entities from the register map.** Every field the device reports becomes an entity with the right device class, unit and precision.
-- **Controls.** Output, grid charging and feed-in switches, and SoC limits, on the models where the write is confirmed on a real unit.
+- **Controls.** Output, grid charging and feed-in switches, SoC limits, and the AC charging mode, on the models where the write is confirmed on a real unit.
 - **Device structure.** The built-in battery and each PV input are sub-devices of the station. Expansion packs and an EP2000's battery are linked devices. The S Meter's three phases are sub-devices of the meter.
 - **Stable entities.** Entities are keyed on the serial number read from the device, so they survive an IP change or a move to a new Home Assistant instance.
 - **Diagnostics.** One-click download for bug reports, with the address and serial numbers redacted.
@@ -54,7 +54,7 @@
 | **FridgePower** | IP address | DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/38) |
 | **AC500** | IP address | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
 | **EP500Pro** | IP address | AC output, DC output, grid charging | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
-| **AC200L** | IP address | AC output, DC output | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
+| **AC200L** | IP address | AC output, DC output, AC power lifting, AC charging mode | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
 | **AC240**, **AC240P** | IP address | AC output, DC output, grid charging, AC ECO, AC power lifting | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/176) |
 | **Apex 300** | IP address | AC output, DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/49) |
 | **EP2000** | IP address | AC output, grid feed-in | [4 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
