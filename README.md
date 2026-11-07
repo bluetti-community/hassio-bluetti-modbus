@@ -57,7 +57,7 @@
 | **AC200L** | IP address | AC output, DC output, AC power lifting, AC charging mode | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
 | **AC240**, **AC240P** | IP address | AC output, DC output, grid charging, AC ECO, AC power lifting | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/176) |
 | **Apex 300** | IP address | AC output, DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/49) |
-| **EP2000** | IP address | AC output, grid feed-in | [4 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
+| **EP2000** | IP address | AC output, grid charging, grid feed-in, SoC low/high limits | [4 units](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145) |
 | **Balco Transfer Hub** | IP address | Read-only | [2 hubs](https://github.com/bluetti-community/bluetti-registers/issues/29) |
 
 Every field a device reports is shown as a reading. The controls listed are the writes confirmed on a real unit.
@@ -98,6 +98,7 @@ Have another BLUETTI model? Register data is welcome in [bluetti-registers](http
 - Its two MPPTs are sub-devices named **MPPT 1** and **MPPT 2**.
 - The battery (an HV800 controller over stacked B700 packs) is a device of its own.
 - Modbus TCP is opened by the BLUETTI app's **Virtual Power Plant - Join VPP** row (choose a provider, port 502), not on the web page. Providers differ by region, and updating the app can bring a missing row. A virtual power plant can let an aggregator charge and discharge the battery, so check what your provider's option authorises first.
+- Grid Charging only has an effect in the app's Custom working mode, while its time-of-use settings allow charging. ([evidence](https://github.com/bluetti-community/bluetti-registers/issues/42#issuecomment-6709361887))
 - The grid entities measure the EP2000's own grid port, not the house's connection. With AC-coupled solar, do not use Total Grid Power as the grid meter in the Energy dashboard. ([evidence](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/145#issuecomment-5987109089))
 
 **Balco Transfer Hub** is a grid-tie controller, not a power station.

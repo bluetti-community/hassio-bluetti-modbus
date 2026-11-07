@@ -18,18 +18,8 @@ from . import device_info as dev_info
 from .const import DOMAIN, FIELDS_SHOWN_VIA_NUMBER
 from .coordinator import PollingCoordinator
 
-# b_soc_low/b_soc_high (57016/57017): min/max, matching bluetti-registers'
-# own num_min/num_max for these fields - bluetti_modbus_lib's Range
-# validator already enforces this at write time; this is only the number
-# entity's own displayed slider/box bounds. Different per field on
-# Balco260 - b_soc_low is 5-90% (the official BLUETTI app's own SOC screen
-# doesn't allow this discharge-stop threshold outside that range), while
-# b_soc_high (charge-stop threshold) is still 0-100% pending equivalent
-# evidence for it.
-_FIELD_BOUNDS: dict[str, tuple[int, int]] = {
-    "b_soc_low": (5, 90),
-    "b_soc_high": (0, 100),
-}
+# Percent limits with no Range in the profile get the full scale.
+_DEFAULT_BOUNDS = (0, 100)
 
 
 # One write at a time: the device takes one Modbus request at a time.
@@ -56,9 +46,9 @@ async def async_setup_entry(
     entities = []
     for field_name in FIELDS_SHOWN_VIA_NUMBER:
         field = coordinator.device.get_field(field_name)
-        # Only where bluetti_modbus_lib actually marks the field writable -
-        # currently Balco260 only (see that library's import.py). Not every
-        # device declares every field in FIELDS_SHOWN_VIA_NUMBER at all.
+        # Only where bluetti_modbus_lib marks the field writable (see that
+        # library's import.py). Not every device declares every field in
+        # FIELDS_SHOWN_VIA_NUMBER at all.
         if field is not None and field.writable:
             entities.append(BluettiNumberEntity(coordinator, device_info, field_name))
 
@@ -88,7 +78,12 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
         self._device_name = device_info.get("name")
         self._attr_translation_key = field_name
         self._attr_unique_id = _unique_id_for(coordinator, self._device_name, field_name, "number")
-        self._attr_native_min_value, self._attr_native_max_value = _FIELD_BOUNDS[field_name]
+        # The profile's own Range, which the library also enforces at write
+        # time: bounds differ per device and per field.
+        field = coordinator.device.get_field(field_name)
+        writable = field.writable if field is not None else None
+        self._attr_native_min_value = getattr(writable, "min", _DEFAULT_BOUNDS[0])
+        self._attr_native_max_value = getattr(writable, "max", _DEFAULT_BOUNDS[1])
 
     async def async_added_to_hass(self) -> None:
         """Prime native_value from whatever the coordinator already has.
