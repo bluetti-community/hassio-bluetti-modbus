@@ -38,6 +38,7 @@ _V6_RETIRED_SWITCH_SENSORS = ("ac_o_switch", "dc_o_switch", "g_i_switch", "g_o_s
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.NUMBER,
+    Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
 ]

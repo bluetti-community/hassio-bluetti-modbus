@@ -756,6 +756,16 @@
         "name": "Maximale Ladegrenze (SoC High)"
       }
     },
+    "select": {
+      "d_charging_mode": {
+        "name": "Lademodus",
+        "state": {
+          "standard": "Standard",
+          "silent": "Leise",
+          "turbo": "Turbo"
+        }
+      }
+    },
     "switch": {
       "ac_o_switch": {
         "name": "AC-Ausgang Schalter"

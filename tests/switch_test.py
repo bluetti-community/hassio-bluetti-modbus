@@ -5,10 +5,12 @@ from homeassistant.components.switch import SwitchDeviceClass
 from homeassistant.exceptions import HomeAssistantError
 from modbus_connection.exceptions import ModbusProtocolError
 
+from custom_components.bluetti_modbus.const import FIELDS_SHOWN_VIA_SWITCH
 from custom_components.bluetti_modbus.switch import (
     BluettiSwitchEntity,
     async_setup_entry,
 )
+from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import get_device
 
 
 def _device_info():
@@ -246,3 +248,17 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(added, [])
         dev_info_fn.assert_not_called()
+
+
+class TestAc200lProfile(unittest.TestCase):
+    def test_power_lifting_is_a_writable_switch_field(self):
+        # Same address as the AC240 profile; switch.py offers it.
+        field = get_device("ac200l").get_field("ac_power_lifting_switch")
+        self.assertIsNotNone(field)
+        self.assertEqual(field.address, 57022)
+        self.assertTrue(field.writable)
+        self.assertIn("ac_power_lifting_switch", FIELDS_SHOWN_VIA_SWITCH)
+
+    def test_no_ac_eco_switch(self):
+        # 57024 (AC ECO on the AC240) did not follow AC ECO on an AC200PL.
+        self.assertIsNone(get_device("ac200l").get_field("ac_eco_switch"))

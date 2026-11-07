@@ -756,6 +756,16 @@
         "name": "Максимальна межа заряду (SoC високий)"
       }
     },
+    "select": {
+      "d_charging_mode": {
+        "name": "Режим заряду",
+        "state": {
+          "standard": "Стандартний",
+          "silent": "Тихий",
+          "turbo": "Турбо"
+        }
+      }
+    },
     "switch": {
       "ac_o_switch": {
         "name": "Перемикач виходу AC"

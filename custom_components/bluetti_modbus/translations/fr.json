@@ -756,6 +756,16 @@
         "name": "Limite de charge maximale (SoC haut)"
       }
     },
+    "select": {
+      "d_charging_mode": {
+        "name": "Mode de charge",
+        "state": {
+          "standard": "Standard",
+          "silent": "Silencieux",
+          "turbo": "Turbo"
+        }
+      }
+    },
     "switch": {
       "ac_o_switch": {
         "name": "Interrupteur sortie AC"
