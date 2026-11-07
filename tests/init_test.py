@@ -231,7 +231,7 @@ class TestAdoptBuiltInEntry(unittest.IsolatedAsyncioTestCase):
         hass.config_entries.async_update_entry.assert_called_once_with(
             entry,
             data={"address": "10.2.1.60", "port": 1502, "name": "Balco 260", "type": "balco260"},
-            version=30,
+            version=31,
         )
         er_module.async_get.assert_not_called()
 
@@ -286,7 +286,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # A version-1 entry cascades all the way to the current version in
         # one call - see async_migrate_entry's own docstring for why.
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -302,7 +302,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         registry.async_update_entity.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -319,7 +319,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         registry.async_get.assert_not_called()
         registry.async_update_entity.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -335,7 +335,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         registry.async_update_entity.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -351,7 +351,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         registry.async_get_entity_id.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -397,7 +397,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             },
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -466,7 +466,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             },
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -528,7 +528,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             },
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -589,7 +589,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             },
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -649,7 +649,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             },
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -710,7 +710,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             new_unique_id="entry1_my_device_d_num_inverters",
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -778,7 +778,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             },
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -819,7 +819,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             },
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -835,7 +835,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         registry.async_remove.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -881,7 +881,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(registry.async_update_entity.call_count, 2)
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -920,7 +920,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # Balco260, and finds nothing to disable here.)
         registry.async_update_entity.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -958,7 +958,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             disabled_by=er_module.RegistryEntryDisabler.INTEGRATION,
         )
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -995,7 +995,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # built on it already.
         registry.async_update_entity.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1042,7 +1042,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # The _total counterpart is the one that stays.
         self.assertEqual(registry.async_update_entity.call_count, 2)
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1079,7 +1079,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # don't disable an entity its owner may have deliberately kept.
         registry.async_update_entity.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1142,7 +1142,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(registry.async_update_entity.call_count, 3)
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1177,7 +1177,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # only cumulative PV energy reading there is.
         registry.async_remove.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1239,7 +1239,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(registry.async_remove.call_count, 3)
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1256,7 +1256,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         registry.async_remove.assert_not_called()
         registry.async_remove.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1338,7 +1338,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # title the 3 -> 4 step just produced down to the plain product
         # name - see its own docstring.
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=30,
+            entry, title="Balco 260", version=31,
             data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True},
         )
 
@@ -1353,7 +1353,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1368,7 +1368,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1388,7 +1388,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         # The 5 -> 6 step (same cascading call) strips the serial number the
         # 4 -> 5 step just re-spaced down to the plain product name.
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=30,
+            entry, title="Balco 260", version=31,
             data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True},
         )
 
@@ -1407,7 +1407,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="Balco 260", version=30,
+            entry, title="Balco 260", version=31,
             data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True},
         )
 
@@ -1424,7 +1424,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, title="S Meter", version=30,
+            entry, title="S Meter", version=31,
             data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True},
         )
 
@@ -1444,7 +1444,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1459,7 +1459,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1478,7 +1478,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         hass.config_entries.async_update_entry.assert_called_once_with(
             entry,
-            version=30,
+            version=31,
             data={
                 "address": "10.2.1.60",
                 "port": 502,
@@ -1498,7 +1498,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         hass.config_entries.async_update_entry.assert_called_once_with(
-            entry, version=30, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
+            entry, version=31, data={**entry.data, CONF_SLOTS_BEYOND_COUNT_PENDING: True}
         )
 
     @patch("custom_components.bluetti_modbus.er")
@@ -1515,7 +1515,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         registry.async_update_entity.assert_not_called()
         hass.config_entries.async_update_entry.assert_called_once_with(
             entry,
-            version=30,
+            version=31,
             data={
                 "address": "10.2.1.60",
                 "port": 502,
@@ -1553,7 +1553,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             removed,
             {"sensor.battery_b_ver_2", "sensor.battery_b_ver_3", "sensor.battery_b_ver_4"},
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_20_to_21_leaves_devices_without_a_built_in_battery_alone(self, er_module):
@@ -1566,7 +1566,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         registry.async_remove.assert_not_called()
         registry.async_remove.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_21_to_22_disables_the_ep2000_hardware_version(self, er_module):
@@ -1590,7 +1590,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         registry.async_update_entity.assert_called_once_with(
             "sensor.hw", disabled_by=er_module.RegistryEntryDisabler.INTEGRATION
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_21_to_22_leaves_other_devices_alone(self, er_module):
@@ -1603,7 +1603,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         registry.async_remove.assert_not_called()
         registry.async_update_entity.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_22_to_23_removes_the_ep500p_grid_charging_sensor(self, er_module):
@@ -1623,7 +1623,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_called_once_with("sensor.gc")
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_22_to_23_leaves_other_devices_alone(self, er_module):
@@ -1636,7 +1636,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         registry.async_remove.assert_not_called()
         registry.async_remove.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_23_to_24_removes_the_ep2000_grid_feed_in_sensor(self, er_module):
@@ -1647,7 +1647,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         entities = [
             MagicMock(entity_id="sensor.fi", unique_id="123_ep2000_g_o_switch", domain="sensor"),
             MagicMock(entity_id="switch.fi", unique_id="123_ep2000_g_o_switch", domain="switch"),
-            MagicMock(entity_id="sensor.gc", unique_id="123_ep2000_g_i_switch", domain="sensor"),
+            MagicMock(entity_id="sensor.ems", unique_id="123_ep2000_d_ems_ctrl", domain="sensor"),
         ]
         er_module.async_entries_for_config_entry.return_value = entities
         hass = MagicMock()
@@ -1656,7 +1656,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_called_once_with("sensor.fi")
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_23_to_24_leaves_other_devices_alone(self, er_module):
@@ -1669,7 +1669,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
 
         registry.async_remove.assert_not_called()
         registry.async_remove.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_24_to_25_removes_the_apex_300_grid_charging_sensor(self, er_module):
@@ -1692,7 +1692,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             [c.args[0] for c in registry.async_remove.call_args_list],
             ["sensor.gc", "switch.gc", "sensor.gc"],
         )
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_25_to_26_removes_the_apex_300_grid_charging_switch(self, er_module):
@@ -1709,7 +1709,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_called_once_with("switch.gc")
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_25_to_26_leaves_other_devices_alone(self, er_module):
@@ -1721,7 +1721,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_26_to_27_brings_back_the_apex_300_grid_charging_switch(self, er_module):
@@ -1738,7 +1738,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_called_once_with("sensor.gc")
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.dr")
     @patch("custom_components.bluetti_modbus.er")
@@ -1799,7 +1799,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
             "sensor.inv2", disabled_by=er_module.RegistryEntryDisabler.INTEGRATION
         )
         dr_module.async_get.return_value.async_remove_device.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.dr")
     @patch("custom_components.bluetti_modbus.er")
@@ -1832,7 +1832,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(removed, {"sensor.pv1", "sensor.pv2t"})
         self.assertEqual(devices.async_get_child_device_by_identifier.call_count, 2)
         devices.async_remove_device.assert_called_once_with("pv1")
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.dr")
     @patch("custom_components.bluetti_modbus.er")
@@ -1854,7 +1854,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         )
         devices.async_remove_device.assert_called_once_with("pv2")
         er_module.async_get.return_value.async_remove.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_27_to_28_invalid_entry_data_still_bumps_the_version(self, er_module):
@@ -1865,7 +1865,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         er_module.async_entries_for_config_entry.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_26_to_27_leaves_other_devices_alone(self, er_module):
@@ -1877,7 +1877,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_24_to_25_leaves_other_devices_alone(self, er_module):
@@ -1889,7 +1889,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_29_to_30_removes_the_ep2000_ac_output_sensor(self, er_module):
@@ -1898,7 +1898,7 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         entities = [
             MagicMock(entity_id="sensor.ac", unique_id="123_ac_o_switch", domain="sensor"),
             MagicMock(entity_id="switch.ac", unique_id="123_ac_o_switch", domain="switch"),
-            MagicMock(entity_id="sensor.gc", unique_id="123_g_i_switch", domain="sensor"),
+            MagicMock(entity_id="sensor.go", unique_id="123_g_o_switch", domain="sensor"),
         ]
         er_module.async_entries_for_config_entry.return_value = entities
         hass = MagicMock()
@@ -1907,7 +1907,46 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_called_once_with("sensor.ac")
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_30_to_31_removes_the_ep2000_sensors_that_became_controls(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        entities = [
+            MagicMock(entity_id="sensor.gc", unique_id="123_g_i_switch", domain="sensor"),
+            MagicMock(entity_id="sensor.low", unique_id="123_b_soc_low", domain="sensor"),
+            MagicMock(entity_id="sensor.high", unique_id="123_b_soc_high", domain="sensor"),
+            MagicMock(entity_id="switch.gc", unique_id="123_g_i_switch", domain="switch"),
+            MagicMock(entity_id="number.low", unique_id="123_b_soc_low", domain="number"),
+            MagicMock(entity_id="sensor.soc", unique_id="123_b_soc_total", domain="sensor"),
+        ]
+        er_module.async_entries_for_config_entry.return_value = entities
+        hass = MagicMock()
+        entry = self._entry(version=30, dev_type="ep2000")
+
+        await async_migrate_entry(hass, entry)
+
+        self.assertEqual(
+            [call.args[0] for call in registry.async_remove.call_args_list],
+            ["sensor.gc", "sensor.low", "sensor.high"],
+        )
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_30_to_31_leaves_other_devices_alone(self, er_module):
+        registry = MagicMock()
+        er_module.async_get.return_value = registry
+        er_module.async_entries_for_config_entry.return_value = [
+            MagicMock(entity_id="sensor.low", unique_id="123_b_soc_low", domain="sensor"),
+        ]
+        hass = MagicMock()
+        entry = self._entry(version=30, dev_type="ac500")
+
+        await async_migrate_entry(hass, entry)
+
+        registry.async_remove.assert_not_called()
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_29_to_30_leaves_other_devices_alone(self, er_module):
@@ -1923,12 +1962,12 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         registry.async_remove.assert_not_called()
-        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=30)
+        hass.config_entries.async_update_entry.assert_called_once_with(entry, version=31)
 
     @patch("custom_components.bluetti_modbus.er")
     async def test_already_current_version_is_a_no_op(self, er_module):
         hass = MagicMock()
-        entry = self._entry(version=30)
+        entry = self._entry(version=31)
 
         result = await async_migrate_entry(hass, entry)
 

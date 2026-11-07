@@ -195,7 +195,7 @@ class TestBuiltInIntegrationSetup(_RealRegistries):
         self.assertTrue(await async_migrate_entry(self.hass, entry))
         await self._setup(entry, BALCO260_DATA)
 
-        self.assertEqual(entry.version, 30)
+        self.assertEqual(entry.version, 31)
         self.assertEqual(entry.unique_id, str(SERIAL))
         self.assertEqual(entry.title, "Balco 260")
         self.assertEqual(self._main_device(entry).id, device.id)

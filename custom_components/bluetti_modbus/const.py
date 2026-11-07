@@ -113,9 +113,9 @@ PA030_CONFIRMED = True
 # 15 blocks, no error, battery power equal to current x voltage to the watt -
 # and that read corrected the signed powers and two-part versions in 0.0.50
 # (bluetti-registers#42). On this model the port is opened by the BLUETTI
-# app's VPP option, not by a switch on the web page. Read-only: nothing on the
-# EP2000 has been written to. Confirmed in Home Assistant on a real unit
-# (hassio-bluetti-modbus#145).
+# app's VPP option, not by a switch on the web page. Confirmed in Home Assistant
+# on a real unit (hassio-bluetti-modbus#145); its writable fields are the ones
+# tested on real units (bluetti-registers#42), see the library's import.py.
 EP2000_CONFIRMED = True
 
 # AC240 (bluetti-modbus 0.51.0+, bluetti-registers 0.0.61): a portable
@@ -242,21 +242,17 @@ PACK_WINDOW_DEV_TYPES = ("ac240",)
 # b_soc_low/b_soc_high (57016/57017): battery empty/full SOC thresholds,
 # 0-100% - genuinely user-configurable settings, not readings. Routed to
 # number.py instead of sensor.py, but only where bluetti_modbus_lib actually
-# marks the field writable=True (currently Balco260 only - see that
-# library's import.py) - sensor.py falls back to its normal read-only
-# handling for a device where it isn't, so nothing is lost there.
+# marks the field writable (see that library's import.py) - sensor.py falls
+# back to its normal read-only handling for a device where it isn't, so
+# nothing is lost there.
 FIELDS_SHOWN_VIA_NUMBER = {"b_soc_low", "b_soc_high"}
 
-# ac_o_switch/g_i_switch/g_o_switch (57001/57009/57010, Balco260) and
-# dc_o_switch (57005, AC500 only) - AC output, grid charging, grid feed-in,
-# and DC output controls - genuinely user-actuated switches, not readings.
-# Routed to switch.py instead of sensor.py, but only where
-# bluetti_modbus_lib actually marks the field writable=True (Balco260's
-# ac_o_switch/g_i_switch/g_o_switch, and - each independently confirmed on
-# real hardware by a different tester, see
-# bluetti-official/bluetti-modbus-tcp-slave#5 - AC500's ac_o_switch/
-# dc_o_switch; AC500's own g_i_switch is confirmed non-functional there
-# instead, see AC500_FIELDS_NOT_SHOWN above), same gating as
+# ac_o_switch/g_i_switch/g_o_switch (57001/57009/57010) and dc_o_switch
+# (57005) - AC output, grid charging, grid feed-in, and DC output controls -
+# genuinely user-actuated switches, not readings. Routed to switch.py instead
+# of sensor.py, but only where bluetti_modbus_lib actually marks the field
+# writable (AC500's own g_i_switch is confirmed non-functional instead, see
+# AC500_FIELDS_NOT_SHOWN above), same gating as
 # FIELDS_SHOWN_VIA_NUMBER below - sensor.py falls back to its normal
 # read-only handling for a device where a name here isn't writable, so
 # nothing is lost there.

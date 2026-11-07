@@ -8,14 +8,16 @@ from custom_components.bluetti_modbus.number import (
     BluettiNumberEntity,
     async_setup_entry,
 )
+from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import get_device
 
 
 def _device_info():
     return {"name": "Test Device"}
 
 
-def _number(field_name="b_soc_low") -> BluettiNumberEntity:
+def _number(field_name="b_soc_low", dev_type="balco260") -> BluettiNumberEntity:
     coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"), data={})
+    coordinator.device = get_device(dev_type)
     number = BluettiNumberEntity(coordinator, _device_info(), field_name)
     number.async_write_ha_state = MagicMock()
     return number
@@ -23,19 +25,34 @@ def _number(field_name="b_soc_low") -> BluettiNumberEntity:
 
 class TestBluettiNumberEntityInit(unittest.TestCase):
     def test_min_max_step_for_b_soc_low(self):
-        # 5-90, not 0-100 - the official BLUETTI app's own SOC screen
-        # doesn't allow this discharge-stop threshold outside that range.
         number = _number("b_soc_low")
         self.assertEqual(number._attr_native_min_value, 5)
         self.assertEqual(number._attr_native_max_value, 90)
         self.assertEqual(number._attr_native_step, 1)
 
     def test_min_max_for_b_soc_high(self):
-        # Still 0-100 - no equivalent evidence yet for this (charge-stop)
-        # threshold, unlike b_soc_low.
         number = _number("b_soc_high")
         self.assertEqual(number._attr_native_min_value, 0)
         self.assertEqual(number._attr_native_max_value, 100)
+
+    def test_bounds_come_from_the_device_profile(self):
+        for field_name in ("b_soc_low", "b_soc_high"):
+            number = _number(field_name, "ep2000")
+            self.assertEqual(number._attr_native_min_value, 5)
+            self.assertEqual(number._attr_native_max_value, 100)
+
+    def test_full_scale_without_a_range_in_the_profile(self):
+        coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"), data={})
+        coordinator.device.get_field.return_value = MagicMock(writable=True)
+        number = BluettiNumberEntity(coordinator, _device_info(), "b_soc_low")
+        self.assertEqual(number._attr_native_min_value, 0)
+        self.assertEqual(number._attr_native_max_value, 100)
+
+    def test_full_scale_without_the_field(self):
+        coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"), data={})
+        coordinator.device.get_field.return_value = None
+        number = BluettiNumberEntity(coordinator, _device_info(), "b_soc_low")
+        self.assertEqual(number._attr_native_min_value, 0)
 
     def test_translation_key_and_unique_id(self):
         number = _number("b_soc_high")

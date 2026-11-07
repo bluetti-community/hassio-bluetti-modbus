@@ -46,9 +46,9 @@ async def async_setup_entry(
     entities = []
     for field_name in FIELDS_SHOWN_VIA_SWITCH:
         field = coordinator.device.get_field(field_name)
-        # Only where bluetti_modbus_lib actually marks the field writable -
-        # currently Balco260 only (see that library's import.py). Not every
-        # device declares every field in FIELDS_SHOWN_VIA_SWITCH at all.
+        # Only where bluetti_modbus_lib marks the field writable (see that
+        # library's import.py). Not every device declares every field in
+        # FIELDS_SHOWN_VIA_SWITCH at all.
         if field is not None and field.writable:
             entities.append(BluettiSwitchEntity(coordinator, device_info, field_name))
 
