@@ -7,11 +7,13 @@ import re
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
+from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     BUILT_IN_BATTERY_DEV_TYPES,
@@ -23,8 +25,9 @@ from .const import (
 )
 from .coordinator import PollingCoordinator
 from .network import NETWORK_STATUS_DEV_TYPES, NetworkStatusCoordinator
+from .services import async_setup_services
 from .types import FullDeviceConfig as FullDeviceConfig
-from .types.initial_device_config import CONF_TYPE
+from .types.initial_device_config import CONF_TYPE, InitialDeviceConfig
 from .vendor.bluetti_modbus_lib import PACK_INFO_FIELDS
 
 # The switch fields the 6 -> 7 migration retires as sensors: the ones that
@@ -39,6 +42,14 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
 ]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the actions, which then report a missing or unloaded entry."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -138,6 +149,11 @@ def _reconcile_config_entry_unique_id(
 
 _CURRENT_VERSION = 30
 
+# The entry format of Home Assistant's built-in bluetti_modbus integration,
+# which shares this domain and only reads the Balco 260.
+_BUILT_IN_CONF_UNIT_ID = "unit_id"
+_BUILT_IN_DEV_TYPE = "balco260"
+
 # The 27 -> 28 step: fields no longer shown, per device type, matched as
 # unique_id suffixes. The PV inputs the AC200L and EP500P profiles dropped
 # (bluetti-registers 0.0.66) lose their devices in the 28 -> 29 step.
@@ -174,6 +190,41 @@ _BALCO260_DROPPED_FIELD_SUFFIXES = (
     "_pv_i_e_local",
     "_pv_ac_e_local",
 )
+
+
+def _adopt_built_in_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Take over an entry created by Home Assistant's built-in integration.
+
+    It stores {host, port, unit_id} and no device type, at its own version. The
+    numbered steps of async_migrate_entry() are about this integration's own
+    earlier entries, so none of them apply: the entry goes straight to the
+    current version. Its serial-keyed unique_id, and the `<serial>_<field>`
+    unique_ids of its entities, are already the ones used here.
+
+    This integration only talks to unit id 1. An entry on another one is left
+    as it is, for the built-in integration to keep using.
+    """
+    unit_id = entry.data.get(_BUILT_IN_CONF_UNIT_ID)
+    if unit_id != 1:
+        logging.getLogger(__name__).error(
+            "Can't take over the built-in integration's setup of %s: it uses Modbus"
+            " unit id %s and this integration only uses 1. Remove that setup and add"
+            " the device again",
+            entry.title,
+            unit_id,
+        )
+        return False
+
+    data = InitialDeviceConfig(
+        entry.data[CONF_HOST],
+        entry.data[CONF_PORT],
+        DEVICE_TYPE_DISPLAY_NAMES[_BUILT_IN_DEV_TYPE],
+        _BUILT_IN_DEV_TYPE,
+    )
+    hass.config_entries.async_update_entry(
+        entry, data=data.as_dict, version=_CURRENT_VERSION
+    )
+    return True
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -404,6 +455,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     version = entry.version
     if version >= _CURRENT_VERSION:
         return True
+
+    if CONF_HOST in entry.data:
+        return _adopt_built_in_entry(hass, entry)
 
     config = FullDeviceConfig.from_dict(entry.data)
     registry = er.async_get(hass)

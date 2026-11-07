@@ -30,6 +30,7 @@
       "no_unconfigured_devices": "Įrenginių nerasta",
       "already_configured": "Įrenginys jau sukonfigūruotas",
       "cannot_connect": "Nepavyko prisijungti prie įrenginio",
+      "not_supported": "Šis įrenginys dar nepalaikomas šios integracijos versijos",
       "modbus_tcp_disabled": "Šiame įrenginyje Modbus TCP išjungtas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, įjunkite Enable su prievadu 502 ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
       "modbus_tcp_encrypted": "Šiame įrenginyje Modbus TCP yra šifruotas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, išjunkite Crypt Enable ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
       "wrong_device": "Tuo adresu atsako kitas įrenginys: jo serijos numeris nėra šio įrašo",
@@ -803,6 +804,32 @@
     },
     "write_failed": {
       "message": "Nepavyko įrašyti į {device} {field}: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} nepalaiko tiesioginio registrų skaitymo"
+    },
+    "invalid_register_request": {
+      "message": "Netinkama registrų užklausa: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Skaityti registrus",
+      "description": "Nuskaito neapdorotus BLUETTI įrenginio holding registrus, tik tuose intervaluose, kuriuos jau skaito jo profilis.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Įrenginys",
+          "description": "BLUETTI Modbus įrašas, iš kurio skaitoma."
+        },
+        "address": {
+          "name": "Adresas",
+          "description": "Pirmasis skaitomas holding registras."
+        },
+        "count": {
+          "name": "Kiekis",
+          "description": "Skaitomų registrų skaičius, ne daugiau nei įrenginio bloko dydis (20 Balco 260 arba FridgePower, 10 Transfer Hub, kitais atvejais 50)."
+        }
+      }
     }
   }
 }

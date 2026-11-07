@@ -30,6 +30,7 @@
       "no_unconfigured_devices": "Geen apparaten gevonden",
       "already_configured": "Apparaat is al geconfigureerd",
       "cannot_connect": "Verbinden met het apparaat mislukt",
+      "not_supported": "Dit apparaat wordt nog niet ondersteund door deze versie van de integratie",
       "modbus_tcp_disabled": "Modbus TCP staat uit op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Enable aan met poort 502 en sla op, sluit dan die pagina en probeer het opnieuw.",
       "modbus_tcp_encrypted": "Modbus TCP is versleuteld op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Crypt Enable uit en sla op, sluit dan die pagina en probeer het opnieuw.",
       "wrong_device": "Op dat adres antwoordt een ander apparaat: het serienummer is niet dat van deze vermelding",
@@ -803,6 +804,32 @@
     },
     "write_failed": {
       "message": "Schrijven naar {device} {field} mislukt: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} ondersteunt het rechtstreeks lezen van registers niet"
+    },
+    "invalid_register_request": {
+      "message": "Ongeldige registeraanvraag: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Registers lezen",
+      "description": "Leest ruwe holding-registers van een BLUETTI-apparaat, binnen de bereiken die zijn profiel al leest.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Apparaat",
+          "description": "De BLUETTI Modbus-vermelding om uit te lezen."
+        },
+        "address": {
+          "name": "Adres",
+          "description": "Eerste holding-register om te lezen."
+        },
+        "count": {
+          "name": "Aantal",
+          "description": "Aantal te lezen registers, hoogstens de blokgrootte van het apparaat (20 op een Balco 260 of FridgePower, 10 op een Transfer Hub, anders 50)."
+        }
+      }
     }
   }
 }

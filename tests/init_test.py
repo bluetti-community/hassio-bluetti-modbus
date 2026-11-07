@@ -213,6 +213,48 @@ class TestReconcileConfigEntryUniqueId(unittest.TestCase):
         hass.config_entries.async_update_entry.assert_not_called()
 
 
+class TestAdoptBuiltInEntry(unittest.IsolatedAsyncioTestCase):
+    def _entry(self, unit_id=1):
+        entry = MagicMock()
+        entry.version = 1
+        entry.title = "My Balco"
+        entry.data = {"host": "10.2.1.60", "port": 1502, "unit_id": unit_id}
+        return entry
+
+    @patch("custom_components.bluetti_modbus.er")
+    async def test_converts_the_entry_and_skips_the_numbered_steps(self, er_module):
+        hass = MagicMock()
+        entry = self._entry()
+
+        self.assertTrue(await async_migrate_entry(hass, entry))
+
+        hass.config_entries.async_update_entry.assert_called_once_with(
+            entry,
+            data={"address": "10.2.1.60", "port": 1502, "name": "Balco 260", "type": "balco260"},
+            version=30,
+        )
+        er_module.async_get.assert_not_called()
+
+    async def test_leaves_an_entry_on_another_unit_id_alone(self):
+        hass = MagicMock()
+
+        with self.assertLogs("custom_components.bluetti_modbus", "ERROR") as logs:
+            self.assertFalse(await async_migrate_entry(hass, self._entry(unit_id=2)))
+
+        self.assertIn("unit id 2", logs.output[0])
+        hass.config_entries.async_update_entry.assert_not_called()
+
+    async def test_leaves_an_entry_without_a_unit_id_alone(self):
+        hass = MagicMock()
+        entry = self._entry()
+        del entry.data["unit_id"]
+
+        with self.assertLogs("custom_components.bluetti_modbus", "ERROR"):
+            self.assertFalse(await async_migrate_entry(hass, entry))
+
+        hass.config_entries.async_update_entry.assert_not_called()
+
+
 class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
     def _entry(self, *, version=1, dev_type="smeter"):
         entry = MagicMock()

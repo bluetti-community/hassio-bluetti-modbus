@@ -19,7 +19,8 @@ a beta series (below).
 
 A prerelease is `MAJOR.MINOR.PATCH-beta.N`: newer than every earlier release,
 older than `MAJOR.MINOR.PATCH`. It is published as a GitHub prerelease, which
-HACS offers only to someone who enables beta versions for the repository.
+the Marketplace offers only to someone who turns on the repository's
+Pre-release switch.
 
 Every change that needs a test on hardware before it ships (a new device, a
 new connection layer, a rising Home Assistant minimum) goes through betas on
@@ -37,9 +38,10 @@ comes after them in the list. Never tag `X.Y.Z` on a commit older than its
 betas, and never ship a stable release before the betas of the change it
 carries. No stable release leaves `main` while its betas are being tested.
 
-GitHub lists releases by day, then by tag name as text, and HACS offers the
-first prerelease in that list. On one day, `-beta.9` therefore comes before
-`-beta.10` (`9` sorts after `1`), and HACS keeps offering `-beta.9`. Never
+GitHub lists releases by day, then by tag name as text, and the Marketplace
+offers the first prerelease in that list. On one day, `-beta.9` therefore comes
+before `-beta.10` (`9` sorts after `1`), and the Marketplace keeps offering
+`-beta.9`. Never
 publish a one-digit and a two-digit beta of a version on the same day: once
 `-beta.9` is out, the next beta waits for the next day (UTC), or the next
 prerelease is `X.Y.Z-rc.1`, which sorts after every `beta` both as text and
@@ -78,4 +80,4 @@ Rules that matter more than the layout:
 - The vendored-library section lists **everything** the tag jump carries, not
   only what the integration uses.
 - No release is shipped until its GitHub release exists: the tag alone does not
-  reach HACS, and the zip asset is built by the release workflow.
+  reach the Marketplace, and the zip asset is built by the release workflow.

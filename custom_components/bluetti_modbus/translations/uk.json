@@ -30,6 +30,7 @@
       "no_unconfigured_devices": "Пристроїв не знайдено",
       "already_configured": "Пристрій уже налаштовано",
       "cannot_connect": "Не вдалося підключитися до пристрою",
+      "not_supported": "Цей пристрій ще не підтримується цією версією інтеграції",
       "modbus_tcp_disabled": "На цьому пристрої Modbus TCP вимкнено. Відкрийте http://{address}/ у браузері, увійдіть як admin (пароль — це пароль Bluetooth пристрою із застосунку BLUETTI або порожній), перейдіть до Settings → Modbus TCP, увімкніть Enable з портом 502 і збережіть, потім закрийте цю сторінку та спробуйте ще раз.",
       "modbus_tcp_encrypted": "На цьому пристрої Modbus TCP зашифровано. Відкрийте http://{address}/ у браузері, увійдіть як admin (пароль — це пароль Bluetooth пристрою із застосунку BLUETTI або порожній), перейдіть до Settings → Modbus TCP, вимкніть Crypt Enable і збережіть, потім закрийте цю сторінку та спробуйте ще раз.",
       "wrong_device": "За цією адресою відповідає інший пристрій: його серійний номер не відповідає цьому запису",
@@ -803,6 +804,32 @@
     },
     "write_failed": {
       "message": "Не вдалося записати в {device} {field}: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} не підтримує пряме зчитування регістрів"
+    },
+    "invalid_register_request": {
+      "message": "Недійсний запит регістрів: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Читати регістри",
+      "description": "Зчитує сирі holding-регістри пристрою BLUETTI в межах діапазонів, які вже читає його профіль.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Пристрій",
+          "description": "Запис BLUETTI Modbus, з якого зчитувати."
+        },
+        "address": {
+          "name": "Адреса",
+          "description": "Перший holding-регістр для зчитування."
+        },
+        "count": {
+          "name": "Кількість",
+          "description": "Кількість регістрів для зчитування, не більше розміру блоку пристрою (20 для Balco 260 або FridgePower, 10 для Transfer Hub, інакше 50)."
+        }
+      }
     }
   }
 }

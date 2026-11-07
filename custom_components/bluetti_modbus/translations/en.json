@@ -30,6 +30,7 @@
       "no_unconfigured_devices": "No devices found",
       "already_configured": "Device is already configured",
       "cannot_connect": "Failed to connect to the device",
+      "not_supported": "This device is not supported by this version of the integration yet",
       "modbus_tcp_disabled": "Modbus TCP is turned off on this device. Open http://{address}/ in a browser, sign in as admin (the password is the device's Bluetooth password from the BLUETTI app, or blank), go to Settings → Modbus TCP, turn on Enable with port 502 and save, then close that page and try again.",
       "modbus_tcp_encrypted": "Modbus TCP is encrypted on this device. Open http://{address}/ in a browser, sign in as admin (the password is the device's Bluetooth password from the BLUETTI app, or blank), go to Settings → Modbus TCP, turn off Crypt Enable and save, then close that page and try again.",
       "wrong_device": "Another device answers at that address: its serial number is not this entry's",
@@ -803,6 +804,32 @@
     },
     "write_failed": {
       "message": "Failed to write to {device} {field}: {error}"
+    },
+    "read_register_unsupported": {
+      "message": "{device} does not support reading registers directly"
+    },
+    "invalid_register_request": {
+      "message": "Invalid register request: {error}"
+    }
+  },
+  "services": {
+    "read_register": {
+      "name": "Read registers",
+      "description": "Reads raw holding registers from a BLUETTI device, inside the ranges its profile already reads.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Device",
+          "description": "The BLUETTI Modbus entry to read from."
+        },
+        "address": {
+          "name": "Address",
+          "description": "First holding register to read."
+        },
+        "count": {
+          "name": "Count",
+          "description": "Number of registers to read, at most the device's own block size (20 on a Balco 260 or FridgePower, 10 on a Transfer Hub, 50 otherwise)."
+        }
+      }
     }
   }
 }

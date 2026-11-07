@@ -11,8 +11,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .web_page import NetworkStatus, async_query_network_status
 
-# Devices whose web page answers getNetworkStatus (a Balco 260).
-NETWORK_STATUS_DEV_TYPES = frozenset({"balco260"})
+# Devices whose web page answers getNetworkStatus (Balco 260, Balco 500).
+NETWORK_STATUS_DEV_TYPES = frozenset({"balco260", "balco500"})
 
 # Rarely: the page's WebSocket may accept one client at a time, and an open
 # browser tab on the page would otherwise keep losing it to this read.
