@@ -182,28 +182,14 @@ class AC200L(BluettiDevice):
         address=57017,
         unit="%",
     )
-    # Not generated: added in this fork ahead of bluetti-registers. The AC
-    # charging speed (Standard/Silent/Turbo) read on a real AC200PL, IoT
-    # 9041.17, by switching it in the BLUETTI app and reading 57023 after
-    # each change - nothing else in 57000-57129 changed (bluetti-registers#48).
-    # Writable as the app's own setting is: writes of 0, 1 and 2 applied on
-    # that unit (the app and the AC input power followed), confirmed at
-    # internal address 3065 - see _INTERNAL_WRITE_ADDRESS.
-    d_charging_mode = field(
-        t=FieldType.ENUM,
-        address=57023,
-        enum_type=ChargingMode,
-        writable=True,
-    )
-    # Not generated: added in this fork ahead of bluetti-registers, at the
-    # address and under the name the AC240 profile has it (bluetti-registers
-    # #65). Read on the same AC200PL by switching Power Lifting on and off in
-    # the BLUETTI app: 57022 followed, nothing else in the profile changed.
-    # Not AC ECO's 57024 as on the AC240 - it stayed 0 while ECO was on.
-    # Writes of 1 and 0 applied (the app followed), confirmed at internal
-    # address 3066 - see _INTERNAL_WRITE_ADDRESS.
     ac_power_lifting_switch = field(
         t=FieldType.UINT16,
         address=57022,
         writable=True,
+    )
+    d_charging_mode = field(
+        t=FieldType.ENUM,
+        address=57023,
+        writable=True,
+        enum_type=ChargingMode,
     )
