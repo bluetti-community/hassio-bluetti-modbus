@@ -37,13 +37,12 @@ class TestBluettiSelectEntityInit(unittest.TestCase):
     def test_current_option_starts_unknown(self):
         self.assertIsNone(_select().current_option)
 
-    def test_is_a_control_disabled_by_default(self):
-        # Shown under Controls, next to the output switches. Writes are
-        # confirmed on one unit and firmware only: the owner enables it from
-        # the device page.
+    def test_is_a_control_enabled_by_default(self):
+        # Shown under Controls, next to the output switches, and enabled by
+        # default as they are.
         select = _select()
         self.assertIsNone(select.entity_category)
-        self.assertFalse(select.entity_registry_enabled_default)
+        self.assertTrue(select.entity_registry_enabled_default)
 
 
 class TestAsyncAddedToHass(unittest.IsolatedAsyncioTestCase):

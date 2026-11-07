@@ -729,14 +729,6 @@
           "dc_pv": "PV DC",
           "ac_pv": "PV AC"
         }
-      },
-      "d_charging_mode": {
-        "name": "Mode de charge",
-        "state": {
-          "standard": "Standard",
-          "silent": "Silencieux",
-          "turbo": "Turbo"
-        }
       }
     },
     "binary_sensor": {

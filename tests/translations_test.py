@@ -94,10 +94,10 @@ class TestTranslationsCoverAllShownFields(unittest.TestCase):
                     if name not in switch_translated:
                         missing.append(f"{dev_type}.{name} (switch)")
                     continue
-                # Also a read-only sensor (see FIELDS_SHOWN_VIA_SELECT), so
-                # no `continue`: the sensor check below applies too.
-                if name in FIELDS_SHOWN_VIA_SELECT and field.writable and name not in select_translated:
-                    missing.append(f"{dev_type}.{name} (select)")
+                if name in FIELDS_SHOWN_VIA_SELECT and field.writable:
+                    if name not in select_translated:
+                        missing.append(f"{dev_type}.{name} (select)")
+                    continue
                 if _sensor_key(name) not in sensor_translated:
                     missing.append(f"{dev_type}.{name} (sensor)")
 
