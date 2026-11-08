@@ -120,6 +120,18 @@
       "b_soc_high": {
         "name": "Maximale Ladegrenze (SoC High)"
       },
+      "g_i_c_max": {
+        "name": "Max. Netzladestrom"
+      },
+      "d_working_mode": {
+        "name": "Arbeitsmodus",
+        "state": {
+          "custom": "Benutzerdefiniert",
+          "self_consumption": "Selbstnutzung",
+          "backup": "Backup",
+          "time_of_use": "Planmäßige Ladung und Entladung"
+        }
+      },
       "d_num_battery_packs": {
         "name": "Anzahl Batteriemodule"
       },

@@ -120,6 +120,18 @@
       "b_soc_high": {
         "name": "Max Charge Limit (SoC High)"
       },
+      "g_i_c_max": {
+        "name": "Max. Grid Charging Current"
+      },
+      "d_working_mode": {
+        "name": "Working Mode",
+        "state": {
+          "custom": "Custom",
+          "self_consumption": "Self-Consumption",
+          "backup": "Backup",
+          "time_of_use": "Time of Use"
+        }
+      },
       "d_num_battery_packs": {
         "name": "Number of Battery Packs"
       },

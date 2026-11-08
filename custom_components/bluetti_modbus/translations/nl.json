@@ -120,6 +120,18 @@
       "b_soc_high": {
         "name": "Maximale laadgrens (SoC hoog)"
       },
+      "g_i_c_max": {
+        "name": "Max. laadstroom van het net"
+      },
+      "d_working_mode": {
+        "name": "Werkmodus",
+        "state": {
+          "custom": "Aangepast",
+          "self_consumption": "Eigenverbruik",
+          "backup": "Back-up",
+          "time_of_use": "Gebruikstijd"
+        }
+      },
       "d_num_battery_packs": {
         "name": "Aantal batterijpakketten"
       },
