@@ -78,7 +78,7 @@
         "name": "Énergie soutirée du réseau totale"
       },
       "g_o_e_total": {
-        "name": "Énergie injectée dans le réseau totale"
+        "name": "Énergie injectée cumulée"
       },
       "pv_ac_e": {
         "name": "Énergie PV AC totale"
@@ -103,16 +103,16 @@
         "name": "Fréquence réseau"
       },
       "ac_o_switch": {
-        "name": "Interrupteur sortie AC"
+        "name": "Sortie AC"
       },
       "dc_o_switch": {
-        "name": "Interrupteur sortie DC"
+        "name": "Sortie DC"
       },
       "g_i_switch": {
-        "name": "Interrupteur charge depuis le réseau"
+        "name": "Charge depuis le réseau"
       },
       "g_o_switch": {
-        "name": "Interrupteur injection réseau"
+        "name": "Injection dans le réseau"
       },
       "b_soc_low": {
         "name": "Limite de décharge minimale (SoC bas)"
@@ -184,7 +184,7 @@
         "name": "Énergie soutirée du réseau"
       },
       "g_o_e_local": {
-        "name": "Énergie injectée dans le réseau"
+        "name": "Énergie injectée"
       },
       "ac_o_e_local": {
         "name": "Énergie de sortie AC"
@@ -342,10 +342,10 @@
         }
       },
       "b_time_to_full_total": {
-        "name": "Temps total jusqu'à la charge complète"
+        "name": "Temps estimé pour charge complète (total)"
       },
       "b_time_to_empty_total": {
-        "name": "Temps total jusqu'à épuisement"
+        "name": "Durée d'utilisation restante (total)"
       },
       "b_ver_count": {
         "name": "Emplacements de version du firmware batterie"
@@ -372,10 +372,10 @@
         "name": "Alarme batterie (station portable)"
       },
       "b_time_to_full": {
-        "name": "Temps jusqu'à la charge complète"
+        "name": "Temps estimé pour charge complète"
       },
       "b_time_to_empty": {
-        "name": "Temps jusqu'à épuisement"
+        "name": "Durée d'utilisation restante"
       },
       "d_iot_model": {
         "name": "Modèle du module IoT"
@@ -768,22 +768,22 @@
     },
     "switch": {
       "ac_o_switch": {
-        "name": "Interrupteur sortie AC"
+        "name": "Sortie AC"
       },
       "dc_o_switch": {
-        "name": "Interrupteur sortie DC"
+        "name": "Sortie DC"
       },
       "g_i_switch": {
-        "name": "Interrupteur charge depuis le réseau"
+        "name": "Charge depuis le réseau"
       },
       "g_o_switch": {
-        "name": "Interrupteur injection réseau"
+        "name": "Injection dans le réseau"
       },
       "ac_eco_switch": {
-        "name": "Interrupteur AC ECO"
+        "name": "AC-ECO"
       },
       "ac_power_lifting_switch": {
-        "name": "Interrupteur AC Power Lifting"
+        "name": "Mode Power Lifting"
       }
     }
   },

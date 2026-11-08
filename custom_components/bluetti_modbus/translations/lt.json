@@ -103,16 +103,16 @@
         "name": "Tinklo dažnis"
       },
       "ac_o_switch": {
-        "name": "AC išėjimo jungiklis"
+        "name": "AC išėjimas"
       },
       "dc_o_switch": {
-        "name": "DC išėjimo jungiklis"
+        "name": "DC išėjimas"
       },
       "g_i_switch": {
-        "name": "Įkrovimo iš tinklo jungiklis"
+        "name": "Įkrovimas iš tinklo"
       },
       "g_o_switch": {
-        "name": "Atidavimo į tinklą jungiklis"
+        "name": "Atidavimas į tinklą"
       },
       "b_soc_low": {
         "name": "Minimali iškrovimo riba (SoC žema)"
@@ -342,10 +342,10 @@
         }
       },
       "b_time_to_full_total": {
-        "name": "Bendras laikas iki pilno įkrovimo"
+        "name": "Numatomas laikas iki pilno įkrovimo (bendras)"
       },
       "b_time_to_empty_total": {
-        "name": "Bendras laikas iki išsikrovimo"
+        "name": "Likęs veikimo laikas (bendras)"
       },
       "b_ver_count": {
         "name": "Baterijos programinės įrangos versijų vietos"
@@ -372,10 +372,10 @@
         "name": "Baterijos nešiojamosios stotelės aliarmas"
       },
       "b_time_to_full": {
-        "name": "Laikas iki pilno įkrovimo"
+        "name": "Numatomas laikas iki pilno įkrovimo"
       },
       "b_time_to_empty": {
-        "name": "Laikas iki išsikrovimo"
+        "name": "Likęs veikimo laikas"
       },
       "d_iot_model": {
         "name": "IoT modulio modelis"
@@ -768,22 +768,22 @@
     },
     "switch": {
       "ac_o_switch": {
-        "name": "AC išėjimo jungiklis"
+        "name": "AC išėjimas"
       },
       "dc_o_switch": {
-        "name": "DC išėjimo jungiklis"
+        "name": "DC išėjimas"
       },
       "g_i_switch": {
-        "name": "Įkrovimo iš tinklo jungiklis"
+        "name": "Įkrovimas iš tinklo"
       },
       "g_o_switch": {
-        "name": "Atidavimo į tinklą jungiklis"
+        "name": "Atidavimas į tinklą"
       },
       "ac_eco_switch": {
-        "name": "AC ECO jungiklis"
+        "name": "AC-ECO"
       },
       "ac_power_lifting_switch": {
-        "name": "AC Power Lifting jungiklis"
+        "name": "Power Lifting režimas"
       }
     }
   },

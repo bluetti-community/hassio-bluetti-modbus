@@ -78,7 +78,7 @@
         "name": "Netzbezugsenergie Gesamt"
       },
       "g_o_e_total": {
-        "name": "Netzeinspeiseenergie Gesamt"
+        "name": "Gesamte Einspeisung"
       },
       "pv_ac_e": {
         "name": "PV-AC-Energie Gesamt"
@@ -103,16 +103,16 @@
         "name": "Netzfrequenz"
       },
       "ac_o_switch": {
-        "name": "AC-Ausgang Schalter"
+        "name": "AC-Ausgang"
       },
       "dc_o_switch": {
-        "name": "DC-Ausgang Schalter"
+        "name": "DC-Ausgang"
       },
       "g_i_switch": {
-        "name": "Netzbezug Schalter"
+        "name": "Ladung aus Stromnetz"
       },
       "g_o_switch": {
-        "name": "Netzeinspeisung Schalter"
+        "name": "Einspeisung ins Stromnetz"
       },
       "b_soc_low": {
         "name": "Minimale Entladegrenze (SoC Low)"
@@ -184,7 +184,7 @@
         "name": "Netzbezugsenergie"
       },
       "g_o_e_local": {
-        "name": "Netzeinspeiseenergie"
+        "name": "Einspeisung"
       },
       "ac_o_e_local": {
         "name": "AC-Ausgangsenergie"
@@ -342,10 +342,10 @@
         }
       },
       "b_time_to_full_total": {
-        "name": "Gesamtzeit bis voll geladen"
+        "name": "Voraussichtliche Ladezeit (gesamt)"
       },
       "b_time_to_empty_total": {
-        "name": "Gesamtzeit bis leer"
+        "name": "Verbleibende Zeit (gesamt)"
       },
       "b_ver_count": {
         "name": "Batterie-Firmware-Versionsplätze"
@@ -372,10 +372,10 @@
         "name": "Batterie-Alarm Powerstation"
       },
       "b_time_to_full": {
-        "name": "Zeit bis voll geladen"
+        "name": "Voraussichtliche Ladezeit"
       },
       "b_time_to_empty": {
-        "name": "Zeit bis leer"
+        "name": "Verbleibende Zeit"
       },
       "d_iot_model": {
         "name": "IoT-Modul Modell"
@@ -768,22 +768,22 @@
     },
     "switch": {
       "ac_o_switch": {
-        "name": "AC-Ausgang Schalter"
+        "name": "AC-Ausgang"
       },
       "dc_o_switch": {
-        "name": "DC-Ausgang Schalter"
+        "name": "DC-Ausgang"
       },
       "g_i_switch": {
-        "name": "Netzbezug Schalter"
+        "name": "Ladung aus Stromnetz"
       },
       "g_o_switch": {
-        "name": "Netzeinspeisung Schalter"
+        "name": "Einspeisung ins Stromnetz"
       },
       "ac_eco_switch": {
-        "name": "AC-ECO Schalter"
+        "name": "AC-ECO"
       },
       "ac_power_lifting_switch": {
-        "name": "AC Power Lifting Schalter"
+        "name": "Power Lifting"
       }
     }
   },

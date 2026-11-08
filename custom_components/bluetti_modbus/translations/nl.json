@@ -103,16 +103,16 @@
         "name": "Netfrequentie"
       },
       "ac_o_switch": {
-        "name": "AC-uitgang schakelaar"
+        "name": "AC-uitgang"
       },
       "dc_o_switch": {
-        "name": "DC-uitgang schakelaar"
+        "name": "DC-uitgang"
       },
       "g_i_switch": {
-        "name": "Laden van net schakelaar"
+        "name": "Laden vanaf net"
       },
       "g_o_switch": {
-        "name": "Teruglevering schakelaar"
+        "name": "Teruglevering aan net"
       },
       "b_soc_low": {
         "name": "Minimale ontlaadgrens (SoC laag)"
@@ -342,10 +342,10 @@
         }
       },
       "b_time_to_full_total": {
-        "name": "Totale tijd tot vol"
+        "name": "Geschatte tijd tot vol (totaal)"
       },
       "b_time_to_empty_total": {
-        "name": "Totale tijd tot leeg"
+        "name": "Resterende looptijd (totaal)"
       },
       "b_ver_count": {
         "name": "Batterij firmwareversie-slots"
@@ -372,10 +372,10 @@
         "name": "Batterij alarm draagbaar"
       },
       "b_time_to_full": {
-        "name": "Tijd tot vol"
+        "name": "Geschatte tijd tot vol"
       },
       "b_time_to_empty": {
-        "name": "Tijd tot leeg"
+        "name": "Resterende looptijd"
       },
       "d_iot_model": {
         "name": "IoT-module model"
@@ -768,22 +768,22 @@
     },
     "switch": {
       "ac_o_switch": {
-        "name": "AC-uitgang schakelaar"
+        "name": "AC-uitgang"
       },
       "dc_o_switch": {
-        "name": "DC-uitgang schakelaar"
+        "name": "DC-uitgang"
       },
       "g_i_switch": {
-        "name": "Laden van net schakelaar"
+        "name": "Laden vanaf net"
       },
       "g_o_switch": {
-        "name": "Teruglevering schakelaar"
+        "name": "Teruglevering aan net"
       },
       "ac_eco_switch": {
-        "name": "AC ECO schakelaar"
+        "name": "AC-ECO"
       },
       "ac_power_lifting_switch": {
-        "name": "AC Power Lifting schakelaar"
+        "name": "Power Lifting-modus"
       }
     }
   },
