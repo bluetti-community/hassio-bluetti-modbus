@@ -86,9 +86,9 @@
       "d_inverter_status": {
         "name": "Inverter Status",
         "state": {
-          "stop": "Stop",
+          "stop": "Off",
           "off_grid": "Off-Grid Operation",
-          "grid_connected_load": "Grid-Connected Load",
+          "grid_connected_load": "Grid Bypass",
           "grid_connected_operation": "Grid-Connected Operation",
           "grid_connected_charging": "Grid-Connected Charging",
           "grid_connected_discharging": "Grid-Connected Discharging",
@@ -264,9 +264,9 @@
       "d_inverter_1_status": {
         "name": "Inverter 1 Status",
         "state": {
-          "stop": "Stop",
+          "stop": "Off",
           "off_grid": "Off-Grid Operation",
-          "grid_connected_load": "Grid-Connected Load",
+          "grid_connected_load": "Grid Bypass",
           "grid_connected_operation": "Grid-Connected Operation",
           "grid_connected_charging": "Grid-Connected Charging",
           "grid_connected_discharging": "Grid-Connected Discharging",
@@ -286,9 +286,9 @@
       "d_inverter_2_status": {
         "name": "Inverter 2 Status",
         "state": {
-          "stop": "Stop",
+          "stop": "Off",
           "off_grid": "Off-Grid Operation",
-          "grid_connected_load": "Grid-Connected Load",
+          "grid_connected_load": "Grid Bypass",
           "grid_connected_operation": "Grid-Connected Operation",
           "grid_connected_charging": "Grid-Connected Charging",
           "grid_connected_discharging": "Grid-Connected Discharging",
@@ -308,9 +308,9 @@
       "d_inverter_3_status": {
         "name": "Inverter 3 Status",
         "state": {
-          "stop": "Stop",
+          "stop": "Off",
           "off_grid": "Off-Grid Operation",
-          "grid_connected_load": "Grid-Connected Load",
+          "grid_connected_load": "Grid Bypass",
           "grid_connected_operation": "Grid-Connected Operation",
           "grid_connected_charging": "Grid-Connected Charging",
           "grid_connected_discharging": "Grid-Connected Discharging",

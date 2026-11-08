@@ -86,9 +86,9 @@
       "d_inverter_status": {
         "name": "État de l'onduleur",
         "state": {
-          "stop": "Arrêt",
+          "stop": "Éteint",
           "off_grid": "Fonctionnement hors réseau",
-          "grid_connected_load": "Consommation raccordée au réseau",
+          "grid_connected_load": "Bypass réseau",
           "grid_connected_operation": "Fonctionnement raccordé au réseau",
           "grid_connected_charging": "En charge, raccordé au réseau",
           "grid_connected_discharging": "En décharge, raccordé au réseau",
@@ -264,9 +264,9 @@
       "d_inverter_1_status": {
         "name": "Onduleur 1 état",
         "state": {
-          "stop": "Arrêt",
+          "stop": "Éteint",
           "off_grid": "Fonctionnement hors réseau",
-          "grid_connected_load": "Consommation raccordée au réseau",
+          "grid_connected_load": "Bypass réseau",
           "grid_connected_operation": "Fonctionnement raccordé au réseau",
           "grid_connected_charging": "En charge, raccordé au réseau",
           "grid_connected_discharging": "En décharge, raccordé au réseau",
@@ -286,9 +286,9 @@
       "d_inverter_2_status": {
         "name": "Onduleur 2 état",
         "state": {
-          "stop": "Arrêt",
+          "stop": "Éteint",
           "off_grid": "Fonctionnement hors réseau",
-          "grid_connected_load": "Consommation raccordée au réseau",
+          "grid_connected_load": "Bypass réseau",
           "grid_connected_operation": "Fonctionnement raccordé au réseau",
           "grid_connected_charging": "En charge, raccordé au réseau",
           "grid_connected_discharging": "En décharge, raccordé au réseau",
@@ -308,9 +308,9 @@
       "d_inverter_3_status": {
         "name": "Onduleur 3 état",
         "state": {
-          "stop": "Arrêt",
+          "stop": "Éteint",
           "off_grid": "Fonctionnement hors réseau",
-          "grid_connected_load": "Consommation raccordée au réseau",
+          "grid_connected_load": "Bypass réseau",
           "grid_connected_operation": "Fonctionnement raccordé au réseau",
           "grid_connected_charging": "En charge, raccordé au réseau",
           "grid_connected_discharging": "En décharge, raccordé au réseau",
@@ -384,25 +384,25 @@
         "name": "Numéro de série IoT"
       },
       "pack_b_type": {
-        "name": "Type de batterie"
+        "name": "Type"
       },
       "pack_b_v": {
-        "name": "Tension batterie"
+        "name": "Tension"
       },
       "pack_b_c": {
-        "name": "Courant batterie"
+        "name": "Courant"
       },
       "pack_b_soc": {
-        "name": "SoC batterie"
+        "name": "SoC"
       },
       "pack_b_soh": {
-        "name": "SoH batterie"
+        "name": "SoH"
       },
       "pack_b_cycle_count": {
-        "name": "Cycles batterie"
+        "name": "Cycles"
       },
       "pack_b_t_avg": {
-        "name": "Température moyenne de la batterie"
+        "name": "Température moyenne"
       },
       "pack_b_cell_count": {
         "name": "Nombre de cellules"
@@ -411,10 +411,10 @@
         "name": "Nombre de capteurs de température"
       },
       "pack_b_i_e": {
-        "name": "Énergie chargée dans la batterie totale"
+        "name": "Énergie chargée totale"
       },
       "pack_b_o_e": {
-        "name": "Énergie déchargée de la batterie totale"
+        "name": "Énergie déchargée totale"
       },
       "d_timestamp": {
         "name": "Horodatage"
@@ -711,16 +711,16 @@
         "name": "Emplacements de version du firmware"
       },
       "input_power": {
-        "name": "Puissance d'entrée"
+        "name": "Puissance"
       },
       "input_voltage": {
-        "name": "Tension d'entrée"
+        "name": "Tension"
       },
       "input_current": {
-        "name": "Courant d'entrée"
+        "name": "Courant"
       },
       "input_type": {
-        "name": "Type d'entrée",
+        "name": "Type",
         "state": {
           "reserve": "Réservé",
           "car": "Voiture",

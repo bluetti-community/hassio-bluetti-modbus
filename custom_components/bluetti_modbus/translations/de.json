@@ -86,9 +86,9 @@
       "d_inverter_status": {
         "name": "Wechselrichterstatus",
         "state": {
-          "stop": "Gestoppt",
+          "stop": "Außer Betrieb",
           "off_grid": "Inselbetrieb",
-          "grid_connected_load": "Netzgekoppelte Last",
+          "grid_connected_load": "Netz-Bypass",
           "grid_connected_operation": "Netzgekoppelter Betrieb",
           "grid_connected_charging": "Netzgekoppeltes Laden",
           "grid_connected_discharging": "Netzgekoppeltes Entladen",
@@ -264,9 +264,9 @@
       "d_inverter_1_status": {
         "name": "Wechselrichter 1 Status",
         "state": {
-          "stop": "Gestoppt",
+          "stop": "Außer Betrieb",
           "off_grid": "Inselbetrieb",
-          "grid_connected_load": "Netzgekoppelte Last",
+          "grid_connected_load": "Netz-Bypass",
           "grid_connected_operation": "Netzgekoppelter Betrieb",
           "grid_connected_charging": "Netzgekoppeltes Laden",
           "grid_connected_discharging": "Netzgekoppeltes Entladen",
@@ -286,9 +286,9 @@
       "d_inverter_2_status": {
         "name": "Wechselrichter 2 Status",
         "state": {
-          "stop": "Gestoppt",
+          "stop": "Außer Betrieb",
           "off_grid": "Inselbetrieb",
-          "grid_connected_load": "Netzgekoppelte Last",
+          "grid_connected_load": "Netz-Bypass",
           "grid_connected_operation": "Netzgekoppelter Betrieb",
           "grid_connected_charging": "Netzgekoppeltes Laden",
           "grid_connected_discharging": "Netzgekoppeltes Entladen",
@@ -308,9 +308,9 @@
       "d_inverter_3_status": {
         "name": "Wechselrichter 3 Status",
         "state": {
-          "stop": "Gestoppt",
+          "stop": "Außer Betrieb",
           "off_grid": "Inselbetrieb",
-          "grid_connected_load": "Netzgekoppelte Last",
+          "grid_connected_load": "Netz-Bypass",
           "grid_connected_operation": "Netzgekoppelter Betrieb",
           "grid_connected_charging": "Netzgekoppeltes Laden",
           "grid_connected_discharging": "Netzgekoppeltes Entladen",
@@ -384,25 +384,25 @@
         "name": "IoT-Seriennummer"
       },
       "pack_b_type": {
-        "name": "Batterietyp"
+        "name": "Typ"
       },
       "pack_b_v": {
-        "name": "Batteriespannung"
+        "name": "Spannung"
       },
       "pack_b_c": {
-        "name": "Batteriestrom"
+        "name": "Stromstärke"
       },
       "pack_b_soc": {
-        "name": "Batterieladezustand (SoC)"
+        "name": "Ladezustand (SoC)"
       },
       "pack_b_soh": {
-        "name": "Batteriezustand (SoH)"
+        "name": "Zustand (SoH)"
       },
       "pack_b_cycle_count": {
         "name": "Ladezyklen"
       },
       "pack_b_t_avg": {
-        "name": "Durchschnittliche Batterietemperatur"
+        "name": "Durchschnittstemperatur"
       },
       "pack_b_cell_count": {
         "name": "Anzahl Batteriezellen"
@@ -411,10 +411,10 @@
         "name": "Anzahl Temperatursensoren"
       },
       "pack_b_i_e": {
-        "name": "Geladene Batterieenergie Gesamt"
+        "name": "Geladene Energie Gesamt"
       },
       "pack_b_o_e": {
-        "name": "Entladene Batterieenergie Gesamt"
+        "name": "Entladene Energie Gesamt"
       },
       "d_timestamp": {
         "name": "Zeitstempel"
@@ -711,16 +711,16 @@
         "name": "Firmware-Versionsplätze"
       },
       "input_power": {
-        "name": "Eingangsleistung"
+        "name": "Leistung"
       },
       "input_voltage": {
-        "name": "Eingangsspannung"
+        "name": "Spannung"
       },
       "input_current": {
-        "name": "Eingangsstrom"
+        "name": "Stromstärke"
       },
       "input_type": {
-        "name": "Eingangstyp",
+        "name": "Typ",
         "state": {
           "reserve": "Reserviert",
           "car": "Auto",
@@ -760,9 +760,9 @@
       "d_charging_mode": {
         "name": "Lademodus",
         "state": {
-          "standard": "Standard",
-          "silent": "Leise",
-          "turbo": "Turbo"
+          "standard": "Standardmodus",
+          "silent": "Ruhemodus",
+          "turbo": "Schnelllademodus"
         }
       }
     },
