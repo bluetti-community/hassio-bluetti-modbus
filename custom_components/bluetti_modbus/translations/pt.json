@@ -78,7 +78,7 @@
         "name": "Energia total importada da rede"
       },
       "g_o_e_total": {
-        "name": "Energia total exportada para a rede"
+        "name": "Energia injetada total"
       },
       "pv_ac_e": {
         "name": "Energia total PV CA"
@@ -103,16 +103,16 @@
         "name": "Frequência da rede"
       },
       "ac_o_switch": {
-        "name": "Interruptor da saída CA"
+        "name": "Saída CA"
       },
       "dc_o_switch": {
-        "name": "Interruptor da saída CC"
+        "name": "Saída CC"
       },
       "g_i_switch": {
-        "name": "Interruptor de carga pela rede"
+        "name": "Carregar da rede"
       },
       "g_o_switch": {
-        "name": "Interruptor de injeção na rede"
+        "name": "Injeção na rede"
       },
       "b_soc_low": {
         "name": "Limite mínimo de descarga (SoC baixo)"
@@ -184,7 +184,7 @@
         "name": "Energia importada da rede"
       },
       "g_o_e_local": {
-        "name": "Energia exportada para a rede"
+        "name": "Energia injetada na rede"
       },
       "ac_o_e_local": {
         "name": "Energia de saída CA"
@@ -342,10 +342,10 @@
         }
       },
       "b_time_to_full_total": {
-        "name": "Tempo total até carga completa"
+        "name": "Tempo estimado de carga (total)"
       },
       "b_time_to_empty_total": {
-        "name": "Tempo total até esvaziar"
+        "name": "Tempo restante (total)"
       },
       "b_ver_count": {
         "name": "Slots de versão de firmware da bateria"
@@ -372,10 +372,10 @@
         "name": "Alarme portátil da bateria"
       },
       "b_time_to_full": {
-        "name": "Tempo até carga completa"
+        "name": "Tempo estimado de carga"
       },
       "b_time_to_empty": {
-        "name": "Tempo até esvaziar"
+        "name": "Tempo restante"
       },
       "d_iot_model": {
         "name": "Modelo do módulo IoT"
@@ -768,22 +768,22 @@
     },
     "switch": {
       "ac_o_switch": {
-        "name": "Interruptor da saída CA"
+        "name": "Saída CA"
       },
       "dc_o_switch": {
-        "name": "Interruptor da saída CC"
+        "name": "Saída CC"
       },
       "g_i_switch": {
-        "name": "Interruptor de carga pela rede"
+        "name": "Carregar da rede"
       },
       "g_o_switch": {
-        "name": "Interruptor de injeção na rede"
+        "name": "Injeção na rede"
       },
       "ac_eco_switch": {
-        "name": "Interruptor CA ECO"
+        "name": "CA-ECO"
       },
       "ac_power_lifting_switch": {
-        "name": "Interruptor CA Power Lifting"
+        "name": "Modo Power Lifting"
       }
     }
   },
