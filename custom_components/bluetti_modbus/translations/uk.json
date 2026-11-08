@@ -86,9 +86,9 @@
       "d_inverter_status": {
         "name": "Стан інвертора",
         "state": {
-          "stop": "Зупинено",
+          "stop": "Вимкнено",
           "off_grid": "Автономна робота",
-          "grid_connected_load": "Навантаження з підключенням до мережі",
+          "grid_connected_load": "Обхід мережі",
           "grid_connected_operation": "Робота з підключенням до мережі",
           "grid_connected_charging": "Заряджання з підключенням до мережі",
           "grid_connected_discharging": "Розряджання з підключенням до мережі",
@@ -264,9 +264,9 @@
       "d_inverter_1_status": {
         "name": "Інвертор 1, стан",
         "state": {
-          "stop": "Зупинено",
+          "stop": "Вимкнено",
           "off_grid": "Автономна робота",
-          "grid_connected_load": "Навантаження з підключенням до мережі",
+          "grid_connected_load": "Обхід мережі",
           "grid_connected_operation": "Робота з підключенням до мережі",
           "grid_connected_charging": "Заряджання з підключенням до мережі",
           "grid_connected_discharging": "Розряджання з підключенням до мережі",
@@ -286,9 +286,9 @@
       "d_inverter_2_status": {
         "name": "Інвертор 2, стан",
         "state": {
-          "stop": "Зупинено",
+          "stop": "Вимкнено",
           "off_grid": "Автономна робота",
-          "grid_connected_load": "Навантаження з підключенням до мережі",
+          "grid_connected_load": "Обхід мережі",
           "grid_connected_operation": "Робота з підключенням до мережі",
           "grid_connected_charging": "Заряджання з підключенням до мережі",
           "grid_connected_discharging": "Розряджання з підключенням до мережі",
@@ -308,9 +308,9 @@
       "d_inverter_3_status": {
         "name": "Інвертор 3, стан",
         "state": {
-          "stop": "Зупинено",
+          "stop": "Вимкнено",
           "off_grid": "Автономна робота",
-          "grid_connected_load": "Навантаження з підключенням до мережі",
+          "grid_connected_load": "Обхід мережі",
           "grid_connected_operation": "Робота з підключенням до мережі",
           "grid_connected_charging": "Заряджання з підключенням до мережі",
           "grid_connected_discharging": "Розряджання з підключенням до мережі",
@@ -384,25 +384,25 @@
         "name": "Серійний номер IoT"
       },
       "pack_b_type": {
-        "name": "Тип батареї"
+        "name": "Тип"
       },
       "pack_b_v": {
-        "name": "Напруга батареї"
+        "name": "Напруга"
       },
       "pack_b_c": {
-        "name": "Струм батареї"
+        "name": "Струм"
       },
       "pack_b_soc": {
-        "name": "SoC батареї"
+        "name": "SoC"
       },
       "pack_b_soh": {
-        "name": "SoH батареї"
+        "name": "SoH"
       },
       "pack_b_cycle_count": {
-        "name": "Кількість циклів батареї"
+        "name": "Кількість циклів"
       },
       "pack_b_t_avg": {
-        "name": "Середня температура батареї"
+        "name": "Середня температура"
       },
       "pack_b_cell_count": {
         "name": "Кількість комірок"
@@ -411,10 +411,10 @@
         "name": "Кількість датчиків температури"
       },
       "pack_b_i_e": {
-        "name": "Загальна енергія заряду батареї"
+        "name": "Загальна енергія заряду"
       },
       "pack_b_o_e": {
-        "name": "Загальна енергія розряду батареї"
+        "name": "Загальна енергія розряду"
       },
       "d_timestamp": {
         "name": "Мітка часу"
@@ -711,16 +711,16 @@
         "name": "Слоти версій прошивки"
       },
       "input_power": {
-        "name": "Вхідна потужність"
+        "name": "Потужність"
       },
       "input_voltage": {
-        "name": "Вхідна напруга"
+        "name": "Напруга"
       },
       "input_current": {
-        "name": "Вхідний струм"
+        "name": "Струм"
       },
       "input_type": {
-        "name": "Тип входу",
+        "name": "Тип",
         "state": {
           "reserve": "Резерв",
           "car": "Автомобіль",

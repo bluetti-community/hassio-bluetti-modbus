@@ -86,9 +86,9 @@
       "d_inverter_status": {
         "name": "Status do inversor",
         "state": {
-          "stop": "Parado",
+          "stop": "Desligado",
           "off_grid": "Operação fora da rede",
-          "grid_connected_load": "Carga conectada à rede",
+          "grid_connected_load": "Bypass da rede",
           "grid_connected_operation": "Operação conectada à rede",
           "grid_connected_charging": "Carregando conectado à rede",
           "grid_connected_discharging": "Descarregando conectado à rede",
@@ -264,9 +264,9 @@
       "d_inverter_1_status": {
         "name": "Inversor 1 status",
         "state": {
-          "stop": "Parado",
+          "stop": "Desligado",
           "off_grid": "Operação fora da rede",
-          "grid_connected_load": "Carga conectada à rede",
+          "grid_connected_load": "Bypass da rede",
           "grid_connected_operation": "Operação conectada à rede",
           "grid_connected_charging": "Carregando conectado à rede",
           "grid_connected_discharging": "Descarregando conectado à rede",
@@ -286,9 +286,9 @@
       "d_inverter_2_status": {
         "name": "Inversor 2 status",
         "state": {
-          "stop": "Parado",
+          "stop": "Desligado",
           "off_grid": "Operação fora da rede",
-          "grid_connected_load": "Carga conectada à rede",
+          "grid_connected_load": "Bypass da rede",
           "grid_connected_operation": "Operação conectada à rede",
           "grid_connected_charging": "Carregando conectado à rede",
           "grid_connected_discharging": "Descarregando conectado à rede",
@@ -308,9 +308,9 @@
       "d_inverter_3_status": {
         "name": "Inversor 3 status",
         "state": {
-          "stop": "Parado",
+          "stop": "Desligado",
           "off_grid": "Operação fora da rede",
-          "grid_connected_load": "Carga conectada à rede",
+          "grid_connected_load": "Bypass da rede",
           "grid_connected_operation": "Operação conectada à rede",
           "grid_connected_charging": "Carregando conectado à rede",
           "grid_connected_discharging": "Descarregando conectado à rede",
@@ -384,25 +384,25 @@
         "name": "Número de série IoT"
       },
       "pack_b_type": {
-        "name": "Tipo de bateria"
+        "name": "Tipo"
       },
       "pack_b_v": {
-        "name": "Tensão da bateria"
+        "name": "Tensão"
       },
       "pack_b_c": {
-        "name": "Corrente da bateria"
+        "name": "Corrente"
       },
       "pack_b_soc": {
-        "name": "SoC da bateria"
+        "name": "SoC"
       },
       "pack_b_soh": {
-        "name": "SoH da bateria"
+        "name": "SoH"
       },
       "pack_b_cycle_count": {
-        "name": "Ciclos da bateria"
+        "name": "Ciclos"
       },
       "pack_b_t_avg": {
-        "name": "Temperatura média da bateria"
+        "name": "Temperatura média"
       },
       "pack_b_cell_count": {
         "name": "Número de células"
@@ -411,10 +411,10 @@
         "name": "Número de sensores de temperatura"
       },
       "pack_b_i_e": {
-        "name": "Energia total carregada na bateria"
+        "name": "Energia total carregada"
       },
       "pack_b_o_e": {
-        "name": "Energia total descarregada da bateria"
+        "name": "Energia total descarregada"
       },
       "d_timestamp": {
         "name": "Carimbo de data/hora"
@@ -711,16 +711,16 @@
         "name": "Slots de versão de firmware"
       },
       "input_power": {
-        "name": "Potência de entrada"
+        "name": "Potência"
       },
       "input_voltage": {
-        "name": "Tensão de entrada"
+        "name": "Tensão"
       },
       "input_current": {
-        "name": "Corrente de entrada"
+        "name": "Corrente"
       },
       "input_type": {
-        "name": "Tipo de entrada",
+        "name": "Tipo",
         "state": {
           "reserve": "Reservado",
           "car": "Carro",

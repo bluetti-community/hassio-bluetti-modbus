@@ -86,9 +86,9 @@
       "d_inverter_status": {
         "name": "Omvormerstatus",
         "state": {
-          "stop": "Gestopt",
+          "stop": "Uit",
           "off_grid": "Off-grid bedrijf",
-          "grid_connected_load": "Netgekoppelde belasting",
+          "grid_connected_load": "Net-bypass",
           "grid_connected_operation": "Netgekoppeld bedrijf",
           "grid_connected_charging": "Netgekoppeld laden",
           "grid_connected_discharging": "Netgekoppeld ontladen",
@@ -264,9 +264,9 @@
       "d_inverter_1_status": {
         "name": "Omvormer 1 status",
         "state": {
-          "stop": "Gestopt",
+          "stop": "Uit",
           "off_grid": "Off-grid bedrijf",
-          "grid_connected_load": "Netgekoppelde belasting",
+          "grid_connected_load": "Net-bypass",
           "grid_connected_operation": "Netgekoppeld bedrijf",
           "grid_connected_charging": "Netgekoppeld laden",
           "grid_connected_discharging": "Netgekoppeld ontladen",
@@ -286,9 +286,9 @@
       "d_inverter_2_status": {
         "name": "Omvormer 2 status",
         "state": {
-          "stop": "Gestopt",
+          "stop": "Uit",
           "off_grid": "Off-grid bedrijf",
-          "grid_connected_load": "Netgekoppelde belasting",
+          "grid_connected_load": "Net-bypass",
           "grid_connected_operation": "Netgekoppeld bedrijf",
           "grid_connected_charging": "Netgekoppeld laden",
           "grid_connected_discharging": "Netgekoppeld ontladen",
@@ -308,9 +308,9 @@
       "d_inverter_3_status": {
         "name": "Omvormer 3 status",
         "state": {
-          "stop": "Gestopt",
+          "stop": "Uit",
           "off_grid": "Off-grid bedrijf",
-          "grid_connected_load": "Netgekoppelde belasting",
+          "grid_connected_load": "Net-bypass",
           "grid_connected_operation": "Netgekoppeld bedrijf",
           "grid_connected_charging": "Netgekoppeld laden",
           "grid_connected_discharging": "Netgekoppeld ontladen",
@@ -384,25 +384,25 @@
         "name": "IoT-serienummer"
       },
       "pack_b_type": {
-        "name": "Batterijtype"
+        "name": "Type"
       },
       "pack_b_v": {
-        "name": "Batterijspanning"
+        "name": "Spanning"
       },
       "pack_b_c": {
-        "name": "Batterijstroom"
+        "name": "Stroom"
       },
       "pack_b_soc": {
-        "name": "Batterij-SoC"
+        "name": "SoC"
       },
       "pack_b_soh": {
-        "name": "Batterij-SoH"
+        "name": "SoH"
       },
       "pack_b_cycle_count": {
-        "name": "Batterij laadcycli"
+        "name": "Laadcycli"
       },
       "pack_b_t_avg": {
-        "name": "Gemiddelde batterijtemperatuur"
+        "name": "Gemiddelde temperatuur"
       },
       "pack_b_cell_count": {
         "name": "Aantal cellen"
@@ -411,10 +411,10 @@
         "name": "Aantal temperatuursensoren"
       },
       "pack_b_i_e": {
-        "name": "Totale geladen batterijenergie"
+        "name": "Totale geladen energie"
       },
       "pack_b_o_e": {
-        "name": "Totale ontladen batterijenergie"
+        "name": "Totale ontladen energie"
       },
       "d_timestamp": {
         "name": "Tijdstempel"
@@ -711,16 +711,16 @@
         "name": "Firmwareversie-slots"
       },
       "input_power": {
-        "name": "Ingangsvermogen"
+        "name": "Vermogen"
       },
       "input_voltage": {
-        "name": "Ingangsspanning"
+        "name": "Spanning"
       },
       "input_current": {
-        "name": "Ingangsstroom"
+        "name": "Stroom"
       },
       "input_type": {
-        "name": "Ingangstype",
+        "name": "Type",
         "state": {
           "reserve": "Gereserveerd",
           "car": "Auto",

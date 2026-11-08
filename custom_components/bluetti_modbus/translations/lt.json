@@ -86,9 +86,9 @@
       "d_inverter_status": {
         "name": "Inverterio būsena",
         "state": {
-          "stop": "Sustabdytas",
+          "stop": "Išjungtas",
           "off_grid": "Autonominis režimas",
-          "grid_connected_load": "Prijungto prie tinklo apkrova",
+          "grid_connected_load": "Tinklo apėjimas",
           "grid_connected_operation": "Darbas prijungus prie tinklo",
           "grid_connected_charging": "Įkrovimas prijungus prie tinklo",
           "grid_connected_discharging": "Iškrovimas prijungus prie tinklo",
@@ -264,9 +264,9 @@
       "d_inverter_1_status": {
         "name": "1 inverterio būsena",
         "state": {
-          "stop": "Sustabdytas",
+          "stop": "Išjungtas",
           "off_grid": "Autonominis režimas",
-          "grid_connected_load": "Prijungto prie tinklo apkrova",
+          "grid_connected_load": "Tinklo apėjimas",
           "grid_connected_operation": "Darbas prijungus prie tinklo",
           "grid_connected_charging": "Įkrovimas prijungus prie tinklo",
           "grid_connected_discharging": "Iškrovimas prijungus prie tinklo",
@@ -286,9 +286,9 @@
       "d_inverter_2_status": {
         "name": "2 inverterio būsena",
         "state": {
-          "stop": "Sustabdytas",
+          "stop": "Išjungtas",
           "off_grid": "Autonominis režimas",
-          "grid_connected_load": "Prijungto prie tinklo apkrova",
+          "grid_connected_load": "Tinklo apėjimas",
           "grid_connected_operation": "Darbas prijungus prie tinklo",
           "grid_connected_charging": "Įkrovimas prijungus prie tinklo",
           "grid_connected_discharging": "Iškrovimas prijungus prie tinklo",
@@ -308,9 +308,9 @@
       "d_inverter_3_status": {
         "name": "3 inverterio būsena",
         "state": {
-          "stop": "Sustabdytas",
+          "stop": "Išjungtas",
           "off_grid": "Autonominis režimas",
-          "grid_connected_load": "Prijungto prie tinklo apkrova",
+          "grid_connected_load": "Tinklo apėjimas",
           "grid_connected_operation": "Darbas prijungus prie tinklo",
           "grid_connected_charging": "Įkrovimas prijungus prie tinklo",
           "grid_connected_discharging": "Iškrovimas prijungus prie tinklo",
@@ -384,25 +384,25 @@
         "name": "IoT serijos numeris"
       },
       "pack_b_type": {
-        "name": "Baterijos tipas"
+        "name": "Tipas"
       },
       "pack_b_v": {
-        "name": "Baterijos įtampa"
+        "name": "Įtampa"
       },
       "pack_b_c": {
-        "name": "Baterijos srovė"
+        "name": "Srovė"
       },
       "pack_b_soc": {
-        "name": "Baterijos SoC"
+        "name": "SoC"
       },
       "pack_b_soh": {
-        "name": "Baterijos SoH"
+        "name": "SoH"
       },
       "pack_b_cycle_count": {
-        "name": "Baterijos ciklų skaičius"
+        "name": "Ciklų skaičius"
       },
       "pack_b_t_avg": {
-        "name": "Vidutinė baterijos temperatūra"
+        "name": "Vidutinė temperatūra"
       },
       "pack_b_cell_count": {
         "name": "Elementų skaičius"
@@ -411,10 +411,10 @@
         "name": "Temperatūros jutiklių skaičius"
       },
       "pack_b_i_e": {
-        "name": "Bendra į bateriją įkrauta energija"
+        "name": "Bendra įkrauta energija"
       },
       "pack_b_o_e": {
-        "name": "Bendra iš baterijos iškrauta energija"
+        "name": "Bendra iškrauta energija"
       },
       "d_timestamp": {
         "name": "Laiko žyma"
@@ -711,16 +711,16 @@
         "name": "Programinės įrangos versijų vietos"
       },
       "input_power": {
-        "name": "Įėjimo galia"
+        "name": "Galia"
       },
       "input_voltage": {
-        "name": "Įėjimo įtampa"
+        "name": "Įtampa"
       },
       "input_current": {
-        "name": "Įėjimo srovė"
+        "name": "Srovė"
       },
       "input_type": {
-        "name": "Įėjimo tipas",
+        "name": "Tipas",
         "state": {
           "reserve": "Rezervuota",
           "car": "Automobilis",
