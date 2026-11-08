@@ -762,7 +762,8 @@
         "state": {
           "standard": "Standard",
           "silent": "Silent",
-          "turbo": "Turbo"
+          "turbo": "Turbo",
+          "custom": "Custom"
         }
       }
     },

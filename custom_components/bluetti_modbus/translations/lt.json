@@ -762,7 +762,8 @@
         "state": {
           "standard": "Standartinis",
           "silent": "Tylus",
-          "turbo": "Turbo"
+          "turbo": "Turbo",
+          "custom": "Pasirinktinis"
         }
       }
     },

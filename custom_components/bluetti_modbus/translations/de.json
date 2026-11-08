@@ -762,7 +762,8 @@
         "state": {
           "standard": "Standardmodus",
           "silent": "Ruhemodus",
-          "turbo": "Schnelllademodus"
+          "turbo": "Schnelllademodus",
+          "custom": "Individueller Lademodus"
         }
       }
     },

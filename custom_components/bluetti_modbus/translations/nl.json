@@ -762,7 +762,8 @@
         "state": {
           "standard": "Standaard",
           "silent": "Stil",
-          "turbo": "Turbo"
+          "turbo": "Turbo",
+          "custom": "Aangepast"
         }
       }
     },
