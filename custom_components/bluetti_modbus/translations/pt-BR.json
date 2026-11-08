@@ -762,7 +762,8 @@
         "state": {
           "standard": "Padrão",
           "silent": "Silencioso",
-          "turbo": "Turbo"
+          "turbo": "Turbo",
+          "custom": "Personalizado"
         }
       }
     },

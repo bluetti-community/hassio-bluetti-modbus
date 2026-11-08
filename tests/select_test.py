@@ -10,6 +10,7 @@ from custom_components.bluetti_modbus.select import (
 )
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import get_device
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib.enums import (
+    ApexChargingMode,
     ChargingMode,
 )
 
@@ -129,6 +130,20 @@ class TestAc200lProfile(unittest.TestCase):
         self.assertEqual(field.address, 57023)
         self.assertTrue(field.writable)
         self.assertIs(field.convert, ChargingMode)
+
+
+class TestPa030Profile(unittest.TestCase):
+    def test_charging_mode_adds_custom_to_the_ac200l_modes(self):
+        field = get_device("pa030").get_field("d_charging_mode")
+        self.assertIsNotNone(field)
+        self.assertEqual(field.address, 57023)
+        self.assertTrue(field.writable)
+        self.assertIs(field.convert, ApexChargingMode)
+
+    def test_the_select_offers_custom(self):
+        coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"), data={})
+        select = BluettiSelectEntity(coordinator, _device_info(), "d_charging_mode", ApexChargingMode)
+        self.assertEqual(select.options, ["standard", "silent", "turbo", "custom"])
 
 
 class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):

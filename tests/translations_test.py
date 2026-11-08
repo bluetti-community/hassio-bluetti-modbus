@@ -17,6 +17,7 @@ from custom_components.bluetti_modbus.sensor import (
     _CHILD_BATTERY_TRANSLATION_KEYS,
     PV_INPUT_FIELD,
     PV_INPUT_TRANSLATION_KEYS,
+    _snake_case,
 )
 from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import get_device
 
@@ -101,6 +102,28 @@ class TestTranslationsCoverAllShownFields(unittest.TestCase):
                 if _sensor_key(name) not in sensor_translated:
                     missing.append(f"{dev_type}.{name} (sensor)")
 
+        self.assertEqual(missing, [])
+
+
+class TestSelectOptionsHaveALabel(unittest.TestCase):
+    """A select option with no state label shows its raw key."""
+
+    def test_every_option_has_a_label_in_every_language(self):
+        missing = []
+        for dev_type in _DEV_TYPES:
+            device = get_device(dev_type)
+            assert device is not None
+            for name in FIELDS_SHOWN_VIA_SELECT:
+                field = device.get_field(name)
+                if field is None or not field.writable:
+                    continue
+                for lang in _LANGUAGES:
+                    states = _translations(lang)["entity"]["select"][name]["state"]
+                    missing.extend(
+                        f"{lang}: {dev_type}.{name}.{_snake_case(member.name)}"
+                        for member in field.convert
+                        if _snake_case(member.name) not in states
+                    )
         self.assertEqual(missing, [])
 
 

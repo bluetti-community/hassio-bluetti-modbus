@@ -266,9 +266,9 @@ FIELDS_SHOWN_VIA_SWITCH = {
     "ac_power_lifting_switch",
 }
 
-# d_charging_mode (57023, AC200L profile - read on an AC200PL,
-# bluetti-registers#48): the AC charging speed, Standard/Silent/Turbo - a
-# setting chosen from a fixed list. Routed to select.py instead of
+# d_charging_mode (57023, AC200L and PA030 profiles): the AC charging speed,
+# Standard/Silent/Turbo, plus Custom on the Apex 300 - a setting chosen from
+# a fixed list. Routed to select.py instead of
 # sensor.py where bluetti_modbus_lib marks the field writable, same gating
 # as FIELDS_SHOWN_VIA_SWITCH above - the select already shows the current
 # mode, so a read-only sensor next to it would only duplicate it.
