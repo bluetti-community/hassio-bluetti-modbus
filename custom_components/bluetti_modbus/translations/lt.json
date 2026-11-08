@@ -120,6 +120,18 @@
       "b_soc_high": {
         "name": "Maksimali įkrovimo riba (SoC aukšta)"
       },
+      "g_i_c_max": {
+        "name": "Maks. įkrovimo srovė iš tinklo"
+      },
+      "d_working_mode": {
+        "name": "Darbo režimas",
+        "state": {
+          "custom": "Pasirinktinis",
+          "self_consumption": "Savas vartojimas",
+          "backup": "Atsarginis maitinimas",
+          "time_of_use": "Naudojimo laikas"
+        }
+      },
       "d_num_battery_packs": {
         "name": "Baterijų modulių skaičius"
       },

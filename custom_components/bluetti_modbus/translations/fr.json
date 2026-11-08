@@ -120,6 +120,18 @@
       "b_soc_high": {
         "name": "Limite de charge maximale (SoC haut)"
       },
+      "g_i_c_max": {
+        "name": "Courant de charge max. depuis le réseau"
+      },
+      "d_working_mode": {
+        "name": "Mode de fonctionnement",
+        "state": {
+          "custom": "Personnalisé",
+          "self_consumption": "Autoconsommation",
+          "backup": "Alimentation de secours",
+          "time_of_use": "Charge/décharge programmée"
+        }
+      },
       "d_num_battery_packs": {
         "name": "Nombre de packs batterie"
       },

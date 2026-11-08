@@ -127,6 +127,22 @@ class TestSelectOptionsHaveALabel(unittest.TestCase):
         self.assertEqual(missing, [])
 
 
+class TestWorkingModeStatesHaveALabel(unittest.TestCase):
+    """The Apex 300's working mode is an enum sensor: every state needs a label."""
+
+    def test_every_state_has_a_label_in_every_language(self):
+        field = get_device("pa030").get_field("d_working_mode")
+        assert field is not None
+        missing = [
+            f"{lang}: {_snake_case(member.name)}"
+            for lang in _LANGUAGES
+            for member in field.convert
+            if _snake_case(member.name)
+            not in _translations(lang)["entity"]["sensor"]["d_working_mode"]["state"]
+        ]
+        self.assertEqual(missing, [])
+
+
 class TestNoDuplicateSensorNames(unittest.TestCase):
     """Regression test for a real reported bug: pv_ac_p ("Total PV to AC
     power") and pv_ac_p_local ("PV to AC power, this inverter") both
