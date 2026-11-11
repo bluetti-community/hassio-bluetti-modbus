@@ -414,7 +414,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # not a real per-phase implementation.
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+        phase_device_info_fn.side_effect = lambda address, coordinator, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 
@@ -461,7 +461,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # other device, for this fixture to mean what it claims.
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+        phase_device_info_fn.side_effect = lambda address, coordinator, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 
@@ -498,7 +498,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # each, counting the active E codes.
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+        phase_device_info_fn.side_effect = lambda address, coordinator, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 
@@ -543,7 +543,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # battery sub-device construction (see TestCreatesBatterySensors).
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+        phase_device_info_fn.side_effect = lambda address, coordinator, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 
@@ -579,7 +579,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # battery sub-device construction (see TestCreatesBatterySensors).
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+        phase_device_info_fn.side_effect = lambda address, coordinator, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 
@@ -614,7 +614,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         # mode. smeter for the same reason as the ac_o_switch test above.
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+        phase_device_info_fn.side_effect = lambda address, coordinator, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 
@@ -1229,7 +1229,7 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     ):
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+        phase_device_info_fn.side_effect = lambda address, coordinator, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 
@@ -1261,6 +1261,10 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             by_key["ac_a_v"].device_info, {"name": "Test Device Phase A"}
         )
+        phase_device_info_fn.assert_any_call("10.2.1.60", coordinator, "a")
+        # Named by its device class on the phase's device ("Voltage").
+        self.assertIsNone(by_key["ac_a_v"]._attr_translation_key)
+        self.assertEqual(by_key["d_timestamp"]._attr_translation_key, "d_timestamp")
 
     @patch("custom_components.bluetti_modbus.sensor.INDIVIDUAL_BC260_PACKS_CONFIRMED", True)
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
@@ -1627,7 +1631,7 @@ class TestCreatesBatterySensors(unittest.IsolatedAsyncioTestCase):
     ):
         config_cls.from_dict.return_value = MagicMock(dev_type="smeter", address="10.2.1.60")
         dev_info_fn.return_value = _device_info()
-        phase_device_info_fn.side_effect = lambda hass, entry, phase: {
+        phase_device_info_fn.side_effect = lambda address, coordinator, phase: {
             "name": f"Test Device Phase {phase.upper()}"
         }
 

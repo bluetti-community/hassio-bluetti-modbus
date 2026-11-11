@@ -46,6 +46,9 @@
     },
     "mppt": {
       "name": "MPPT {input}"
+    },
+    "phase": {
+      "name": "{phase} fazė"
     }
   },
   "entity": {
@@ -430,60 +433,6 @@
       },
       "d_timestamp": {
         "name": "Laiko žyma"
-      },
-      "ac_a_v": {
-        "name": "A fazės įtampa"
-      },
-      "ac_b_v": {
-        "name": "B fazės įtampa"
-      },
-      "ac_c_v": {
-        "name": "C fazės įtampa"
-      },
-      "ac_a_c": {
-        "name": "A fazės srovė"
-      },
-      "ac_b_c": {
-        "name": "B fazės srovė"
-      },
-      "ac_c_c": {
-        "name": "C fazės srovė"
-      },
-      "ac_a_p": {
-        "name": "A fazės galia"
-      },
-      "ac_b_p": {
-        "name": "B fazės galia"
-      },
-      "ac_c_p": {
-        "name": "C fazės galia"
-      },
-      "ac_a_p_reactive": {
-        "name": "A fazės reaktyvioji galia"
-      },
-      "ac_b_p_reactive": {
-        "name": "B fazės reaktyvioji galia"
-      },
-      "ac_c_p_reactive": {
-        "name": "C fazės reaktyvioji galia"
-      },
-      "ac_a_p_apparent": {
-        "name": "A fazės pilnutinė galia"
-      },
-      "ac_b_p_apparent": {
-        "name": "B fazės pilnutinė galia"
-      },
-      "ac_c_p_apparent": {
-        "name": "C fazės pilnutinė galia"
-      },
-      "ac_a_pf": {
-        "name": "A fazės galios koeficientas"
-      },
-      "ac_b_pf": {
-        "name": "B fazės galios koeficientas"
-      },
-      "ac_c_pf": {
-        "name": "C fazės galios koeficientas"
       },
       "ac_v_avg": {
         "name": "Vidutinė fazės įtampa"

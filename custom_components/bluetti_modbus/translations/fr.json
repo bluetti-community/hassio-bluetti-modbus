@@ -46,6 +46,9 @@
     },
     "mppt": {
       "name": "MPPT {input}"
+    },
+    "phase": {
+      "name": "Phase {phase}"
     }
   },
   "entity": {
@@ -430,60 +433,6 @@
       },
       "d_timestamp": {
         "name": "Horodatage"
-      },
-      "ac_a_v": {
-        "name": "Phase A tension"
-      },
-      "ac_b_v": {
-        "name": "Phase B tension"
-      },
-      "ac_c_v": {
-        "name": "Phase C tension"
-      },
-      "ac_a_c": {
-        "name": "Phase A courant"
-      },
-      "ac_b_c": {
-        "name": "Phase B courant"
-      },
-      "ac_c_c": {
-        "name": "Phase C courant"
-      },
-      "ac_a_p": {
-        "name": "Phase A puissance"
-      },
-      "ac_b_p": {
-        "name": "Phase B puissance"
-      },
-      "ac_c_p": {
-        "name": "Phase C puissance"
-      },
-      "ac_a_p_reactive": {
-        "name": "Phase A puissance réactive"
-      },
-      "ac_b_p_reactive": {
-        "name": "Phase B puissance réactive"
-      },
-      "ac_c_p_reactive": {
-        "name": "Phase C puissance réactive"
-      },
-      "ac_a_p_apparent": {
-        "name": "Phase A puissance apparente"
-      },
-      "ac_b_p_apparent": {
-        "name": "Phase B puissance apparente"
-      },
-      "ac_c_p_apparent": {
-        "name": "Phase C puissance apparente"
-      },
-      "ac_a_pf": {
-        "name": "Phase A facteur de puissance"
-      },
-      "ac_b_pf": {
-        "name": "Phase B facteur de puissance"
-      },
-      "ac_c_pf": {
-        "name": "Phase C facteur de puissance"
       },
       "ac_v_avg": {
         "name": "Tension de phase moyenne"

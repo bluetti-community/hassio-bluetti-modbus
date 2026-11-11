@@ -33,6 +33,7 @@ from . import (
     battery_is_child_device,
     pack_device_info,
     phase_device_info,
+    phase_device_name,
     pv_input_device_info,
 )
 from . import device_info as dev_info
@@ -265,14 +266,12 @@ async def async_setup_entry(
     # same "invalid data" case already ruled out by the config check above.
     assert device_info is not None
 
-    # S Meter's per-phase fields get their own sub-device (see
-    # phase_device_info()'s docstring) - built once per phase, not per field.
-    phase_device_infos: dict[str, DeviceInfo] = {}
+    # S Meter's per-phase fields sit on a child device per phase (see
+    # phase_device_info()) - built once per phase, not per field.
+    phase_device_infos: dict[str, ChildDeviceInfo] = {}
     if config.dev_type == "smeter":
         for phase in SMETER_PHASE_FIELDS:
-            info = phase_device_info(hass, entry, phase)
-            assert info is not None  # same guarantee as dev_info() above
-            phase_device_infos[phase] = info
+            phase_device_infos[phase] = phase_device_info(config.address, coordinator, phase)
 
     # Expansion packs (a Balco 260's BC260, a FridgePower's BC200) get their
     # own sub-device (see pack_device_info()'s docstring and coordinator.py's
@@ -410,7 +409,8 @@ async def async_setup_entry(
             continue
         if field_phase:
             field_device_info = phase_device_infos[field_phase]
-            device_name = field_device_info.get("name")
+            # The unique_id keeps the name of the device the phase had.
+            device_name = phase_device_name(entry, field_phase)
         elif pv_input:
             input_num = int(pv_input.group(1))
             if input_num not in pv_device_infos:
@@ -436,6 +436,9 @@ async def async_setup_entry(
             logger=logger,
             translation_key=translation_key,
             zero_is_unknown=(config.dev_type, field.name) in _ZERO_IS_UNKNOWN,
+            # A phase's readings are named by device class on its device:
+            # "Phase A" "Voltage".
+            named_by_device_class=bool(field_phase),
         )
         sensors_to_add.append(sensor)
 

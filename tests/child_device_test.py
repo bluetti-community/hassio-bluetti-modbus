@@ -23,7 +23,11 @@ from homeassistant.helpers import frame, restore_state, translation
 from homeassistant.helpers import label_registry as lr
 from homeassistant.helpers.entity_platform import EntityPlatform
 
-from custom_components.bluetti_modbus import async_migrate_entry, async_setup_entry
+from custom_components.bluetti_modbus import (
+    async_migrate_entry,
+    async_setup_entry,
+    get_unique_id,
+)
 from custom_components.bluetti_modbus.const import DOMAIN
 from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 from custom_components.bluetti_modbus.sensor import async_setup_entry as sensor_setup
@@ -520,3 +524,117 @@ class TestSlotsBeyondTheCount(_RealRegistries):
             with self.subTest(entity=entity.entity_id):
                 self.assertIsNone(self.entities.async_get(entity.entity_id))
         self.assertIsNotNone(self._entity("g_1_i_p"))
+
+
+# What an S Meter answers, as far as these tests look: no serial over Modbus.
+SMETER_DATA = {
+    "ac_a_v": 231.2,
+    "ac_a_c": 1.5,
+    "ac_a_p": 300,
+    "ac_b_v": 230.4,
+    "ac_c_v": 229.9,
+    "ac_p_total": 300,
+}
+
+
+class TestSmeterPhaseChildDevices(_RealRegistries):
+    def _phase(self, entry, phase):
+        return self.devices.async_get_child_device_by_identifier(
+            (DOMAIN, f"{ADDRESS}-phase-{phase}"), entry.entry_id
+        )
+
+    def _smeter_entity(self, entry, field, phase):
+        # No serial: the unique_id carries the name the phase's device had.
+        unique_id = get_unique_id(f"{entry.entry_id} {entry.title} Phase {phase} {field}")
+        entity_id = self.entities.async_get_entity_id("sensor", DOMAIN, unique_id)
+        assert entity_id is not None, field
+        entity = self.entities.async_get(entity_id)
+        assert entity is not None
+        return entity
+
+    async def test_each_phase_is_a_child_of_the_meter(self):
+        entry = self._entry("smeter", "S Meter")
+
+        await self._setup(entry, SMETER_DATA)
+
+        main = self._main_device(entry)
+        for phase in ("a", "b", "c"):
+            with self.subTest(phase=phase):
+                device = self._phase(entry, phase)
+                self.assertIsNotNone(device)
+                self.assertEqual(device.parent_device_id, main.id)
+                self.assertEqual(device.name, f"Phase {phase.upper()}")
+                self.assertEqual(device.identifiers, {(DOMAIN, f"{ADDRESS}-phase-{phase}")})
+        voltage = self._smeter_entity(entry, "ac_a_v", "A")
+        self.assertEqual(voltage.device_id, self._phase(entry, "a").id)
+        # Named by its device class.
+        self.assertEqual(voltage.original_name, "Voltage")
+        self.assertEqual(self._smeter_entity(entry, "ac_a_c", "A").original_name, "Current")
+        self.assertEqual(self._smeter_entity(entry, "ac_a_p", "A").original_name, "Power")
+        self.assertEqual(self.hass.states.get(voltage.entity_id).name, "Phase A Voltage")
+        # The totals stay on the meter.
+        total = self.entities.async_get_entity_id(
+            "sensor", DOMAIN, get_unique_id(f"{entry.entry_id} S Meter ac_p_total")
+        )
+        self.assertIsNotNone(total)
+        self.assertEqual(self.entities.async_get(total).device_id, main.id)
+
+    async def test_a_new_install_names_the_entity_after_the_child_device(self):
+        entry = self._entry("smeter", "S Meter")
+
+        await self._setup(entry, SMETER_DATA)
+
+        self.assertEqual(
+            self._smeter_entity(entry, "ac_a_v", "A").entity_id, "sensor.s_meter_phase_a_voltage"
+        )
+
+    async def test_the_old_phase_device_becomes_the_child(self):
+        entry = self._entry("smeter", "S Meter")
+        area = ar.async_get(self.hass).async_create("Garage")
+        main = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id, identifiers={(DOMAIN, ADDRESS)}, name="S Meter"
+        )
+        old = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, f"{ADDRESS}-phase-a")},
+            name="S Meter Phase A",
+            manufacturer="BLUETTI",
+            model="S Meter",
+            via_device_id=main.id,
+        )
+        self.devices.async_update_device(old.id, area_id=area.id, name_by_user="House phase")
+        voltage = self.entities.async_get_or_create(
+            "sensor",
+            DOMAIN,
+            get_unique_id(f"{entry.entry_id} S Meter Phase A ac_a_v"),
+            config_entry=entry,
+            device_id=old.id,
+            suggested_object_id="s_meter_phase_a_phase_a_voltage",
+        )
+        # Home Assistant restarts: the devices are no longer the live ones of
+        # a setup.
+        self.devices.async_config_entry_unloaded(entry.entry_id)
+
+        await self._setup(entry, SMETER_DATA)
+
+        phase = self._phase(entry, "a")
+        self.assertIsNotNone(phase)
+        self.assertEqual(phase.id, old.id)
+        self.assertEqual(phase.parent_device_id, main.id)
+        self.assertEqual(phase.area_id, area.id)
+        self.assertEqual(phase.name_by_user, "House phase")
+        # The entity keeps its entity_id, and with it its history.
+        entity = self._smeter_entity(entry, "ac_a_v", "A")
+        self.assertEqual(entity.id, voltage.id)
+        self.assertEqual(entity.entity_id, "sensor.s_meter_phase_a_phase_a_voltage")
+        self.assertEqual(entity.device_id, phase.id)
+
+    async def test_removing_the_meter_removes_its_phases(self):
+        entry = self._entry("smeter", "S Meter")
+        await self._setup(entry, SMETER_DATA)
+        self.assertIsNotNone(self._phase(entry, "a"))
+
+        self.devices.async_remove_device(self._main_device(entry).id)
+
+        for phase in ("a", "b", "c"):
+            self.assertIsNone(self._phase(entry, phase))

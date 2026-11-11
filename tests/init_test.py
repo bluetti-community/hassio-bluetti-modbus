@@ -14,6 +14,7 @@ from custom_components.bluetti_modbus import (
     get_unique_id,
     pack_device_info,
     phase_device_info,
+    phase_device_name,
     stacked_battery_model,
     sub_device_model,
 )
@@ -2126,30 +2127,28 @@ class TestDeviceInfo(unittest.TestCase):
 
 
 class TestPhaseDeviceInfo(unittest.TestCase):
-    @patch("custom_components.bluetti_modbus.dr")
-    def test_returns_sub_device_info_linked_to_the_main_device(self, dr_module):
-        dr_module.async_get_device_id_by_identifier.return_value = "main-device-id"
-        entry = MagicMock()
-        entry.entry_id = "entry1"
-        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "smeter"}
-        entry.title = "My S Meter"
-        hass = MagicMock()
+    # Patched for the same reason as in TestBatteryDeviceInfo below.
+    @patch("custom_components.bluetti_modbus.ChildDeviceInfo")
+    def test_a_phase_is_a_child_device_of_the_meter(self, child_info_cls):
+        coordinator = MagicMock(device_id="main-device-id")
 
-        info = phase_device_info(hass, entry, "a")
+        info = phase_device_info("10.2.1.60", coordinator, "a")
 
-        self.assertEqual(info["identifiers"], {(DOMAIN, "10.2.1.60-phase-a")})
-        self.assertEqual(info["name"], "My S Meter Phase A")
-        self.assertEqual(info["via_device_id"], "main-device-id")
-        dr_module.async_get_device_id_by_identifier.assert_called_once_with(
-            hass, (DOMAIN, "10.2.1.60"), config_entry_id="entry1"
+        self.assertIs(info, child_info_cls.return_value)
+        # The identifier the phase had as a device of its own: the registry
+        # converts that device in place.
+        child_info_cls.assert_called_once_with(
+            identifiers={(DOMAIN, "10.2.1.60-phase-a")},
+            parent_device_id="main-device-id",
+            translation_key="phase",
+            translation_placeholders={"phase": "A"},
         )
 
-    def test_returns_none_for_invalid_entry(self):
+    def test_the_name_its_unique_ids_carry(self):
         entry = MagicMock()
-        entry.data = {}
-        hass = MagicMock()
+        entry.title = "My S Meter"
 
-        self.assertIsNone(phase_device_info(hass, entry, "a"))
+        self.assertEqual(phase_device_name(entry, "b"), "My S Meter Phase B")
 
 
 class TestSubDeviceModel(unittest.TestCase):
