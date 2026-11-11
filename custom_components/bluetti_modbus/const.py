@@ -174,6 +174,10 @@ SMETER_PHASE_FIELDS: dict[str, tuple[str, ...]] = {
     "c": ("ac_c_v", "ac_c_c", "ac_c_p", "ac_c_p_reactive", "ac_c_p_apparent", "ac_c_pf"),
 }
 
+# S Meter fields named as on the BLUETTI app's meter screen, under a key of
+# their own: the stations share the field and keep their name.
+SMETER_TRANSLATION_KEYS = {"g_i_e_total": "smeter_g_i_e_total"}
+
 # d_status (55111) decodes to a bool already (bluetti_modbus_lib's
 # bit_flag()) - a confirmed, single-bit online status, unlike this project's
 # other undecoded bitmap/status registers. Routed to binary_sensor.py

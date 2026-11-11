@@ -83,6 +83,9 @@
       "g_o_e_total": {
         "name": "Totale netteruglevering"
       },
+      "smeter_g_i_e_total": {
+        "name": "Totale netafname"
+      },
       "pv_ac_e": {
         "name": "Totale PV-AC-energie"
       },

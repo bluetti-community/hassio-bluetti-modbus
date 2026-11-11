@@ -56,6 +56,7 @@ from .const import (
     FP_FIELDS_NOT_SHOWN,
     INDIVIDUAL_BC260_PACKS_CONFIRMED,
     SMETER_PHASE_FIELDS,
+    SMETER_TRANSLATION_KEYS,
 )
 from .coordinator import PollingCoordinator
 from .field_metadata import metadata_for
@@ -420,6 +421,8 @@ async def async_setup_entry(
             # The unique_id keeps the station's name the entity had there.
             field_device_info = pv_device_infos[input_num]
             translation_key = PV_INPUT_TRANSLATION_KEYS[pv_input.group(2)]
+        elif config.dev_type == "smeter":
+            translation_key = SMETER_TRANSLATION_KEYS.get(field.name)
         sensor = BluettiSensor(
             coordinator,
             field_device_info,

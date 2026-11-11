@@ -83,6 +83,9 @@
       "g_o_e_total": {
         "name": "Total Grid Export Energy"
       },
+      "smeter_g_i_e_total": {
+        "name": "Total Grid Import Energy"
+      },
       "pv_ac_e": {
         "name": "Total PV AC Energy"
       },

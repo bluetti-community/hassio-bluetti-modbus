@@ -83,6 +83,9 @@
       "g_o_e_total": {
         "name": "Énergie injectée cumulée"
       },
+      "smeter_g_i_e_total": {
+        "name": "Consommation cumulée"
+      },
       "pv_ac_e": {
         "name": "Énergie PV AC totale"
       },

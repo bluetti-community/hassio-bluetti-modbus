@@ -83,6 +83,9 @@
       "g_o_e_total": {
         "name": "Gesamte Einspeisung"
       },
+      "smeter_g_i_e_total": {
+        "name": "Gesamtverbrauch"
+      },
       "pv_ac_e": {
         "name": "PV-AC-Energie Gesamt"
       },

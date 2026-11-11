@@ -83,6 +83,9 @@
       "g_o_e_total": {
         "name": "Bendra į tinklą atiduota energija"
       },
+      "smeter_g_i_e_total": {
+        "name": "Bendra iš tinklo gauta energija"
+      },
       "pv_ac_e": {
         "name": "Bendra PV AC energija"
       },

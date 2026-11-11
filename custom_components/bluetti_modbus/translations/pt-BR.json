@@ -83,6 +83,9 @@
       "g_o_e_total": {
         "name": "Energia injetada total"
       },
+      "smeter_g_i_e_total": {
+        "name": "Consumo total"
+      },
       "pv_ac_e": {
         "name": "Energia total PV CA"
       },

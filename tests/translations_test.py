@@ -13,6 +13,7 @@ from custom_components.bluetti_modbus.const import (
     FIELDS_SHOWN_VIA_SELECT,
     FIELDS_SHOWN_VIA_SWITCH,
     SMETER_PHASE_FIELDS,
+    SMETER_TRANSLATION_KEYS,
 )
 from custom_components.bluetti_modbus.sensor import (
     _CHILD_BATTERY_TRANSLATION_KEYS,
@@ -57,10 +58,14 @@ _DEV_TYPES = tuple(DEVICE_TYPE_DISPLAY_NAMES)
 _PHASE_FIELDS = {name for names in SMETER_PHASE_FIELDS.values() for name in names}
 
 
-def _sensor_key(name):
+def _sensor_key(dev_type, name):
     """The translation key a sensor field is named by (sensor.py)."""
     pv_input = PV_INPUT_FIELD.match(name)
-    return PV_INPUT_TRANSLATION_KEYS[pv_input.group(2)] if pv_input else name
+    if pv_input:
+        return PV_INPUT_TRANSLATION_KEYS[pv_input.group(2)]
+    if dev_type == "smeter":
+        return SMETER_TRANSLATION_KEYS.get(name, name)
+    return name
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):
@@ -107,7 +112,7 @@ class TestTranslationsCoverAllShownFields(unittest.TestCase):
                 # Named by device class on its phase's device.
                 if name in _PHASE_FIELDS:
                     continue
-                if _sensor_key(name) not in sensor_translated:
+                if _sensor_key(dev_type, name) not in sensor_translated:
                     missing.append(f"{dev_type}.{name} (sensor)")
 
         self.assertEqual(missing, [])
@@ -191,7 +196,7 @@ class TestNoDuplicateSensorNames(unittest.TestCase):
                 # One device per phase, its readings named by device class.
                 if name in _PHASE_FIELDS:
                     continue
-                entry = sensor_names.get(name)
+                entry = sensor_names.get(_sensor_key(dev_type, name))
                 if entry is None:
                     continue  # already reported by the coverage test above
                 display_name = entry["name"]
