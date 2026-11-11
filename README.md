@@ -234,7 +234,7 @@ The exact set depends on your model.
 - **Inverter:** status, type, power, voltage and current per inverter, and totals.
 - **Diagnostics:** serial numbers, firmware versions, counts, protection and alarm registers. Inverter faults and warnings show the number of active codes, with each code and its meaning as attributes. On a Balco 260, also the Wi-Fi signal.
 - **S Meter:** voltage, current, active, reactive and apparent power and power factor per phase, plus totals and averages.
-- **Switches and numbers:** AC Output, DC Output, Grid Charging, Grid Feed-in, AC ECO, AC Power Lifting, Min Discharge Limit (5-90 %) and Max Charge Limit (0-100 %), on the models listed in [Supported devices](#supported-devices).
+- **Switches and numbers:** AC Output, DC Output, Grid Charging, Grid Feed-in, AC ECO, AC Power Lifting, Min Discharge Limit and Max Charge Limit (5-90 % and 0-100 % on a Balco 260, 5-100 % on a Balco 500 and an EP2000), on the models listed in [Supported devices](#supported-devices).
 - **Binary sensors:** Online (S Meter); BLUETTI cloud connection and Internet reachable (Balco 260).
 
 > [!CAUTION]
