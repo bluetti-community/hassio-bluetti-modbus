@@ -27,12 +27,12 @@ class TestBluettiNumberEntityInit(unittest.TestCase):
     def test_min_max_step_for_b_soc_low(self):
         number = _number("b_soc_low")
         self.assertEqual(number._attr_native_min_value, 5)
-        self.assertEqual(number._attr_native_max_value, 90)
+        self.assertEqual(number._attr_native_max_value, 100)
         self.assertEqual(number._attr_native_step, 1)
 
     def test_min_max_for_b_soc_high(self):
         number = _number("b_soc_high")
-        self.assertEqual(number._attr_native_min_value, 0)
+        self.assertEqual(number._attr_native_min_value, 5)
         self.assertEqual(number._attr_native_max_value, 100)
 
     def test_bounds_come_from_the_device_profile(self):
