@@ -4,6 +4,7 @@ from .base_devices import WRITABLE_REGISTERS, RegisterWrite
 from .devices import (
     AC200L,
     AC240,
+    AC300,
     AC500,
     AGGREGATE_SLAVE_ID,
     AGGREGATE_SUMMARY_FIELDS,
@@ -33,6 +34,7 @@ from .enums import (
     FAULT_DESCRIPTIONS,
     WARNING_DESCRIPTIONS,
     ApexChargingMode,
+    BalcoWorkingMode,
     ChargingMode,
     InverterFault,
     InverterStatus,
@@ -47,6 +49,7 @@ from .modbus import BluettiModbusClient, read_values
 __all__ = [
     "AC200L",
     "AC240",
+    "AC300",
     "AC500",
     "AGGREGATE_SLAVE_ID",
     "AGGREGATE_SUMMARY_FIELDS",
@@ -64,6 +67,7 @@ __all__ = [
     "ApexChargingMode",
     "Balco260",
     "Balco500",
+    "BalcoWorkingMode",
     "Balcotrans",
     "BluettiModbusClient",
     "BluettiModbusConnectionError",

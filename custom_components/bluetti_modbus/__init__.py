@@ -145,7 +145,7 @@ def _reconcile_config_entry_unique_id(
     hass.config_entries.async_update_entry(entry, unique_id=str(serial))
 
 
-_CURRENT_VERSION = 32
+_CURRENT_VERSION = 33
 
 # The entry format of Home Assistant's built-in bluetti_modbus integration,
 # which shares this domain and only reads the Balco 260.
@@ -855,6 +855,18 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ):
                     registry.async_remove(entity_entry.entity_id)
         version = 32
+
+    if version == 32:
+        # The Balco 500's system switch, grid feed-in switch and working mode
+        # took writes on a real unit: the read-only sensors give way to the
+        # switches and the select.
+        if config is not None and config.dev_type == "balco500":
+            for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+                if entity_entry.domain == "sensor" and entity_entry.unique_id.endswith(
+                    ("_ac_o_switch", "_g_o_switch", "_d_working_mode")
+                ):
+                    registry.async_remove(entity_entry.entity_id)
+        version = 33
 
     updates: dict[str, Any] = {"version": version}
     if new_title is not None:

@@ -729,6 +729,14 @@
           "turbo": "Turbo",
           "custom": "Personnalisé"
         }
+      },
+      "d_working_mode": {
+        "name": "Mode de fonctionnement",
+        "state": {
+          "custom": "Personnalisé",
+          "self_consumption": "Autoconsommation",
+          "backup": "Alimentation de secours"
+        }
       }
     },
     "switch": {
@@ -749,6 +757,9 @@
       },
       "ac_power_lifting_switch": {
         "name": "Mode Power Lifting"
+      },
+      "system_switch": {
+        "name": "Interrupteur principal du système"
       }
     }
   },

@@ -274,7 +274,15 @@ FIELDS_SHOWN_VIA_SWITCH = {
 # sensor.py where bluetti_modbus_lib marks the field writable, same gating
 # as FIELDS_SHOWN_VIA_SWITCH above - the select already shows the current
 # mode, so a read-only sensor next to it would only duplicate it.
-FIELDS_SHOWN_VIA_SELECT = {"d_charging_mode"}
+#
+# d_working_mode (57020): the working mode, writable on a Balco 500 (Custom,
+# Self-Consumption, Backup). Read-only on an Apex 300, where it stays a
+# sensor.
+FIELDS_SHOWN_VIA_SELECT = {"d_charging_mode", "d_working_mode"}
+
+# A switch the BLUETTI app names differently on one model. Balco 500: 57001
+# switches the whole system, "System ON/OFF" in the app.
+SWITCH_TRANSLATION_KEYS = {("balco500", "ac_o_switch"): "system_switch"}
 
 # d_ver_arm/d_ver_dsp/d_iot_ver/d_serial (Balco260/EP2000 only - S Meter's
 # address range doesn't include these): the main unit's own identity, not

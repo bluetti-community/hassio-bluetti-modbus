@@ -729,6 +729,14 @@
           "turbo": "Turbo",
           "custom": "Aangepast"
         }
+      },
+      "d_working_mode": {
+        "name": "Werkmodus",
+        "state": {
+          "custom": "Aangepast",
+          "self_consumption": "Eigenverbruik",
+          "backup": "Back-up"
+        }
       }
     },
     "switch": {
@@ -749,6 +757,9 @@
       },
       "ac_power_lifting_switch": {
         "name": "Power Lifting-modus"
+      },
+      "system_switch": {
+        "name": "Hoofdschakelaar"
       }
     }
   },

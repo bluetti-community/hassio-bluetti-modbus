@@ -729,6 +729,14 @@
           "turbo": "Турбо",
           "custom": "Користувацький"
         }
+      },
+      "d_working_mode": {
+        "name": "Режим роботи",
+        "state": {
+          "custom": "Користувацький",
+          "self_consumption": "Самоспоживання",
+          "backup": "Резервне живлення"
+        }
       }
     },
     "switch": {
@@ -749,6 +757,9 @@
       },
       "ac_power_lifting_switch": {
         "name": "Збільшення потужності"
+      },
+      "system_switch": {
+        "name": "Системний перемикач"
       }
     }
   },
