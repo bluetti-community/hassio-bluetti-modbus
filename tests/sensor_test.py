@@ -111,6 +111,23 @@ class TestDisplayPrecision(unittest.TestCase):
         self.assertIsNone(_display_precision(MagicMock(scale=None)))
         self.assertIsNone(_display_precision(object()))
 
+    def test_a_power_factor_shows_two_decimals(self):
+        # A float ratio with no scale: an S Meter's total showed as
+        # 0.858669281005859.
+        from custom_components.bluetti_modbus.field_metadata import metadata_for
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            get_device as real_get_device,
+        )
+
+        smeter = real_get_device("smeter")
+        assert smeter is not None
+        for name in ("ac_a_pf", "ac_b_pf", "ac_c_pf", "ac_pf_total"):
+            field = smeter.get_field(name)
+            self.assertIsNone(_display_precision(field))
+            self.assertEqual(_display_precision(field, metadata_for(name).device_class), 2)
+        voltage = smeter.get_field("ac_a_v")
+        self.assertIsNone(_display_precision(voltage, metadata_for("ac_a_v").device_class))
+
     def test_the_real_profiles_give_the_decimals_their_readings_have(self):
         # 53.89 V and 49.9 Hz on a real Apex 300 showed as 54 V and 50 Hz.
         from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (

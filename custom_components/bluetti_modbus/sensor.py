@@ -229,13 +229,21 @@ def _enum_options(field: object) -> list[str] | None:
     return None
 
 
-def _display_precision(field: object) -> int | None:
+def _display_precision(
+    field: object, device_class: SensorDeviceClass | None = None
+) -> int | None:
     """The decimals a scaled field carries, or None to keep HA's default.
 
     Home Assistant shows a voltage, a frequency or a power with no decimal
     unless told otherwise, so 53.89 V read as 54 V and 49.9 Hz as 50 Hz.
     A field read at 0.1 or 0.01 shows the one or two decimals it has.
+
+    A power factor is a ratio between -1 and 1 read as a float, with no
+    scale to go by and no default in Home Assistant, which then shows every
+    digit of the float: two decimals.
     """
+    if device_class is SensorDeviceClass.POWER_FACTOR:
+        return 2
     scale = getattr(field, "scale", None)
     if isinstance(scale, (int, float)) and 0 < scale < 1:
         return round(-math.log10(scale))
@@ -434,7 +442,7 @@ async def async_setup_entry(
             device_class=metadata.device_class,
             state_class=metadata.state_class,
             options=_enum_options(field),
-            display_precision=_display_precision(field),
+            display_precision=_display_precision(field, metadata.device_class),
             enabled_by_default=metadata.enabled_by_default,
             logger=logger,
             translation_key=translation_key,
@@ -470,7 +478,7 @@ async def async_setup_entry(
                 device_class=metadata.device_class,
                 state_class=metadata.state_class,
                 options=_enum_options(field),
-                display_precision=_display_precision(field),
+                display_precision=_display_precision(field, metadata.device_class),
                 enabled_by_default=metadata.enabled_by_default,
                 logger=logger,
                 pack_num=pack_num,
@@ -504,7 +512,7 @@ async def async_setup_entry(
                 device_class=metadata.device_class,
                 state_class=metadata.state_class,
                 options=_enum_options(field),
-                display_precision=_display_precision(field),
+                display_precision=_display_precision(field, metadata.device_class),
                 enabled_by_default=metadata.enabled_by_default,
                 logger=logger,
                 translation_key=translation_key,
