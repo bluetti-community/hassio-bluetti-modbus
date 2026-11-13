@@ -46,6 +46,9 @@
     },
     "mppt": {
       "name": "MPPT {input}"
+    },
+    "phase": {
+      "name": "Phase {phase}"
     }
   },
   "entity": {
@@ -79,6 +82,9 @@
       },
       "g_o_e_total": {
         "name": "Total Grid Export Energy"
+      },
+      "smeter_g_i_e_total": {
+        "name": "Total Grid Import Energy"
       },
       "pv_ac_e": {
         "name": "Total PV AC Energy"
@@ -430,60 +436,6 @@
       },
       "d_timestamp": {
         "name": "Timestamp"
-      },
-      "ac_a_v": {
-        "name": "Phase A Voltage"
-      },
-      "ac_b_v": {
-        "name": "Phase B Voltage"
-      },
-      "ac_c_v": {
-        "name": "Phase C Voltage"
-      },
-      "ac_a_c": {
-        "name": "Phase A Current"
-      },
-      "ac_b_c": {
-        "name": "Phase B Current"
-      },
-      "ac_c_c": {
-        "name": "Phase C Current"
-      },
-      "ac_a_p": {
-        "name": "Phase A Power"
-      },
-      "ac_b_p": {
-        "name": "Phase B Power"
-      },
-      "ac_c_p": {
-        "name": "Phase C Power"
-      },
-      "ac_a_p_reactive": {
-        "name": "Phase A Reactive Power"
-      },
-      "ac_b_p_reactive": {
-        "name": "Phase B Reactive Power"
-      },
-      "ac_c_p_reactive": {
-        "name": "Phase C Reactive Power"
-      },
-      "ac_a_p_apparent": {
-        "name": "Phase A Apparent Power"
-      },
-      "ac_b_p_apparent": {
-        "name": "Phase B Apparent Power"
-      },
-      "ac_c_p_apparent": {
-        "name": "Phase C Apparent Power"
-      },
-      "ac_a_pf": {
-        "name": "Phase A Power Factor"
-      },
-      "ac_b_pf": {
-        "name": "Phase B Power Factor"
-      },
-      "ac_c_pf": {
-        "name": "Phase C Power Factor"
       },
       "ac_v_avg": {
         "name": "Average Phase Voltage"

@@ -12,6 +12,8 @@ from custom_components.bluetti_modbus.const import (
     FIELDS_SHOWN_VIA_NUMBER,
     FIELDS_SHOWN_VIA_SELECT,
     FIELDS_SHOWN_VIA_SWITCH,
+    SMETER_PHASE_FIELDS,
+    SMETER_TRANSLATION_KEYS,
 )
 from custom_components.bluetti_modbus.sensor import (
     _CHILD_BATTERY_TRANSLATION_KEYS,
@@ -52,10 +54,18 @@ def _flatten(node, prefix=""):
 _DEV_TYPES = tuple(DEVICE_TYPE_DISPLAY_NAMES)
 
 
-def _sensor_key(name):
+# An S Meter's per-phase fields.
+_PHASE_FIELDS = {name for names in SMETER_PHASE_FIELDS.values() for name in names}
+
+
+def _sensor_key(dev_type, name):
     """The translation key a sensor field is named by (sensor.py)."""
     pv_input = PV_INPUT_FIELD.match(name)
-    return PV_INPUT_TRANSLATION_KEYS[pv_input.group(2)] if pv_input else name
+    if pv_input:
+        return PV_INPUT_TRANSLATION_KEYS[pv_input.group(2)]
+    if dev_type == "smeter":
+        return SMETER_TRANSLATION_KEYS.get(name, name)
+    return name
 
 
 class TestTranslationsCoverAllShownFields(unittest.TestCase):
@@ -99,7 +109,10 @@ class TestTranslationsCoverAllShownFields(unittest.TestCase):
                     if name not in select_translated:
                         missing.append(f"{dev_type}.{name} (select)")
                     continue
-                if _sensor_key(name) not in sensor_translated:
+                # Named by device class on its phase's device.
+                if name in _PHASE_FIELDS:
+                    continue
+                if _sensor_key(dev_type, name) not in sensor_translated:
                     missing.append(f"{dev_type}.{name} (sensor)")
 
         self.assertEqual(missing, [])
@@ -180,7 +193,10 @@ class TestNoDuplicateSensorNames(unittest.TestCase):
                 # One name per PV input, each on its own device.
                 if PV_INPUT_FIELD.match(name):
                     continue
-                entry = sensor_names.get(name)
+                # One device per phase, its readings named by device class.
+                if name in _PHASE_FIELDS:
+                    continue
+                entry = sensor_names.get(_sensor_key(dev_type, name))
                 if entry is None:
                     continue  # already reported by the coverage test above
                 display_name = entry["name"]
@@ -210,6 +226,21 @@ class TestPvInputNames(unittest.TestCase):
                 {"reserve", "car", "adapter", "other", "dc_pv", "ac_pv"},
                 lang,
             )
+
+
+class TestPhaseNames(unittest.TestCase):
+    """An S Meter phase's child device (sensor.py)."""
+
+    def test_the_device_has_a_name_in_every_language(self):
+        for lang in _LANGUAGES:
+            translations = _translations(lang)
+            self.assertIn("{phase}", translations["device"]["phase"]["name"], lang)
+
+    def test_the_readings_have_no_name_of_their_own(self):
+        # Their device class names them: a key left behind would be unused.
+        for lang in _LANGUAGES:
+            sensor = _translations(lang)["entity"]["sensor"]
+            self.assertEqual(_PHASE_FIELDS & set(sensor), set(), lang)
 
 
 class TestBuiltInBatteryNames(unittest.TestCase):

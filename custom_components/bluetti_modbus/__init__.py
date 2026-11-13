@@ -82,14 +82,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _reconcile_config_entry_unique_id(hass, entry, coordinator)
 
     # Registered explicitly, before the platforms below create any entity:
-    # S Meter's per-phase sub-devices (see phase_device_info()) link back to
-    # this device via via_device_id, which only resolves against a device
-    # already in the registry - matches home-assistant/core's shelly
-    # integration, which registers its own main device the same way before
-    # forwarding to platforms (ShellyRpcCoordinator.async_setup()).
+    # its child devices (the built-in battery, the PV inputs, an S Meter's
+    # phases) and the expansion packs linked by via_device_id need it in the
+    # registry already.
     main_device_info = device_info(entry, coordinator)
     if main_device_info is not None:
-        # Kept for the built-in battery, a child device of this one.
+        # Kept as the parent of its child devices.
         coordinator.device_id = (
             dr.async_get(hass)
             .async_get_or_create(config_entry_id=entry.entry_id, **main_device_info)
@@ -1113,29 +1111,35 @@ def device_info(
     return info
 
 
+def phase_device_name(entry: ConfigEntry, phase: str) -> str:
+    """The name an S Meter phase's device was registered under.
+
+    A child device is named by its translation instead, but the phase's
+    entity unique_ids carry this name (see _unique_id_for()).
+    """
+    return f"{entry.title} Phase {phase.upper()}"
+
+
 def phase_device_info(
-    hass: HomeAssistant, entry: ConfigEntry, phase: str
-) -> DeviceInfo | None:
-    """Device info for one of S Meter's per-phase sub-devices (phase: 'a'/'b'/'c')."""
-    config = FullDeviceConfig.from_dict(entry.data)
+    address: str, coordinator: PollingCoordinator, phase: str
+) -> ChildDeviceInfo:
+    """Device info for one of an S Meter's phases ('a'/'b'/'c'), a child device.
 
-    if config is None:
-        return None
-
-    return DeviceInfo(
-        identifiers={(DOMAIN, f"{config.address}-phase-{phase}")},
-        name=f"{entry.title} Phase {phase.upper()}",
-        manufacturer=MANUFACTURER,
-        model=DEVICE_TYPE_DISPLAY_NAMES.get(config.dev_type, config.dev_type),
-        # Groups this sub-device under the main S Meter device on the
-        # Devices page, the same way home-assistant/core's shelly
-        # integration groups its own per-channel energy-meter sub-devices
-        # under one physical Shelly Pro 3EM (get_rpc_device_info() there).
-        # The main device is registered explicitly in async_setup_entry()
-        # above before this can ever be resolved.
-        via_device_id=dr.async_get_device_id_by_identifier(
-            hass, (DOMAIN, config.address), config_entry_id=entry.entry_id
-        ),
+    A phase is a logical part of the meter, with no serial, model or
+    firmware of its own, so a child device of the main one, as each PV
+    input is (pv_input_device_info()). Its identifier is the one the phase
+    had as a device of its own, linked by via_device: the registry finds
+    that device and converts it in place, keeping its id, area and custom
+    name.
+    """
+    # Set by async_setup_entry() before the platforms, which are the only
+    # callers.
+    assert coordinator.device_id is not None
+    return ChildDeviceInfo(
+        identifiers={(DOMAIN, f"{address}-phase-{phase}")},
+        parent_device_id=coordinator.device_id,
+        translation_key="phase",
+        translation_placeholders={"phase": phase.upper()},
     )
 
 
@@ -1213,9 +1217,8 @@ def pack_device_info(
             config.dev_type,
         ),
         # Groups this sub-device under the main Balco260 device on the
-        # Devices page - same pattern as phase_device_info() above. The main
-        # device is registered explicitly in async_setup_entry() above
-        # before this can ever be resolved.
+        # Devices page. The main device is registered explicitly in
+        # async_setup_entry() above before this can ever be resolved.
         via_device_id=dr.async_get_device_id_by_identifier(
             hass, (DOMAIN, config.address), config_entry_id=entry.entry_id
         ),

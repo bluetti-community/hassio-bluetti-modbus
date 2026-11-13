@@ -46,6 +46,9 @@
     },
     "mppt": {
       "name": "MPPT {input}"
+    },
+    "phase": {
+      "name": "Phase {phase}"
     }
   },
   "entity": {
@@ -79,6 +82,9 @@
       },
       "g_o_e_total": {
         "name": "Gesamte Einspeisung"
+      },
+      "smeter_g_i_e_total": {
+        "name": "Gesamtverbrauch"
       },
       "pv_ac_e": {
         "name": "PV-AC-Energie Gesamt"
@@ -430,60 +436,6 @@
       },
       "d_timestamp": {
         "name": "Zeitstempel"
-      },
-      "ac_a_v": {
-        "name": "Phase A Spannung"
-      },
-      "ac_b_v": {
-        "name": "Phase B Spannung"
-      },
-      "ac_c_v": {
-        "name": "Phase C Spannung"
-      },
-      "ac_a_c": {
-        "name": "Phase A Strom"
-      },
-      "ac_b_c": {
-        "name": "Phase B Strom"
-      },
-      "ac_c_c": {
-        "name": "Phase C Strom"
-      },
-      "ac_a_p": {
-        "name": "Phase A Leistung"
-      },
-      "ac_b_p": {
-        "name": "Phase B Leistung"
-      },
-      "ac_c_p": {
-        "name": "Phase C Leistung"
-      },
-      "ac_a_p_reactive": {
-        "name": "Phase A Blindleistung"
-      },
-      "ac_b_p_reactive": {
-        "name": "Phase B Blindleistung"
-      },
-      "ac_c_p_reactive": {
-        "name": "Phase C Blindleistung"
-      },
-      "ac_a_p_apparent": {
-        "name": "Phase A Scheinleistung"
-      },
-      "ac_b_p_apparent": {
-        "name": "Phase B Scheinleistung"
-      },
-      "ac_c_p_apparent": {
-        "name": "Phase C Scheinleistung"
-      },
-      "ac_a_pf": {
-        "name": "Phase A Leistungsfaktor"
-      },
-      "ac_b_pf": {
-        "name": "Phase B Leistungsfaktor"
-      },
-      "ac_c_pf": {
-        "name": "Phase C Leistungsfaktor"
       },
       "ac_v_avg": {
         "name": "Durchschnittliche Phasenspannung"

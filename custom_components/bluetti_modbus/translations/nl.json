@@ -46,6 +46,9 @@
     },
     "mppt": {
       "name": "MPPT {input}"
+    },
+    "phase": {
+      "name": "Fase {phase}"
     }
   },
   "entity": {
@@ -79,6 +82,9 @@
       },
       "g_o_e_total": {
         "name": "Totale netteruglevering"
+      },
+      "smeter_g_i_e_total": {
+        "name": "Totale netafname"
       },
       "pv_ac_e": {
         "name": "Totale PV-AC-energie"
@@ -430,60 +436,6 @@
       },
       "d_timestamp": {
         "name": "Tijdstempel"
-      },
-      "ac_a_v": {
-        "name": "Fase A spanning"
-      },
-      "ac_b_v": {
-        "name": "Fase B spanning"
-      },
-      "ac_c_v": {
-        "name": "Fase C spanning"
-      },
-      "ac_a_c": {
-        "name": "Fase A stroom"
-      },
-      "ac_b_c": {
-        "name": "Fase B stroom"
-      },
-      "ac_c_c": {
-        "name": "Fase C stroom"
-      },
-      "ac_a_p": {
-        "name": "Fase A vermogen"
-      },
-      "ac_b_p": {
-        "name": "Fase B vermogen"
-      },
-      "ac_c_p": {
-        "name": "Fase C vermogen"
-      },
-      "ac_a_p_reactive": {
-        "name": "Fase A blindvermogen"
-      },
-      "ac_b_p_reactive": {
-        "name": "Fase B blindvermogen"
-      },
-      "ac_c_p_reactive": {
-        "name": "Fase C blindvermogen"
-      },
-      "ac_a_p_apparent": {
-        "name": "Fase A schijnbaar vermogen"
-      },
-      "ac_b_p_apparent": {
-        "name": "Fase B schijnbaar vermogen"
-      },
-      "ac_c_p_apparent": {
-        "name": "Fase C schijnbaar vermogen"
-      },
-      "ac_a_pf": {
-        "name": "Fase A arbeidsfactor"
-      },
-      "ac_b_pf": {
-        "name": "Fase B arbeidsfactor"
-      },
-      "ac_c_pf": {
-        "name": "Fase C arbeidsfactor"
       },
       "ac_v_avg": {
         "name": "Gemiddelde fasespanning"

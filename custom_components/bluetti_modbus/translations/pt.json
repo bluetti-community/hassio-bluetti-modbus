@@ -46,6 +46,9 @@
     },
     "mppt": {
       "name": "MPPT {input}"
+    },
+    "phase": {
+      "name": "Fase {phase}"
     }
   },
   "entity": {
@@ -79,6 +82,9 @@
       },
       "g_o_e_total": {
         "name": "Energia injetada total"
+      },
+      "smeter_g_i_e_total": {
+        "name": "Consumo total"
       },
       "pv_ac_e": {
         "name": "Energia total PV CA"
@@ -430,60 +436,6 @@
       },
       "d_timestamp": {
         "name": "Carimbo de data/hora"
-      },
-      "ac_a_v": {
-        "name": "Fase A tensão"
-      },
-      "ac_b_v": {
-        "name": "Fase B tensão"
-      },
-      "ac_c_v": {
-        "name": "Fase C tensão"
-      },
-      "ac_a_c": {
-        "name": "Fase A corrente"
-      },
-      "ac_b_c": {
-        "name": "Fase B corrente"
-      },
-      "ac_c_c": {
-        "name": "Fase C corrente"
-      },
-      "ac_a_p": {
-        "name": "Fase A potência"
-      },
-      "ac_b_p": {
-        "name": "Fase B potência"
-      },
-      "ac_c_p": {
-        "name": "Fase C potência"
-      },
-      "ac_a_p_reactive": {
-        "name": "Fase A potência reativa"
-      },
-      "ac_b_p_reactive": {
-        "name": "Fase B potência reativa"
-      },
-      "ac_c_p_reactive": {
-        "name": "Fase C potência reativa"
-      },
-      "ac_a_p_apparent": {
-        "name": "Fase A potência aparente"
-      },
-      "ac_b_p_apparent": {
-        "name": "Fase B potência aparente"
-      },
-      "ac_c_p_apparent": {
-        "name": "Fase C potência aparente"
-      },
-      "ac_a_pf": {
-        "name": "Fase A fator de potência"
-      },
-      "ac_b_pf": {
-        "name": "Fase B fator de potência"
-      },
-      "ac_c_pf": {
-        "name": "Fase C fator de potência"
       },
       "ac_v_avg": {
         "name": "Tensão média de fase"
