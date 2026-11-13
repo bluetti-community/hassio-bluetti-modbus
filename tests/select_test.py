@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from homeassistant.exceptions import HomeAssistantError
 from modbus_connection.exceptions import ModbusProtocolError
 
+from custom_components.bluetti_modbus.const import FIELDS_SHOWN_VIA_SELECT
 from custom_components.bluetti_modbus.select import (
     BluettiSelectEntity,
     async_setup_entry,
@@ -165,7 +166,9 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         await async_setup_entry(MagicMock(), self._entry(MagicMock(writable=True, convert=ChargingMode)), added.extend)
 
-        self.assertEqual(len(added), 1)
+        # The mock answers every FIELDS_SHOWN_VIA_SELECT name with the same
+        # writable enum field.
+        self.assertEqual({e._field_name for e in added}, FIELDS_SHOWN_VIA_SELECT)
         self.assertIsInstance(added[0], BluettiSelectEntity)
         self.assertEqual(added[0].options, ["standard", "silent", "turbo"])
 
@@ -212,3 +215,29 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         await async_setup_entry(MagicMock(), entry, added.extend)
 
         self.assertEqual(added, [])
+
+
+class TestBalco500Profile(unittest.TestCase):
+    def test_working_mode_is_a_writable_enum_at_57020(self):
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            BalcoWorkingMode,
+        )
+
+        field = get_device("balco500").get_field("d_working_mode")
+        self.assertIsNotNone(field)
+        self.assertEqual(field.address, 57020)
+        self.assertTrue(field.writable)
+        self.assertIs(field.convert, BalcoWorkingMode)
+
+    def test_the_select_offers_the_apps_three_modes(self):
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            BalcoWorkingMode,
+        )
+
+        coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"), data={})
+        select = BluettiSelectEntity(coordinator, _device_info(), "d_working_mode", BalcoWorkingMode)
+        self.assertEqual(select.options, ["custom", "self_consumption", "backup"])
+        self.assertEqual(select._attr_translation_key, "d_working_mode")
+
+    def test_the_apex_300s_working_mode_stays_read_only(self):
+        self.assertFalse(get_device("pa030").get_field("d_working_mode").writable)

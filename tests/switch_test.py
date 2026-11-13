@@ -262,3 +262,39 @@ class TestAc200lProfile(unittest.TestCase):
     def test_no_ac_eco_switch(self):
         # 57024 (AC ECO on the AC240) did not follow AC ECO on an AC200PL.
         self.assertIsNone(get_device("ac200l").get_field("ac_eco_switch"))
+
+
+class TestBalco500Profile(unittest.IsolatedAsyncioTestCase):
+    def test_the_system_switch_is_writable(self):
+        field = get_device("balco500").get_field("ac_o_switch")
+        self.assertIsNotNone(field)
+        self.assertEqual(field.address, 57001)
+        self.assertTrue(field.writable)
+
+    @patch("custom_components.bluetti_modbus.switch.dev_info")
+    @patch("custom_components.bluetti_modbus.switch.FullDeviceConfig")
+    async def test_57001_takes_the_apps_name_and_keeps_its_unique_id(self, config_cls, dev_info_fn):
+        # "System ON/OFF" in the BLUETTI app on this model: it switches the
+        # whole system. The grid charging switch stays read-only.
+        config_cls.from_dict.return_value = MagicMock(dev_type="balco500", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(
+            spec=PollingCoordinator, config_entry=MagicMock(entry_id="entry1"), data={}
+        )
+        coordinator.device = get_device("balco500")
+        entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
+        added = []
+
+        await async_setup_entry(MagicMock(), entry, added.extend)
+
+        keys = {e._field_name: e._attr_translation_key for e in added}
+        self.assertEqual(keys, {"ac_o_switch": "system_switch", "g_o_switch": "g_o_switch"})
+        system = next(e for e in added if e._field_name == "ac_o_switch")
+        self.assertTrue(system.unique_id.endswith("_ac_o_switch"))
+
+    def test_another_model_keeps_the_ac_output_name(self):
+        self.assertEqual(_switch("ac_o_switch")._attr_translation_key, "ac_o_switch")

@@ -777,6 +777,14 @@
           "turbo": "Turbo",
           "custom": "Pasirinktinis"
         }
+      },
+      "d_working_mode": {
+        "name": "Darbo režimas",
+        "state": {
+          "custom": "Pasirinktinis",
+          "self_consumption": "Savas vartojimas",
+          "backup": "Atsarginis maitinimas"
+        }
       }
     },
     "switch": {
@@ -797,6 +805,9 @@
       },
       "ac_power_lifting_switch": {
         "name": "Power Lifting režimas"
+      },
+      "system_switch": {
+        "name": "Pagrindinis jungiklis"
       }
     }
   },

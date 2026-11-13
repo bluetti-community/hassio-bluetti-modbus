@@ -777,6 +777,14 @@
           "turbo": "Schnelllademodus",
           "custom": "Individueller Lademodus"
         }
+      },
+      "d_working_mode": {
+        "name": "Arbeitsmodus",
+        "state": {
+          "custom": "Benutzerdefiniert",
+          "self_consumption": "Selbstnutzung",
+          "backup": "Backup"
+        }
       }
     },
     "switch": {
@@ -797,6 +805,9 @@
       },
       "ac_power_lifting_switch": {
         "name": "Power Lifting"
+      },
+      "system_switch": {
+        "name": "Hauptschalter"
       }
     }
   },
