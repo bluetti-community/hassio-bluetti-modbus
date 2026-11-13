@@ -19,7 +19,7 @@ from modbus_connection.exceptions import ModbusError
 
 from . import FullDeviceConfig, _unique_id_for
 from . import device_info as dev_info
-from .const import DOMAIN, FIELDS_SHOWN_VIA_SWITCH
+from .const import DOMAIN, FIELDS_SHOWN_VIA_SWITCH, SWITCH_TRANSLATION_KEYS
 from .coordinator import PollingCoordinator
 
 # One write at a time: the device takes one Modbus request at a time.
@@ -50,7 +50,14 @@ async def async_setup_entry(
         # library's import.py). Not every device declares every field in
         # FIELDS_SHOWN_VIA_SWITCH at all.
         if field is not None and field.writable:
-            entities.append(BluettiSwitchEntity(coordinator, device_info, field_name))
+            entities.append(
+                BluettiSwitchEntity(
+                    coordinator,
+                    device_info,
+                    field_name,
+                    SWITCH_TRANSLATION_KEYS.get((config.dev_type, field_name)),
+                )
+            )
 
     async_add_entities(entities)
 
@@ -71,6 +78,7 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
         coordinator: PollingCoordinator,
         device_info: DeviceInfo,
         field_name: str,
+        translation_key: str | None = None,
     ) -> None:
         """Init switch entity."""
         super().__init__(coordinator)
@@ -81,7 +89,7 @@ class BluettiSwitchEntity(CoordinatorEntity[PollingCoordinator], SwitchEntity):
         # constructed with, so _async_write below doesn't need a None check
         # for something that's never actually None here.
         self._device_name = device_info.get("name")
-        self._attr_translation_key = field_name
+        self._attr_translation_key = translation_key or field_name
         self._attr_unique_id = _unique_id_for(coordinator, self._device_name, field_name, "switch")
 
     async def async_added_to_hass(self) -> None:

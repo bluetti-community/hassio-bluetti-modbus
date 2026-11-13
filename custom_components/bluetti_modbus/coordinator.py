@@ -21,6 +21,7 @@ from .types import FullDeviceConfig
 from .vendor.bluetti_modbus_lib import (
     AC200L,
     AC240,
+    AC300,
     AC500,
     AGGREGATE_SLAVE_ID,
     EP500P,
@@ -51,6 +52,7 @@ _FP_BUILT_IN_FIELDS_AT_41 = ("b_cycle_count", "b_i_e", "b_o_e")
 BluettiProfile = (
     AC200L
     | AC240
+    | AC300
     | AC500
     | FP
     | PA030

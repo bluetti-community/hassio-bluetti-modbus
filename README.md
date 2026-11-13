@@ -38,7 +38,7 @@
 - **Local.** Nothing leaves your network. It can run alongside the [cloud-based BLUETTI integration](https://github.com/bluetti-official/bluetti-home-assistant) on the same device.
 - **Set up from the UI.** The Balco 260, Balco 500 and S Meter are discovered on your network. Other models take an IP address and a device type.
 - **Entities from the register map.** Every field the device reports becomes an entity with the right device class, unit and precision.
-- **Controls.** Output, grid charging and feed-in switches, SoC limits, and the AC charging mode, on the models where the write is confirmed on a real unit.
+- **Controls.** Output, grid charging and feed-in switches, SoC limits, the AC charging mode and the working mode, on the models where the write is confirmed on a real unit.
 - **Device structure.** The built-in battery and each PV input are sub-devices of the station. Expansion packs and an EP2000's battery are linked devices. The S Meter's three phases are sub-devices of the meter.
 - **Stable entities.** Entities are keyed on the serial number read from the device, so they survive an IP change or a move to a new Home Assistant instance.
 - **Diagnostics.** One-click download for bug reports, with the address and serial numbers redacted.
@@ -49,7 +49,7 @@
 | Device | Setup | Controls | Evidence |
 | --- | --- | --- | --- |
 | **Balco 260** | Discovered | AC output, grid charging, grid feed-in, SoC low/high limits | Real hardware + BLUETTI spec |
-| **Balco 500** | Discovered | Grid feed-in, SoC low/high limits | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/68) |
+| **Balco 500** | Discovered | System ON/OFF, working mode, grid feed-in, SoC low/high limits | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/68) |
 | **S Meter** | Discovered | Read-only | Real hardware + BLUETTI spec |
 | **FridgePower** | IP address | DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/38) |
 | **AC500** | IP address | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
@@ -73,6 +73,11 @@ Have another BLUETTI model? Register data is welcome in [bluetti-registers](http
 
 - With an energy meter paired in the BLUETTI app (a Shelly Pro 3EM, for example), the grid entities report the meter's readings: the household's grid connection, not the Balco's own port. A three-phase meter on a single-phase installation reports three phases, with the same voltage on each and no current on phases 2-3. Those entities can be disabled.
 - A pack slot that answers only its serial number shows its sensors as **unavailable** rather than 0 % or 0 V. This is a firmware issue confirmed by BLUETTI.
+
+**Balco 500**
+
+- **System ON/OFF** is the app's switch of the same name: off stops the whole system, not only the AC output.
+- **Working Mode** offers Custom, Self-Consumption and Backup, as the BLUETTI app does.
 
 **FridgePower**
 
@@ -234,7 +239,7 @@ The exact set depends on your model.
 - **Inverter:** status, type, power, voltage and current per inverter, and totals.
 - **Diagnostics:** serial numbers, firmware versions, counts, protection and alarm registers. Inverter faults and warnings show the number of active codes, with each code and its meaning as attributes. On a Balco 260, also the Wi-Fi signal.
 - **S Meter:** voltage, current, active, reactive and apparent power and power factor per phase, plus totals and averages.
-- **Switches and numbers:** AC Output, DC Output, Grid Charging, Grid Feed-in, AC ECO, AC Power Lifting, Min Discharge Limit and Max Charge Limit (5-100 % on a Balco 260, a Balco 500 and an EP2000), on the models listed in [Supported devices](#supported-devices).
+- **Switches, selects and numbers:** AC Output, System ON/OFF, DC Output, Grid Charging, Grid Feed-in, AC ECO, AC Power Lifting, Charging Mode, Working Mode, Min Discharge Limit and Max Charge Limit (5-100 % on a Balco 260, a Balco 500 and an EP2000), on the models listed in [Supported devices](#supported-devices).
 - **Binary sensors:** Online (S Meter); BLUETTI cloud connection and Internet reachable (Balco 260).
 
 > [!CAUTION]

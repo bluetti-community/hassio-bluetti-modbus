@@ -859,12 +859,13 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         version = 32
 
     if version == 32:
-        # The Balco 500's grid feed-in switch took writes on a real unit: the
-        # read-only sensor gives way to the switch.
+        # The Balco 500's system switch, grid feed-in switch and working mode
+        # took writes on a real unit: the read-only sensors give way to the
+        # switches and the select.
         if config is not None and config.dev_type == "balco500":
             for entity_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
                 if entity_entry.domain == "sensor" and entity_entry.unique_id.endswith(
-                    "_g_o_switch"
+                    ("_ac_o_switch", "_g_o_switch", "_d_working_mode")
                 ):
                     registry.async_remove(entity_entry.entity_id)
         version = 33

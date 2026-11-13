@@ -777,6 +777,14 @@
           "turbo": "Turbo",
           "custom": "Custom"
         }
+      },
+      "d_working_mode": {
+        "name": "Working Mode",
+        "state": {
+          "custom": "Custom",
+          "self_consumption": "Self-Consumption",
+          "backup": "Backup"
+        }
       }
     },
     "switch": {
@@ -797,6 +805,9 @@
       },
       "ac_power_lifting_switch": {
         "name": "AC Power Lifting Switch"
+      },
+      "system_switch": {
+        "name": "System ON/OFF"
       }
     }
   },

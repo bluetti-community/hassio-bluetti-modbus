@@ -1934,10 +1934,13 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         hass.config_entries.async_update_entry.assert_called_once_with(entry, version=33)
 
     @patch("custom_components.bluetti_modbus.er")
-    async def test_32_to_33_removes_the_balco500s_feed_in_sensor(self, er_module):
+    async def test_32_to_33_removes_the_balco500s_sensors_now_controls(self, er_module):
         registry = MagicMock()
         er_module.async_get.return_value = registry
         entities = [
+            MagicMock(entity_id="sensor.sys", unique_id="123_ac_o_switch", domain="sensor"),
+            MagicMock(entity_id="sensor.mode", unique_id="123_d_working_mode", domain="sensor"),
+            MagicMock(entity_id="select.mode", unique_id="123_d_working_mode", domain="select"),
             MagicMock(entity_id="sensor.feed", unique_id="123_g_o_switch", domain="sensor"),
             MagicMock(entity_id="sensor.gc", unique_id="123_g_i_switch", domain="sensor"),
             MagicMock(entity_id="switch.feed", unique_id="123_g_o_switch", domain="switch"),
@@ -1949,7 +1952,8 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         await async_migrate_entry(hass, entry)
 
         self.assertEqual(
-            [call.args[0] for call in registry.async_remove.call_args_list], ["sensor.feed"]
+            [call.args[0] for call in registry.async_remove.call_args_list],
+            ["sensor.sys", "sensor.mode", "sensor.feed"],
         )
         hass.config_entries.async_update_entry.assert_called_once_with(entry, version=33)
 
@@ -1959,9 +1963,10 @@ class TestAsyncMigrateEntry(unittest.IsolatedAsyncioTestCase):
         er_module.async_get.return_value = registry
         er_module.async_entries_for_config_entry.return_value = [
             MagicMock(entity_id="sensor.feed", unique_id="123_g_o_switch", domain="sensor"),
+            MagicMock(entity_id="sensor.mode", unique_id="123_d_working_mode", domain="sensor"),
         ]
         hass = MagicMock()
-        entry = self._entry(version=32, dev_type="fp")
+        entry = self._entry(version=32, dev_type="pa030")
 
         await async_migrate_entry(hass, entry)
 
