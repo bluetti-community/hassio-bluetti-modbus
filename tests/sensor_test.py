@@ -1188,6 +1188,43 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(by_key["pv_1_i_type"]._attr_entity_registry_enabled_default)
         self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
 
+    @patch("custom_components.bluetti_modbus.sensor.get_device")
+    @patch("custom_components.bluetti_modbus.sensor.dev_info")
+    @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
+    async def test_ac300_shares_ac500s_battery_and_pv_energy_overrides(
+        self, config_cls, dev_info_fn, get_device_fn
+    ):
+        # AC500's register set read on a real AC300 (bluetti-registers#47):
+        # no plain b_soc, and pv_i_e_local is the app's PV yield, the only
+        # cumulative PV energy the profile has.
+        config_cls.from_dict.return_value = MagicMock(dev_type="ac300", address="10.2.1.60")
+        dev_info_fn.return_value = _device_info()
+
+        def _field(name):
+            f = MagicMock(address=50001, unit=None, writable=False)
+            f.name = name
+            return f
+
+        bluetti_device = MagicMock()
+        bluetti_device.get_sensors.return_value = ["b_soc_total", "pv_i_e_local"]
+        bluetti_device.get_field.side_effect = _field
+        get_device_fn.return_value = bluetti_device
+
+        from custom_components.bluetti_modbus.coordinator import PollingCoordinator
+
+        coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
+        coordinator.data = {}
+        hass = MagicMock()
+        entry = MagicMock(entry_id="entry1")
+        entry.runtime_data = coordinator
+        added = []
+
+        await async_setup_entry(hass, entry, added.extend)
+
+        by_key = {s._response_key: s for s in added}
+        self.assertEqual(by_key["b_soc_total"]._attr_device_class, SensorDeviceClass.BATTERY)
+        self.assertTrue(by_key["pv_i_e_local"]._attr_entity_registry_enabled_default)
+
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")

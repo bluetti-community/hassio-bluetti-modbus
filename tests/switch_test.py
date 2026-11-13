@@ -264,6 +264,22 @@ class TestAc200lProfile(unittest.TestCase):
         self.assertIsNone(get_device("ac200l").get_field("ac_eco_switch"))
 
 
+class TestAc300Profile(unittest.TestCase):
+    def test_both_output_switches_are_writable(self):
+        # Written on a real unit, the outputs following (bluetti-registers#47).
+        for name, address in (("ac_o_switch", 57001), ("dc_o_switch", 57005)):
+            with self.subTest(name=name):
+                field = get_device("ac300").get_field(name)
+                self.assertIsNotNone(field)
+                self.assertEqual(field.address, address)
+                self.assertTrue(field.writable)
+                self.assertIn(name, FIELDS_SHOWN_VIA_SWITCH)
+
+    def test_no_grid_charging_switch(self):
+        # 57009 did not follow the app's Grid Charge setting on that unit.
+        self.assertIsNone(get_device("ac300").get_field("g_i_switch"))
+
+
 class TestBalco500Profile(unittest.IsolatedAsyncioTestCase):
     def test_the_system_switch_is_writable(self):
         field = get_device("balco500").get_field("ac_o_switch")

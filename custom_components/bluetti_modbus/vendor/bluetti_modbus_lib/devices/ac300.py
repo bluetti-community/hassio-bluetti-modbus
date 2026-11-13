@@ -19,6 +19,7 @@ class AC300(BluettiDevice):
         (50214, 50214),
         (50215, 50215),
         (50217, 50217),
+        (50219, 50219),
         (50229, 50229),
         (51001, 51001),
         (51002, 51002),
@@ -27,7 +28,6 @@ class AC300(BluettiDevice):
         (53011, 53012),
         (57001, 57001),
         (57005, 57005),
-        (57009, 57009),
         (57016, 57016),
         (57017, 57017),
     )
@@ -92,6 +92,11 @@ class AC300(BluettiDevice):
         unit="W",
         count=1,
     )
+    pv_1_i_p = field(
+        t=FieldType.UINT16,
+        address=50219,
+        unit="W",
+    )
     pv_i_e_local = field(
         t=FieldType.UINT16,
         address=50229,
@@ -125,15 +130,12 @@ class AC300(BluettiDevice):
     ac_o_switch = field(
         t=FieldType.UINT16,
         address=57001,
+        writable=True,
     )
     dc_o_switch = field(
         t=FieldType.UINT16,
         address=57005,
         writable=True,
-    )
-    g_i_switch = field(
-        t=FieldType.UINT16,
-        address=57009,
     )
     b_soc_low = field(
         t=FieldType.UINT16,

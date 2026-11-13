@@ -243,6 +243,25 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
         labels = {o["value"]: o["label"] for o in options}
         self.assertEqual(labels.get("ac240"), "AC240")
 
+    @patch("custom_components.bluetti_modbus.config_flow.AC300_CONFIRMED", False)
+    async def test_ac300_not_offered_unless_confirmed(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        values = {o["value"] for o in options}
+        self.assertNotIn("ac300", values)
+
+    async def test_ac300_offered(self):
+        flow = _flow()
+        with patch.object(flow, "async_show_form", return_value="form") as show_form:
+            await flow.async_step_user()
+
+        options = _type_options(show_form.call_args.kwargs["data_schema"])
+        labels = {o["value"]: o["label"] for o in options}
+        self.assertEqual(labels.get("ac300"), "AC300")
+
     @patch("custom_components.bluetti_modbus.config_flow.PA030_CONFIRMED", False)
     async def test_pa030_not_offered_unless_confirmed(self):
         flow = _flow()
@@ -466,7 +485,7 @@ class TestConfigFlowUserStep(unittest.IsolatedAsyncioTestCase):
 
     async def test_an_ac_family_device_says_when_its_page_reports_modbus_disabled(self):
         # The AC family's page has no crypt_enable: only "disabled" can show.
-        for dev_type in ("ac200l", "ac240", "ac500", "ep500p"):
+        for dev_type in ("ac200l", "ac240", "ac300", "ac500", "ep500p"):
             with self.subTest(dev_type=dev_type):
                 error = await self._failed_user_step(
                     dev_type, web_page=_patched_web_page(enabled=False, encrypted=None)

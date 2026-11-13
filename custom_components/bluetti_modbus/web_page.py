@@ -48,11 +48,14 @@ _LOGGER = logging.getLogger(__name__)
 
 _TIMEOUT_SECONDS = 5
 
-# Device types whose web page is asked when a Modbus probe fails.
+# Device types whose web page is asked when a Modbus probe fails. The AC300
+# is asked as the rest of the AC family is (same IoT firmware, V9041.17);
+# its answer has not been seen on a unit.
 WEB_PAGE_DEV_TYPES = frozenset(
     {
         "ac200l",
         "ac240",
+        "ac300",
         "ac500",
         "balco260",
         "balco500",
