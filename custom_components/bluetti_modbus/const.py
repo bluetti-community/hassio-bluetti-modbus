@@ -128,6 +128,12 @@ EP2000_CONFIRMED = True
 # in Home Assistant; not yet confirmed there.
 AC240_CONFIRMED = True
 
+# AC300 (bluetti-modbus 0.75.0+, bluetti-registers 0.0.80): AC500's register
+# set, read on a real unit against the BLUETTI app, the AC and DC output
+# switches written and seen to follow (bluetti-registers#47). Offered from
+# the 3.7.0 betas, for its owner's test in Home Assistant.
+AC300_CONFIRMED = True
+
 # Devices whose own built-in battery reports through PACK_INFO_FIELDS at
 # the main unit's Modbus address, and so get a battery sub-device: every
 # profile that carries that block - the Balco 260 and Balco 500, the
@@ -152,6 +158,7 @@ SEPARATE_BATTERY_DEV_TYPES = ("ep2000",)
 DEVICE_TYPE_DISPLAY_NAMES: dict[str, str] = {
     "ac200l": "AC200L",
     "ac240": "AC240",
+    "ac300": "AC300",
     "ac500": "AC500",
     "balco260": "Balco 260",
     "balco500": "Balco 500",

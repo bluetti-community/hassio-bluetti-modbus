@@ -77,7 +77,7 @@ from .vendor.bluetti_modbus_lib import (
 # Apex 300 - bluetti-registers#49), so the AC500-specific sensor exceptions
 # below hold for all four. Not AC500_FIELDS_NOT_SHOWN, though: the EP500P's
 # g_i_switch is a working grid charging switch.
-_AC_FAMILY = ("ac500", "ac200l", "ac240", "ep500p", "pa030")
+_AC_FAMILY = ("ac500", "ac200l", "ac240", "ac300", "ep500p", "pa030")
 
 # The PV type exception below is the one member of that set the Apex 300
 # does not share: on it both strings read DcPv, with two DC inputs declared,
@@ -86,8 +86,9 @@ _AC_FAMILY = ("ac500", "ac200l", "ac240", "ep500p", "pa030")
 # sensors are enabled like any other confirmed field.
 _PV_TYPE_UNVERIFIED = ("ac500", "ac200l", "ep500p")
 
-# The AC family members whose profile has no pv_i_e_total.
-_NO_PV_ENERGY_TOTAL = ("ac500", "ac200l", "ep500p")
+# The AC family members whose profile has no pv_i_e_total. On the AC300,
+# pv_i_e_local reads the BLUETTI app's PV yield (bluetti-registers#47).
+_NO_PV_ENERGY_TOTAL = ("ac500", "ac200l", "ac300", "ep500p")
 
 # The EP2000 has two MPPTs - terminals PV1+PV2 on one, PV3+PV4 on the other -
 # and reports them in the PV1 and PV2 slots, so their devices are named after

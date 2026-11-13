@@ -53,6 +53,7 @@
 | **S Meter** | Discovered | Read-only | Real hardware + BLUETTI spec |
 | **FridgePower** | IP address | DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/38) |
 | **AC500** | IP address | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
+| **AC300** | IP address | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/47) |
 | **EP500Pro** | IP address | AC output, DC output, grid charging | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |
 | **AC200L** | IP address | AC output, DC output, AC power lifting, AC charging mode | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/31) |
 | **AC240**, **AC240P** | IP address | AC output, DC output, grid charging, AC ECO, AC power lifting | [Real unit](https://github.com/bluetti-community/hassio-bluetti-modbus/issues/176) |
@@ -85,7 +86,7 @@ Have another BLUETTI model? Register data is welcome in [bluetti-registers](http
 - There is no grid feed-in switch: the unit is off-grid only.
 - One PV input, one inverter and one phase.
 
-**AC500, EP500Pro, AC200L, Apex 300** share one register layout. An AC200PL reads with the AC200L type.
+**AC500, AC300, EP500Pro, AC200L, Apex 300** share one register layout. An AC200PL reads with the AC200L type.
 
 - The SoC limits are read-only.
 - There is no per-pack data: the pack registers show the pack selected in the app, and that selector is not reachable over Modbus TCP.
@@ -93,6 +94,7 @@ Have another BLUETTI model? Register data is welcome in [bluetti-registers](http
 - On the Apex 300, Grid Charging is the Custom working mode's "Charge From Grid" setting. It has no effect in Backup mode.
 - On the Apex 300, the AC charging mode can be changed, from Home Assistant as from the BLUETTI app, only while the unit's physical charging mode selector is on Auto.
 - Energy and per-string PV fields have not been seen non-zero on the EP500Pro and AC200L.
+- On the AC300, there is no grid charging entity: its register does not follow the app's Grid Charge setting. Of the two PV inputs, only the power of input 1 is reported, next to the total.
 
 **AC240, AC240P.** Add an AC240P with the AC240 type.
 
