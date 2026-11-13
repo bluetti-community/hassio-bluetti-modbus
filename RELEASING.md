@@ -61,13 +61,17 @@ the text that ships says what changed for the person running it.
 
 ```markdown
 ## ✨ New Features
-- **Short subject**: what it does, and what it was confirmed against. (#123)
+- **Device: short subject**: what it does, and what it was confirmed against. (#123)
+- **Other device**, confirmed on the hardware it was tested on:
+  - **Short subject**: what it does. (#124)
+  - **Short subject**: what it does. (#125)
 
 ## 🐛 Bug Fixes
-- **Short subject**: the symptom, then the cause in one clause. (#124)
+- **Device: short subject**: the symptom, then the cause in one clause. (#126)
 
 ## 📦 Vendored library
-- Everything the `bluetti-modbus` tag jump carries, inert items included.
+- bluetti-modbus <old> → <new>. The jump carries:
+  - **Device**: everything the jump carries for it, inert items included, each with its version.
 
 **Full Changelog**: https://github.com/bluetti-community/hassio-bluetti-modbus/compare/<previous>...<this>
 ```
@@ -76,8 +80,12 @@ Rules that matter more than the layout:
 
 - One line per change, leading with the subject in bold, ending with its pull
   request number.
+- A device is named once per section. With one change, its name leads the
+  line. With several, the device is one bullet and its changes are indented
+  under it, so the name is not repeated on every line; evidence that covers
+  them all goes on the device's line.
 - A device claim names the hardware it was confirmed on, or says it is untested.
 - The vendored-library section lists **everything** the tag jump carries, not
-  only what the integration uses.
+  only what the integration uses, grouped by device the same way.
 - No release is shipped until its GitHub release exists: the tag alone does not
   reach the Marketplace, and the zip asset is built by the release workflow.
