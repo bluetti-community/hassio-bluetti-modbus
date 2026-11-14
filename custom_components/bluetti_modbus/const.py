@@ -282,9 +282,9 @@ FIELDS_SHOWN_VIA_SWITCH = {
 # as FIELDS_SHOWN_VIA_SWITCH above - the select already shows the current
 # mode, so a read-only sensor next to it would only duplicate it.
 #
-# d_working_mode (57020): the working mode, writable on a Balco 500 (Custom,
-# Self-Consumption, Backup). Read-only on an Apex 300, where it stays a
-# sensor.
+# d_working_mode (57020): the working mode, writable on a Balco 260 and a
+# Balco 500 (Custom, Self-Consumption, Backup). Read-only on an Apex 300,
+# where it stays a sensor.
 FIELDS_SHOWN_VIA_SELECT = {"d_charging_mode", "d_working_mode"}
 
 # A switch the BLUETTI app names differently on one model. Balco 500: 57001
