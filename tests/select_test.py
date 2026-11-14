@@ -217,6 +217,46 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(added, [])
 
 
+class TestBalco260Profile(unittest.TestCase):
+    def test_working_mode_is_a_writable_enum_at_57020(self):
+        from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (
+            BalcoWorkingMode,
+        )
+
+        field = get_device("balco260").get_field("d_working_mode")
+        self.assertIsNotNone(field)
+        self.assertEqual(field.address, 57020)
+        self.assertTrue(field.writable)
+        self.assertIs(field.convert, BalcoWorkingMode)
+
+
+class TestBalco260WithoutWorkingMode(unittest.IsolatedAsyncioTestCase):
+    async def test_the_other_settings_are_still_read(self):
+        # 57020 is not in BLUETTI's register list: a unit that refuses it
+        # keeps its switches and SoC limits, read as the coordinator reads
+        # them (a component restricted to the settings block).
+        from modbus_connection.exceptions import IllegalDataAddressError
+        from modbus_connection.mock import MockModbusConnection
+
+        unit = MockModbusConnection().for_unit(1)
+        for address in (57001, 57009, 57010):
+            unit.holding[address] = 1
+        unit.holding[57016] = 20
+        unit.holding[57017] = 100
+        unit.fail_read(57020, IllegalDataAddressError(2))
+        settings = get_device("balco260", unit)
+        settings.restrict_fields(
+            [n for n in settings.field_names() if settings.get_field(n).address >= 57001]
+        )
+
+        await settings.async_update_with_retry()
+
+        self.assertEqual(settings.values["b_soc_low"], 20)
+        self.assertEqual(settings.values["b_soc_high"], 100)
+        self.assertTrue(settings.values["g_o_switch"])
+        self.assertNotIn("d_working_mode", settings.field_names())
+
+
 class TestBalco500Profile(unittest.TestCase):
     def test_working_mode_is_a_writable_enum_at_57020(self):
         from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import (

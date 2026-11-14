@@ -48,7 +48,7 @@
 
 | Device | Setup | Controls | Evidence |
 | --- | --- | --- | --- |
-| **Balco 260** | Discovered | AC output, grid charging, grid feed-in, SoC low/high limits | Real hardware + BLUETTI spec |
+| **Balco 260** | Discovered | AC output, working mode, grid charging, grid feed-in, SoC low/high limits | Real hardware + BLUETTI spec |
 | **Balco 500** | Discovered | System ON/OFF, working mode, grid feed-in, SoC low/high limits | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/68) |
 | **S Meter** | Discovered | Read-only | Real hardware + BLUETTI spec |
 | **FridgePower** | IP address | DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/38) |
@@ -74,6 +74,7 @@ Have another BLUETTI model? Register data is welcome in [bluetti-registers](http
 
 - With an energy meter paired in the BLUETTI app (a Shelly Pro 3EM, for example), the grid entities report the meter's readings: the household's grid connection, not the Balco's own port. A three-phase meter on a single-phase installation reports three phases, with the same voltage on each and no current on phases 2-3. Those entities can be disabled.
 - A pack slot that answers only its serial number shows its sensors as **unavailable** rather than 0 % or 0 V. This is a firmware issue confirmed by BLUETTI.
+- **Working Mode** offers Custom, Self-Consumption and Backup, as the BLUETTI app does. The register is not in BLUETTI's list: on a unit whose firmware does not serve it, the select stays unknown and the other entities are not affected.
 
 **Balco 500**
 
