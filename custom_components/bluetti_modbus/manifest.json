@@ -2,7 +2,7 @@
     "domain": "bluetti_modbus",
     "name": "BLUETTI Modbus",
     "categories": ["energy.solar_batteries"],
-    "codeowners": ["@Patrick762", "@chpego"],
+    "codeowners": ["@chpego"],
     "config_flow": true,
     "dependencies": ["modbus"],
     "documentation": "https://github.com/bluetti-community/hassio-bluetti-modbus",

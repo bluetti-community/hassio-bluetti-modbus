@@ -338,14 +338,13 @@ To test a new model, see the library's [hardware testing guide](https://github.c
 - [bluetti-modbus](https://github.com/bluetti-community/bluetti-modbus): the library this integration is built on, also used by the built-in integration.
 - [bluetti-registers](https://github.com/bluetti-community/bluetti-registers): the register maps.
 - [bluetti-official/bluetti-home-assistant](https://github.com/bluetti-official/bluetti-home-assistant): BLUETTI's cloud integration, usable at the same time.
-- [Patrick762/hassio-bluetti-modbus](https://github.com/Patrick762/hassio-bluetti-modbus): the project this repository was forked from, maintained independently.
 - [Patrick762/hassio-bluetti-bt](https://github.com/Patrick762/hassio-bluetti-bt): Bluetooth integration for BLUETTI's portable power stations.
 
 ## Disclaimer and license
 
 This integration is not affiliated with, endorsed by, or supported by BLUETTI. It is provided without any warranty; use it at your own risk.
 
-Released under the [MIT License](LICENSE).
+Originally created by [Patrick762](https://github.com/Patrick762); maintained by the bluetti-community. Released under the [MIT License](LICENSE).
 
 [release-shield]: https://img.shields.io/github/v/release/bluetti-community/hassio-bluetti-modbus.svg
 [release]: https://github.com/bluetti-community/hassio-bluetti-modbus/releases
