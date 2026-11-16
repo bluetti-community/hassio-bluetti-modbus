@@ -129,7 +129,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # version with (a fresh entry created at a stale VERSION here would
     # otherwise immediately trigger a real migration step on its very next
     # setup, for no reason).
-    VERSION = 33
+    VERSION = 34
 
     def __init__(self) -> None:
         _LOGGER.info("Initialize config flow")

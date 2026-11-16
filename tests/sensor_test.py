@@ -825,12 +825,13 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
     @patch("custom_components.bluetti_modbus.sensor.get_device")
     @patch("custom_components.bluetti_modbus.sensor.dev_info")
     @patch("custom_components.bluetti_modbus.sensor.FullDeviceConfig")
-    async def test_ac240_hides_its_iot_serial_and_pack_count(
+    async def test_ac240_and_pa030_hide_what_they_misreport(
         self, config_cls, dev_info_fn, get_device_fn, battery_device_info_fn
     ):
         # const.py's AC240_FIELDS_NOT_SHOWN: on the AC240, d_iot_serial is the
-        # unit's own serial and d_num_battery_packs a maximum. Other devices
-        # keep both.
+        # unit's own serial and d_num_battery_packs a maximum.
+        # PA030_FIELDS_NOT_SHOWN: the Apex 300's pack count reads 0. Other
+        # devices keep both.
         dev_info_fn.return_value = _device_info()
         battery_device_info_fn.return_value = {"name": "Test Device Battery"}
 
@@ -850,7 +851,11 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
 
         from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 
-        for dev_type, shown in (("ac240", False), ("ac500", True)):
+        for dev_type, serial_shown, packs_shown in (
+            ("ac240", False, False),
+            ("pa030", True, False),
+            ("ac500", True, True),
+        ):
             config_cls.from_dict.return_value = MagicMock(dev_type=dev_type, address="10.2.1.60")
             coordinator = MagicMock(spec=PollingCoordinator, config_entry=MagicMock(), data={})
             coordinator.data = {}
@@ -860,8 +865,8 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             await async_setup_entry(hass, MagicMock(entry_id="entry1", runtime_data=coordinator), added.extend)
 
             keys = {s._response_key for s in added}
-            self.assertEqual("d_iot_serial" in keys, shown, dev_type)
-            self.assertEqual("d_num_battery_packs" in keys, shown, dev_type)
+            self.assertEqual("d_iot_serial" in keys, serial_shown, dev_type)
+            self.assertEqual("d_num_battery_packs" in keys, packs_shown, dev_type)
             self.assertIn("d_num_inverters", keys, dev_type)
 
     @patch("custom_components.bluetti_modbus.sensor.battery_device_info")

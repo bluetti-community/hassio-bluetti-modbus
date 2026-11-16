@@ -242,6 +242,11 @@ BALCO500_FIELDS_NOT_SHOWN = {
     "b_time_to_full_total",
 }
 
+# Apex 300: d_num_battery_packs (51001) reads 0 with four packs attached,
+# whether the BLUETTI app is closed or shows the packs (bluetti-modbus#164),
+# so it is not shown.
+PA030_FIELDS_NOT_SHOWN = {"d_num_battery_packs"}
+
 # Devices whose built-in battery block (PACK_INFO_FIELDS) is a window on
 # the pack the BLUETTI app last showed: it reads all zeros until the app
 # opens that pack, then fills (AC240, bluetti-registers#65). While it is

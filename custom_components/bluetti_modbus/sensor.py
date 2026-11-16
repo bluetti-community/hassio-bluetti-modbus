@@ -55,6 +55,7 @@ from .const import (
     FIELDS_SHOWN_VIA_SWITCH,
     FP_FIELDS_NOT_SHOWN,
     INDIVIDUAL_BC260_PACKS_CONFIRMED,
+    PA030_FIELDS_NOT_SHOWN,
     SMETER_PHASE_FIELDS,
     SMETER_TRANSLATION_KEYS,
 )
@@ -325,6 +326,8 @@ async def async_setup_entry(
         if config.dev_type == "ac240" and f in AC240_FIELDS_NOT_SHOWN:
             continue
         if config.dev_type == "balco500" and f in BALCO500_FIELDS_NOT_SHOWN:
+            continue
+        if config.dev_type == "pa030" and f in PA030_FIELDS_NOT_SHOWN:
             continue
         if f in FIELDS_SHOWN_VIA_BINARY_SENSOR:
             continue
