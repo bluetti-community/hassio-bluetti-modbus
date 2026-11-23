@@ -31,7 +31,10 @@ from custom_components.bluetti_modbus import (
 from custom_components.bluetti_modbus.const import DOMAIN
 from custom_components.bluetti_modbus.coordinator import PollingCoordinator
 from custom_components.bluetti_modbus.sensor import async_setup_entry as sensor_setup
+from custom_components.bluetti_modbus.switch import BluettiSwitchEntity
+from custom_components.bluetti_modbus.switch import async_setup_entry as switch_setup
 from custom_components.bluetti_modbus.types import FullDeviceConfig
+from custom_components.bluetti_modbus.vendor.bluetti_modbus_lib import get_device
 
 ADDRESS = "10.2.1.60"
 SERIAL = 2611110033917
@@ -638,3 +641,105 @@ class TestSmeterPhaseChildDevices(_RealRegistries):
 
         for phase in ("a", "b", "c"):
             self.assertIsNone(self._phase(entry, phase))
+
+
+# The switches' names, as the BLUETTI app shows them: what a new install
+# shows and the entity id it gets, per device.
+SWITCHES = {
+    ("balco260", "Balco 260"): {
+        "ac_o_switch": ("AC Output", "balco_260_ac_output"),
+        "g_i_switch": ("Charge From Grid", "balco_260_charge_from_grid"),
+        "g_o_switch": ("Feed into Grid", "balco_260_feed_into_grid"),
+    },
+}
+FP_SWITCHES = {
+    "dc_o_switch": ("DC Output", "fridgepower_dc_output"),
+    "g_i_switch": ("Charge From Grid", "fridgepower_charge_from_grid"),
+    "ac_eco_switch": ("AC-ECO", "fridgepower_ac_eco"),
+    "ac_power_lifting_switch": ("Power Lifting Mode", "fridgepower_power_lifting_mode"),
+}
+SWITCHES[("fp", "FridgePower")] = FP_SWITCHES
+# The entity ids the names ending in "Switch" gave before.
+FP_SWITCH_IDS_BEFORE = {
+    "dc_o_switch": "switch.fridgepower_dc_output_switch",
+    "g_i_switch": "switch.fridgepower_grid_charging_switch",
+    "ac_eco_switch": "switch.fridgepower_ac_eco_switch",
+    "ac_power_lifting_switch": "switch.fridgepower_ac_power_lifting_switch",
+}
+
+
+class TestSwitchNames(_RealRegistries):
+    def _coordinator(self, entry, dev_type="fp"):
+        coordinator = MagicMock(spec=PollingCoordinator)
+        coordinator.hass = self.hass
+        coordinator.config_entry = entry
+        coordinator.device = get_device(dev_type)
+        coordinator.data = {name: 0 for names in SWITCHES.values() for name in names}
+        coordinator.last_update_success = True
+        entry.runtime_data = coordinator
+        return coordinator
+
+    async def _setup_switches(self, entry):
+        platform = EntityPlatform(
+            hass=self.hass,
+            logger=logging.getLogger(__name__),
+            domain="switch",
+            platform_name=DOMAIN,
+            platform=SimpleNamespace(async_setup_entry=switch_setup),
+            scan_interval=timedelta(seconds=30),
+            entity_namespace=None,
+        )
+        self.assertTrue(await platform.async_setup_entry(entry))
+        await self.hass.async_block_till_done()
+
+    def _switch(self, unique_id):
+        entity_id = self.entities.async_get_entity_id("switch", DOMAIN, unique_id)
+        assert entity_id is not None, unique_id
+        return self.entities.async_get(entity_id)
+
+    async def test_a_new_install_gets_the_apps_names(self):
+        for (dev_type, title), switches in SWITCHES.items():
+            entry = self._entry(dev_type, title)
+            coordinator = self._coordinator(entry, dev_type)
+
+            await self._setup_switches(entry)
+
+            for field, (name, object_id) in switches.items():
+                with self.subTest(device=dev_type, field=field):
+                    unique_id = BluettiSwitchEntity(
+                        coordinator, {"name": title}, field
+                    )._attr_unique_id
+                    switch = self._switch(unique_id)
+                    self.assertEqual(switch.entity_id, f"switch.{object_id}")
+                    self.assertEqual(
+                        self.hass.states.get(switch.entity_id).name, f"{title} {name}"
+                    )
+
+    async def test_an_existing_install_keeps_its_entity_ids(self):
+        # Registered before the switches dropped "Switch" from their names.
+        entry = self._entry("fp", "FridgePower")
+        coordinator = self._coordinator(entry)
+        unique_ids = {}
+        for field, entity_id in FP_SWITCH_IDS_BEFORE.items():
+            unique_ids[field] = BluettiSwitchEntity(
+                coordinator, {"name": "FridgePower"}, field
+            )._attr_unique_id
+            registered = self.entities.async_get_or_create(
+                "switch",
+                DOMAIN,
+                unique_ids[field],
+                config_entry=entry,
+                suggested_object_id=entity_id.removeprefix("switch."),
+            )
+            self.assertEqual(registered.entity_id, entity_id)
+
+        await self._setup_switches(entry)
+
+        # Same entity ids, today's names.
+        for field, (name, _) in FP_SWITCHES.items():
+            entity_id = FP_SWITCH_IDS_BEFORE[field]
+            with self.subTest(field=field):
+                self.assertEqual(self._switch(unique_ids[field]).entity_id, entity_id)
+                self.assertEqual(
+                    self.hass.states.get(entity_id).name, f"FridgePower {name}"
+                )

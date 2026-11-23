@@ -745,22 +745,22 @@
     },
     "switch": {
       "ac_o_switch": {
-        "name": "AC Output Switch"
+        "name": "AC Output"
       },
       "dc_o_switch": {
-        "name": "DC Output Switch"
+        "name": "DC Output"
       },
       "g_i_switch": {
-        "name": "Grid Charging Switch"
+        "name": "Charge From Grid"
       },
       "g_o_switch": {
-        "name": "Grid Feed-in Switch"
+        "name": "Feed into Grid"
       },
       "ac_eco_switch": {
-        "name": "AC ECO Switch"
+        "name": "AC-ECO"
       },
       "ac_power_lifting_switch": {
-        "name": "AC Power Lifting Switch"
+        "name": "Power Lifting Mode"
       },
       "system_switch": {
         "name": "System ON/OFF"
