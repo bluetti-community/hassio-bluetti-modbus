@@ -135,7 +135,11 @@
           "custom": "Personalizado",
           "self_consumption": "Autoconsumo",
           "backup": "Fonte de Backup",
-          "time_of_use": "Carga e Descarga Programada"
+          "time_of_use": "Carga e Descarga Programada",
+          "customized_ups": "UPS Personalizado",
+          "pv_priority_ups": "UPS Prioritário PV",
+          "standard_ups": "UPS Padrão",
+          "time_control_ups": "UPS com Controle de Tempo"
         }
       },
       "d_num_battery_packs": {
