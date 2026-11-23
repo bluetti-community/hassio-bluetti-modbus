@@ -275,7 +275,7 @@ FIELDS_SHOWN_VIA_SWITCH = {
     "dc_o_switch",
     "g_i_switch",
     "g_o_switch",
-    # AC240 only so far (bluetti-registers#65).
+    # AC240 and FridgePower.
     "ac_eco_switch",
     "ac_power_lifting_switch",
 }
@@ -288,8 +288,8 @@ FIELDS_SHOWN_VIA_SWITCH = {
 # mode, so a read-only sensor next to it would only duplicate it.
 #
 # d_working_mode (57020): the working mode, writable on a Balco 260 and a
-# Balco 500 (Custom, Self-Consumption, Backup). Read-only on an Apex 300,
-# where it stays a sensor.
+# Balco 500 (Custom, Self-Consumption, Backup). Read-only on an Apex 300
+# and a FridgePower (the app's UPS modes), where it stays a sensor.
 FIELDS_SHOWN_VIA_SELECT = {"d_charging_mode", "d_working_mode"}
 
 # A switch the BLUETTI app names differently on one model. Balco 500: 57001

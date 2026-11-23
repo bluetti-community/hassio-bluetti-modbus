@@ -141,14 +141,16 @@ class TestSelectOptionsHaveALabel(unittest.TestCase):
 
 
 class TestWorkingModeStatesHaveALabel(unittest.TestCase):
-    """The Apex 300's working mode is an enum sensor: every state needs a label."""
+    """The Apex 300's working mode and the FridgePower's UPS mode are enum
+    sensors: every state needs a label."""
 
     def test_every_state_has_a_label_in_every_language(self):
-        field = get_device("pa030").get_field("d_working_mode")
-        assert field is not None
+        fields = [get_device(dev).get_field("d_working_mode") for dev in ("pa030", "fp")]
+        assert all(field is not None for field in fields)
         missing = [
             f"{lang}: {_snake_case(member.name)}"
             for lang in _LANGUAGES
+            for field in fields
             for member in field.convert
             if _snake_case(member.name)
             not in _translations(lang)["entity"]["sensor"]["d_working_mode"]["state"]

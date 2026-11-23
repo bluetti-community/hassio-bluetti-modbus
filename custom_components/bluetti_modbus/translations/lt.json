@@ -135,7 +135,11 @@
           "custom": "Pasirinktinis",
           "self_consumption": "Savas vartojimas",
           "backup": "Atsarginis maitinimas",
-          "time_of_use": "Naudojimo laikas"
+          "time_of_use": "Naudojimo laikas",
+          "customized_ups": "Pasirinktinis UPS",
+          "pv_priority_ups": "UPS su PV prioritetu",
+          "standard_ups": "Standartinis UPS",
+          "time_control_ups": "UPS su laiko valdymu"
         }
       },
       "d_num_battery_packs": {

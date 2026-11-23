@@ -292,3 +292,7 @@ class TestBalco500Profile(unittest.TestCase):
 
     def test_the_apex_300s_working_mode_stays_read_only(self):
         self.assertFalse(get_device("pa030").get_field("d_working_mode").writable)
+
+    def test_the_fridgepowers_ups_mode_stays_read_only(self):
+        # The unit refuses a write at 57020 (bluetti-registers#38).
+        self.assertFalse(get_device("fp").get_field("d_working_mode").writable)

@@ -135,7 +135,11 @@
           "custom": "Aangepast",
           "self_consumption": "Eigenverbruik",
           "backup": "Back-up",
-          "time_of_use": "Gebruikstijd"
+          "time_of_use": "Gebruikstijd",
+          "customized_ups": "Aangepaste UPS",
+          "pv_priority_ups": "UPS met PV-prioriteit",
+          "standard_ups": "Standaard UPS",
+          "time_control_ups": "Tijdgestuurde UPS"
         }
       },
       "d_num_battery_packs": {

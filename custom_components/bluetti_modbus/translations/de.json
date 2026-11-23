@@ -135,7 +135,11 @@
           "custom": "Benutzerdefiniert",
           "self_consumption": "Selbstnutzung",
           "backup": "Backup",
-          "time_of_use": "Planmäßige Ladung und Entladung"
+          "time_of_use": "Planmäßige Ladung und Entladung",
+          "customized_ups": "Benutzerdefinierte USV",
+          "pv_priority_ups": "PV-Vorrang-USV",
+          "standard_ups": "Standard-USV",
+          "time_control_ups": "Zeitsteuerung-USV"
         }
       },
       "d_num_battery_packs": {

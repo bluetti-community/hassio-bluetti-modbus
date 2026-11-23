@@ -135,7 +135,11 @@
           "custom": "Custom",
           "self_consumption": "Self-Consumption",
           "backup": "Backup",
-          "time_of_use": "Time of Use"
+          "time_of_use": "Time of Use",
+          "customized_ups": "Customized UPS",
+          "pv_priority_ups": "PV Priority UPS",
+          "standard_ups": "Standard UPS",
+          "time_control_ups": "Time Control UPS"
         }
       },
       "d_num_battery_packs": {

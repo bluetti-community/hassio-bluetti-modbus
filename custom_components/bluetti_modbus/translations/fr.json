@@ -135,7 +135,11 @@
           "custom": "Personnalisé",
           "self_consumption": "Autoconsommation",
           "backup": "Alimentation de secours",
-          "time_of_use": "Charge/décharge programmée"
+          "time_of_use": "Charge/décharge programmée",
+          "customized_ups": "UPS personnalisé",
+          "pv_priority_ups": "UPS priorité PV",
+          "standard_ups": "UPS standard",
+          "time_control_ups": "UPS contrôlé par horaire"
         }
       },
       "d_num_battery_packs": {

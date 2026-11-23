@@ -264,6 +264,18 @@ class TestAc200lProfile(unittest.TestCase):
         self.assertIsNone(get_device("ac200l").get_field("ac_eco_switch"))
 
 
+class TestFpProfile(unittest.TestCase):
+    def test_power_lifting_and_ac_eco_are_writable_switch_fields(self):
+        # Each written on a real FridgePower, the BLUETTI app following
+        # (bluetti-registers#38).
+        for name, address in (("ac_power_lifting_switch", 57022), ("ac_eco_switch", 57024)):
+            field = get_device("fp").get_field(name)
+            self.assertIsNotNone(field)
+            self.assertEqual(field.address, address)
+            self.assertTrue(field.writable)
+            self.assertIn(name, FIELDS_SHOWN_VIA_SWITCH)
+
+
 class TestAc300Profile(unittest.TestCase):
     def test_both_output_switches_are_writable(self):
         # Written on a real unit, the outputs following (bluetti-registers#47).
