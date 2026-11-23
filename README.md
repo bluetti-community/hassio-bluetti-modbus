@@ -51,7 +51,7 @@
 | **Balco 260** | Discovered | AC output, working mode, grid charging, grid feed-in, SoC low/high limits | Real hardware + BLUETTI spec |
 | **Balco 500** | Discovered | System ON/OFF, working mode, grid feed-in, SoC low/high limits | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/68) |
 | **S Meter** | Discovered | Read-only | Real hardware + BLUETTI spec |
-| **FridgePower** | IP address | DC output, grid charging | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/38) |
+| **FridgePower** | IP address | DC output, grid charging, AC charging mode | [3 units](https://github.com/bluetti-community/bluetti-registers/issues/38) |
 | **AC500** | IP address | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/13) |
 | **AC300** | IP address | AC output, DC output | [Real unit](https://github.com/bluetti-community/bluetti-registers/issues/47) |
 | **EP500Pro** | IP address | AC output, DC output, grid charging | [2 units](https://github.com/bluetti-community/bluetti-registers/issues/35) |

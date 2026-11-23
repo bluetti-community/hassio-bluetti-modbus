@@ -133,6 +133,17 @@ class TestAc200lProfile(unittest.TestCase):
         self.assertIs(field.convert, ChargingMode)
 
 
+class TestFpProfile(unittest.TestCase):
+    def test_charging_mode_is_a_writable_enum_at_57023(self):
+        # Standard, Silent and Turbo read after the change in the BLUETTI app
+        # on a real FridgePower; a write confirmed, the app following.
+        field = get_device("fp").get_field("d_charging_mode")
+        self.assertIsNotNone(field)
+        self.assertEqual(field.address, 57023)
+        self.assertTrue(field.writable)
+        self.assertIs(field.convert, ChargingMode)
+
+
 class TestPa030Profile(unittest.TestCase):
     def test_charging_mode_adds_custom_to_the_ac200l_modes(self):
         field = get_device("pa030").get_field("d_charging_mode")
