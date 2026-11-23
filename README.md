@@ -291,7 +291,7 @@ triggers:
 actions:
   - action: switch.turn_off
     target:
-      entity_id: switch.balco_260_grid_charging_switch
+      entity_id: switch.balco_260_charge_from_grid
 mode: single
 ```
 
