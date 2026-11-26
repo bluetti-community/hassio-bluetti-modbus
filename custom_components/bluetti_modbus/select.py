@@ -80,6 +80,16 @@ class BluettiSelectEntity(CoordinatorEntity[PollingCoordinator], SelectEntity):
         self._members = {_snake_case(member.name): member for member in enum_type}
         self._attr_options = list(self._members)
 
+    @property
+    def available(self) -> bool:
+        """Unavailable while the mode is not read.
+
+        The library stops reading a mode the firmware refuses, and leaves it
+        out of its values; the settings poll may also not have read it yet.
+        """
+        data = self.coordinator.data
+        return super().available and isinstance(data, dict) and self._field_name in data
+
     async def async_added_to_hass(self) -> None:
         """Prime current_option from whatever the coordinator already has."""
         await super().async_added_to_hass()
