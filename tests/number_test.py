@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from homeassistant.components.number import NumberDeviceClass, NumberMode
+from homeassistant.const import EntityCategory
 from homeassistant.exceptions import HomeAssistantError
 from modbus_connection.exceptions import ModbusProtocolError
 
@@ -53,6 +55,28 @@ class TestBluettiNumberEntityInit(unittest.TestCase):
         coordinator.device.get_field.return_value = None
         number = BluettiNumberEntity(coordinator, _device_info(), "b_soc_low")
         self.assertEqual(number._attr_native_min_value, 0)
+
+    def test_a_soc_limit_is_a_battery_percentage_on_every_model(self):
+        for dev_type in (
+            "ac200l", "ac240", "ac300", "ac500", "balco260", "balco500",
+            "ep2000", "ep500p", "fp", "pa030",
+        ):
+            for field_name in ("b_soc_low", "b_soc_high"):
+                with self.subTest(dev_type=dev_type, field=field_name):
+                    number = _number(field_name, dev_type)
+                    self.assertEqual(number.native_unit_of_measurement, "%")
+                    self.assertEqual(number.device_class, NumberDeviceClass.BATTERY)
+
+    def test_a_soc_limit_is_configuration_typed_in_a_box(self):
+        number = _number("b_soc_high")
+        self.assertEqual(number.entity_category, EntityCategory.CONFIG)
+        self.assertEqual(number.mode, NumberMode.BOX)
+
+    def test_no_unit_without_one_in_the_profile(self):
+        coordinator = MagicMock(config_entry=MagicMock(entry_id="test_entry_id"), data={})
+        coordinator.device.get_field.return_value = None
+        number = BluettiNumberEntity(coordinator, _device_info(), "b_soc_low")
+        self.assertIsNone(number.native_unit_of_measurement)
 
     def test_translation_key_and_unique_id(self):
         number = _number("b_soc_high")
