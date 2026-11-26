@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.number import NumberEntity
+from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -20,6 +21,11 @@ from .coordinator import PollingCoordinator
 
 # Percent limits with no Range in the profile get the full scale.
 _DEFAULT_BOUNDS = (0, 100)
+
+_DEVICE_CLASSES = {
+    "b_soc_low": NumberDeviceClass.BATTERY,
+    "b_soc_high": NumberDeviceClass.BATTERY,
+}
 
 
 # One write at a time: the device takes one Modbus request at a time.
@@ -60,6 +66,9 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
 
     _attr_has_entity_name = True
     _attr_native_step = 1
+    # A limit set once in a while, typed in: under Configuration, as a box.
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_mode = NumberMode.BOX
 
     def __init__(
         self,
@@ -84,6 +93,10 @@ class BluettiNumberEntity(CoordinatorEntity[PollingCoordinator], NumberEntity):
         writable = field.writable if field is not None else None
         self._attr_native_min_value = getattr(writable, "min", _DEFAULT_BOUNDS[0])
         self._attr_native_max_value = getattr(writable, "max", _DEFAULT_BOUNDS[1])
+        # The profile's unit, as for a sensor.
+        unit = getattr(field, "unit", None)
+        self._attr_native_unit_of_measurement = unit if isinstance(unit, str) else None
+        self._attr_device_class = _DEVICE_CLASSES.get(field_name)
 
     async def async_added_to_hass(self) -> None:
         """Prime native_value from whatever the coordinator already has.
