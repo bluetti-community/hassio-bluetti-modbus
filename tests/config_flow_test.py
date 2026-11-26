@@ -1,8 +1,11 @@
+import tempfile
 import unittest
 from contextlib import asynccontextmanager
 from ipaddress import ip_address
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntries, ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
@@ -15,6 +18,7 @@ from custom_components.bluetti_modbus.config_flow import (
     _async_probe,
     _async_probe_hems,
 )
+from custom_components.bluetti_modbus.const import DOMAIN
 from custom_components.bluetti_modbus.smeter_ws import SmeterWsInfo
 from custom_components.bluetti_modbus.web_page import ModbusTcpSetting
 
@@ -568,7 +572,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             _patched_ws_query(),
             patch.object(flow, "_async_abort_entries_match") as abort_match,
             patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
-            patch.object(flow, "_abort_if_unique_id_configured") as abort_check,
+            patch.object(flow, "_abort_if_discovered_unit_configured") as abort_check,
             patch.object(flow, "async_show_form", return_value="form") as show_form,
         ):
             result = await flow.async_step_zeroconf(_discovery_info())
@@ -577,7 +581,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
         set_uid.assert_awaited_once_with(
             "1234567890123", raise_on_progress=False
         )
-        abort_check.assert_called_once()
+        abort_check.assert_called_once_with("10.2.1.80")
         self.assertEqual(
             flow.context["title_placeholders"], {"name": "S Meter 1234567890123"}
         )
@@ -599,7 +603,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             _patched_ws_query(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form"),
         ):
             await flow.async_step_zeroconf(_discovery_info())
@@ -613,7 +617,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             _patched_ws_query(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_abort", return_value="aborted") as async_abort,
         ):
             result = await flow.async_step_zeroconf(_discovery_info())
@@ -635,7 +639,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             ) as query_ws,
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form"),
         ):
             await flow.async_step_zeroconf(_discovery_info())
@@ -653,7 +657,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             _patched_ws_query(modbus_tcp_enabled=False),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_abort", return_value="aborted") as async_abort,
         ):
             result = await flow.async_step_zeroconf(_discovery_info())
@@ -671,7 +675,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             _patched_ws_query(modbus_tcp_enabled=True, modbus_tcp_encrypted=True),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_abort", return_value="aborted") as async_abort,
         ):
             result = await flow.async_step_zeroconf(_discovery_info())
@@ -690,7 +694,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             _patched_ws_query(firmware_version="V300510106", modbus_tcp_enabled=True),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form"),
         ):
             await flow.async_step_zeroconf(_discovery_info())
@@ -708,7 +712,7 @@ class TestConfigFlowZeroconfStep(unittest.IsolatedAsyncioTestCase):
             _patched_ws_query(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form") as show_form,
         ):
             result = await flow.async_step_zeroconf(_discovery_info())
@@ -811,14 +815,14 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             _patched_hems_probe(device_values={"d_serial": 1234567890123}),
             patch.object(flow, "_async_abort_entries_match") as abort_match,
             patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
-            patch.object(flow, "_abort_if_unique_id_configured") as abort_check,
+            patch.object(flow, "_abort_if_discovered_unit_configured") as abort_check,
             patch.object(flow, "async_show_form", return_value="form") as show_form,
         ):
             result = await flow.async_step_zeroconf(_balco260_discovery_info())
 
         abort_match.assert_called_once_with({"address": "10.2.1.128"})
         set_uid.assert_awaited_once_with("1234567890123")
-        abort_check.assert_called_once()
+        abort_check.assert_called_once_with("10.2.1.128")
         self.assertEqual(
             flow.context["title_placeholders"], {"name": "Balco 260 1234567890123"}
         )
@@ -837,7 +841,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             _patched_hems_probe(device_values={"d_serial": 1234567890123}) as probe,
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form"),
         ):
             await flow.async_step_zeroconf(_balco260_discovery_info())
@@ -858,7 +862,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             _patched_web_page() as web_page,
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form"),
         ):
             await flow.async_step_zeroconf(_balco260_discovery_info())
@@ -893,7 +897,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             _patched_web_page(),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_abort", return_value="aborted") as async_abort,
         ):
             result = await flow.async_step_zeroconf(_balco260_discovery_info())
@@ -913,7 +917,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             _patched_hems_probe(device_values={"d_serial": 1234567890123}) as probe,
             patch.object(flow, "_async_abort_entries_match") as abort_match,
             patch.object(flow, "async_set_unique_id", new=AsyncMock()),
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form"),
         ):
             await flow.async_step_zeroconf(_balco260_discovery_info())
@@ -928,7 +932,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             _patched_hems_probe(device_values={}),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form"),
         ):
             await flow.async_step_zeroconf(_balco260_discovery_info())
@@ -970,7 +974,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             _patched_hems_probe(device_values={"d_serial": 1234567890123}, dev_type="balco500"),
             patch.object(flow, "_async_abort_entries_match"),
             patch.object(flow, "async_set_unique_id", new=AsyncMock()) as set_uid,
-            patch.object(flow, "_abort_if_unique_id_configured"),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
             patch.object(flow, "async_show_form", return_value="form") as show_form,
         ):
             await flow.async_step_zeroconf(_balco260_discovery_info())
@@ -1290,3 +1294,73 @@ class TestConfigFlowReconfigureStep(unittest.IsolatedAsyncioTestCase):
             show_form.call_args.kwargs["description_placeholders"],
             {"error": "no route to host", "address": "10.2.1.61"},
         )
+
+
+class TestDiscoveredUnitAlreadyConfigured(unittest.IsolatedAsyncioTestCase):
+    """A discovered unit that has an entry, against Home Assistant's real entries."""
+
+    async def asyncSetUp(self):
+        self._config_dir = tempfile.TemporaryDirectory()
+        self.hass = HomeAssistant(self._config_dir.name)
+        self.hass.config_entries = ConfigEntries(self.hass, {})
+        await self.hass.config_entries.async_initialize()
+
+    async def asyncTearDown(self):
+        await self.hass.async_stop(force=True)
+        self._config_dir.cleanup()
+
+    def _entry(self, *, port=502, source="zeroconf"):
+        entry = ConfigEntry(
+            data={"address": "10.2.1.60", "port": port, "name": "n", "type": "balco260"},
+            discovery_keys={},
+            domain=DOMAIN,
+            minor_version=1,
+            options={},
+            source=source,
+            subentries_data=None,
+            title="Balco 260",
+            unique_id="1234567890123",
+            version=34,
+        )
+        self.hass.config_entries._entries[entry.entry_id] = entry
+        return entry
+
+    async def _discover(self, host="10.2.1.61"):
+        flow = _flow()
+        flow.hass = self.hass
+        # What the flow manager sets on a real flow.
+        flow.handler = DOMAIN
+        flow.context = {"source": "zeroconf"}
+        await flow.async_set_unique_id("1234567890123", raise_on_progress=False)
+        flow._abort_if_discovered_unit_configured(host)
+
+    async def test_the_entry_takes_the_address_its_unit_announces(self):
+        entry = self._entry()
+
+        with self.assertRaises(AbortFlow) as aborted:
+            await self._discover()
+
+        self.assertEqual(aborted.exception.reason, "already_configured")
+        self.assertEqual(entry.data["address"], "10.2.1.61")
+        self.assertEqual(entry.data["port"], 502)
+
+    async def test_an_entry_on_another_port_keeps_its_address(self):
+        entry = self._entry(port=1502)
+
+        with self.assertRaises(AbortFlow):
+            await self._discover()
+
+        self.assertEqual(entry.data["address"], "10.2.1.60")
+
+    async def test_an_ignored_unit_stays_ignored_as_it_was(self):
+        entry = self._entry(source=SOURCE_IGNORE)
+
+        with self.assertRaises(AbortFlow):
+            await self._discover()
+
+        self.assertEqual(entry.data["address"], "10.2.1.60")
+
+    async def test_a_new_unit_goes_on_to_be_set_up(self):
+        await self._discover()
+
+        self.assertEqual(self.hass.config_entries.async_entries(DOMAIN), [])
