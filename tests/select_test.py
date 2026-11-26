@@ -124,6 +124,28 @@ class TestHandleCoordinatorUpdate(unittest.TestCase):
         self.assertIsNone(select.current_option)
 
 
+class TestAvailable(unittest.TestCase):
+    def _select(self, data, last_update_success=True):
+        select = _select("d_working_mode")
+        select.coordinator.data = data
+        select.coordinator.last_update_success = last_update_success
+        return select
+
+    def test_available_once_the_mode_is_read(self):
+        self.assertTrue(self._select({"d_working_mode": 2}).available)
+
+    def test_unavailable_while_the_mode_is_not_read(self):
+        # A firmware that refuses the register: the library stops reading
+        # it and leaves it out of its values.
+        self.assertFalse(self._select({"b_soc": 80}).available)
+
+    def test_unavailable_before_any_data(self):
+        self.assertFalse(self._select(None).available)
+
+    def test_unavailable_after_a_failed_poll(self):
+        self.assertFalse(self._select({"d_working_mode": 2}, last_update_success=False).available)
+
+
 class TestAc200lProfile(unittest.TestCase):
     def test_charging_mode_is_a_writable_enum_at_57023(self):
         field = get_device("ac200l").get_field("d_charging_mode")
