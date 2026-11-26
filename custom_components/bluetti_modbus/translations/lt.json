@@ -24,7 +24,8 @@
     "error": {
       "cannot_connect": "Nepavyko prisijungti prie įrenginio: {error}. Patikrinkite, ar Modbus TCP įjungtas paties įrenginio žiniatinklio nustatymuose; jei tas puslapis atidarytas naršyklėje, uždarykite jį prieš bandydami dar kartą, nes jis gali trukdyti šiam patikrinimui nuskaityti nustatymą.",
       "modbus_tcp_disabled": "Šiame įrenginyje Modbus TCP išjungtas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, įjunkite Enable su prievadu 502 ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
-      "modbus_tcp_encrypted": "Šiame įrenginyje Modbus TCP yra šifruotas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, išjunkite Crypt Enable ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą."
+      "modbus_tcp_encrypted": "Šiame įrenginyje Modbus TCP yra šifruotas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, išjunkite Crypt Enable ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
+      "link_settings_in_use": "Home Assistant jau jungiasi prie šio adreso su kitais Modbus ryšio nustatymais. Pašalinkite arba pakeiskite kitą šio įrenginio Modbus konfigūraciją (pavyzdžiui, modbus šakotuvą YAML faile) ir bandykite dar kartą."
     },
     "abort": {
       "no_unconfigured_devices": "Įrenginių nerasta",
@@ -34,7 +35,8 @@
       "modbus_tcp_disabled": "Šiame įrenginyje Modbus TCP išjungtas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, įjunkite Enable su prievadu 502 ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
       "modbus_tcp_encrypted": "Šiame įrenginyje Modbus TCP yra šifruotas. Naršyklėje atidarykite http://{address}/, prisijunkite kaip admin (slaptažodis yra įrenginio Bluetooth slaptažodis iš BLUETTI programėlės arba tuščias), eikite į Settings → Modbus TCP, išjunkite Crypt Enable ir išsaugokite, tada uždarykite tą puslapį ir bandykite dar kartą.",
       "wrong_device": "Tuo adresu atsako kitas įrenginys: jo serijos numeris nėra šio įrašo",
-      "reconfigure_successful": "Įrenginio adresas atnaujintas"
+      "reconfigure_successful": "Įrenginio adresas atnaujintas",
+      "link_settings_in_use": "Home Assistant jau jungiasi prie šio įrenginio su kitais Modbus ryšio nustatymais"
     }
   },
   "device": {
@@ -782,6 +784,12 @@
     },
     "invalid_register_request": {
       "message": "Netinkama registrų užklausa: {error}"
+    },
+    "link_settings_in_use": {
+      "message": "Home Assistant jau jungiasi prie šio įrenginio su kitais Modbus ryšio nustatymais: {error}"
+    },
+    "device_unavailable": {
+      "message": "{device} nepasiekiamas: nieko neįrašyta"
     }
   },
   "services": {

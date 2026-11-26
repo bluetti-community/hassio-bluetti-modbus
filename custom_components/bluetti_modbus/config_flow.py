@@ -49,10 +49,11 @@ from .web_page import WEB_PAGE_DEV_TYPES, async_query_modbus_setting
 
 _LOGGER = logging.getLogger(__name__)
 
-# What a probe below can fail with: the device not answering (ModbusError,
-# or a bare TimeoutError), or Home Assistant already holding a connection to
-# this host and port with other link settings (HomeAssistantError).
-PROBE_ERRORS = (ModbusError, TimeoutError, HomeAssistantError)
+# What a probe below can fail with when the device does not answer.
+PROBE_ERRORS = (ModbusError, TimeoutError)
+# Home Assistant already reaches this host and port over other link settings,
+# which one shared connection cannot honour: no retry helps.
+LINK_SETTINGS_IN_USE = "link_settings_in_use"
 
 
 async def _async_probe(hass: HomeAssistant, host: str, port: int, dev_type: str) -> dict[str, Any]:
@@ -161,6 +162,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # all (see _modbus_identity()'s own docstring) - .get()
                 # simply finds nothing there, no dev_type check needed here.
                 serial = values.get("d_serial")
+            except HomeAssistantError:
+                errors["base"] = LINK_SETTINGS_IN_USE
             except PROBE_ERRORS as err:
                 errors["base"] = await _async_failure_reason(self.hass, address, dev_type)
                 description_placeholders["error"] = str(err)
@@ -339,6 +342,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._async_abort_entries_match({CONF_ADDRESS: address})
             try:
                 values = await _async_probe(self.hass, address, port, dev_type)
+            except HomeAssistantError:
+                errors["base"] = LINK_SETTINGS_IN_USE
             except PROBE_ERRORS as err:
                 errors["base"] = await _async_failure_reason(self.hass, address, dev_type)
                 description_placeholders["error"] = str(err)
@@ -469,6 +474,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             await _async_probe(self.hass, host, 502, "smeter")
+        except HomeAssistantError:
+            return self.async_abort(reason=LINK_SETTINGS_IN_USE)
         except PROBE_ERRORS:
             return self.async_abort(reason="cannot_connect")
 
@@ -516,6 +523,8 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             dev_type, values = await _async_probe_hems(self.hass, host, 502)
             serial = values.get("d_serial")
+        except HomeAssistantError:
+            return self.async_abort(reason=LINK_SETTINGS_IN_USE)
         except PROBE_ERRORS:
             return self.async_abort(
                 reason=await _async_failure_reason(

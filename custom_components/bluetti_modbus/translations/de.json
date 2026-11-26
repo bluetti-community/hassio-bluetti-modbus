@@ -24,7 +24,8 @@
     "error": {
       "cannot_connect": "Verbindung zum Gerät fehlgeschlagen: {error}. Prüfen, ob Modbus TCP in den Web-Einstellungen des Geräts aktiviert ist; ist diese Seite in einem Browser geöffnet, sie vor dem erneuten Versuch schließen, da sie diese Prüfung sonst am Lesen der Einstellung hindern kann.",
       "modbus_tcp_disabled": "Modbus TCP ist auf diesem Gerät ausgeschaltet. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Enable mit Port 502 einschalten und speichern, dann die Seite schließen und erneut versuchen.",
-      "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Crypt Enable ausschalten und speichern, dann die Seite schließen und erneut versuchen."
+      "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Crypt Enable ausschalten und speichern, dann die Seite schließen und erneut versuchen.",
+      "link_settings_in_use": "Home Assistant erreicht diese Adresse bereits mit anderen Modbus-Verbindungseinstellungen. Die andere Modbus-Konfiguration für dieses Gerät (zum Beispiel einen Modbus-Hub in YAML) entfernen oder ändern und es dann erneut versuchen."
     },
     "abort": {
       "no_unconfigured_devices": "Keine Geräte gefunden",
@@ -34,7 +35,8 @@
       "modbus_tcp_disabled": "Modbus TCP ist auf diesem Gerät ausgeschaltet. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Enable mit Port 502 einschalten und speichern, dann die Seite schließen und erneut versuchen.",
       "modbus_tcp_encrypted": "Modbus TCP ist auf diesem Gerät verschlüsselt. http://{address}/ im Browser öffnen, als admin anmelden (Passwort: das Bluetooth-Passwort des Geräts aus der BLUETTI-App, oder leer), unter Settings → Modbus TCP Crypt Enable ausschalten und speichern, dann die Seite schließen und erneut versuchen.",
       "wrong_device": "Unter dieser Adresse antwortet ein anderes Gerät: seine Seriennummer ist nicht die dieses Eintrags",
-      "reconfigure_successful": "Die Adresse des Geräts wurde aktualisiert"
+      "reconfigure_successful": "Die Adresse des Geräts wurde aktualisiert",
+      "link_settings_in_use": "Home Assistant erreicht dieses Gerät bereits mit anderen Modbus-Verbindungseinstellungen"
     }
   },
   "device": {
@@ -782,6 +784,12 @@
     },
     "invalid_register_request": {
       "message": "Ungültige Registeranfrage: {error}"
+    },
+    "link_settings_in_use": {
+      "message": "Home Assistant erreicht dieses Gerät bereits mit anderen Modbus-Verbindungseinstellungen: {error}"
+    },
+    "device_unavailable": {
+      "message": "{device} ist nicht verfügbar: Es wurde nichts geschrieben"
     }
   },
   "services": {

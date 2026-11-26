@@ -24,7 +24,8 @@
     "error": {
       "cannot_connect": "Failed to connect to the device: {error}. Check that Modbus TCP is enabled in the device's own web settings; if that page is open in a browser, close it before trying again, since it can keep this check from reading the setting.",
       "modbus_tcp_disabled": "Modbus TCP is turned off on this device. Open http://{address}/ in a browser, sign in as admin (the password is the device's Bluetooth password from the BLUETTI app, or blank), go to Settings → Modbus TCP, turn on Enable with port 502 and save, then close that page and try again.",
-      "modbus_tcp_encrypted": "Modbus TCP is encrypted on this device. Open http://{address}/ in a browser, sign in as admin (the password is the device's Bluetooth password from the BLUETTI app, or blank), go to Settings → Modbus TCP, turn off Crypt Enable and save, then close that page and try again."
+      "modbus_tcp_encrypted": "Modbus TCP is encrypted on this device. Open http://{address}/ in a browser, sign in as admin (the password is the device's Bluetooth password from the BLUETTI app, or blank), go to Settings → Modbus TCP, turn off Crypt Enable and save, then close that page and try again.",
+      "link_settings_in_use": "Home Assistant already reaches this address over other Modbus link settings. Remove or change the other Modbus configuration for this device (a modbus hub in YAML, for example), then try again."
     },
     "abort": {
       "no_unconfigured_devices": "No devices found",
@@ -34,7 +35,8 @@
       "modbus_tcp_disabled": "Modbus TCP is turned off on this device. Open http://{address}/ in a browser, sign in as admin (the password is the device's Bluetooth password from the BLUETTI app, or blank), go to Settings → Modbus TCP, turn on Enable with port 502 and save, then close that page and try again.",
       "modbus_tcp_encrypted": "Modbus TCP is encrypted on this device. Open http://{address}/ in a browser, sign in as admin (the password is the device's Bluetooth password from the BLUETTI app, or blank), go to Settings → Modbus TCP, turn off Crypt Enable and save, then close that page and try again.",
       "wrong_device": "Another device answers at that address: its serial number is not this entry's",
-      "reconfigure_successful": "The device's address was updated"
+      "reconfigure_successful": "The device's address was updated",
+      "link_settings_in_use": "Home Assistant already reaches this device over other Modbus link settings"
     }
   },
   "device": {
@@ -782,6 +784,12 @@
     },
     "invalid_register_request": {
       "message": "Invalid register request: {error}"
+    },
+    "link_settings_in_use": {
+      "message": "Home Assistant already reaches this device over other Modbus link settings: {error}"
+    },
+    "device_unavailable": {
+      "message": "{device} is unavailable: nothing was written"
     }
   },
   "services": {

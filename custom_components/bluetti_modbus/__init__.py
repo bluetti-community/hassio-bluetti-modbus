@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryError, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -66,11 +67,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Create coordinator for polling
     logger.debug("Creating coordinator")
-    coordinator = PollingCoordinator(
-        hass,
-        entry,
-        config,
-    )
+    try:
+        coordinator = PollingCoordinator(
+            hass,
+            entry,
+            config,
+        )
+    except HomeAssistantError as err:
+        # Home Assistant already reaches this address over other Modbus link
+        # settings, which one shared connection cannot honour.
+        raise ConfigEntryError(
+            translation_domain=DOMAIN,
+            translation_key="link_settings_in_use",
+            translation_placeholders={"error": str(err)},
+        ) from err
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 

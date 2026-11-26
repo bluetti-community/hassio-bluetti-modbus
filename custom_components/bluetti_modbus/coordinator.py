@@ -11,6 +11,7 @@ from typing import Any
 from homeassistant.components.modbus import async_get_unit
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from modbus_connection import ModbusTcpParams, ModbusUnit
 from modbus_connection.exceptions import ModbusError
@@ -277,6 +278,14 @@ class PollingCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         to handle here beyond the serialization.
         """
         async with self._io_lock:
+            # A write that waited for a poll goes no further if that poll
+            # found the unit gone, or another one at its address.
+            if not self.last_update_success:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="device_unavailable",
+                    translation_placeholders={"device": self.config_entry.title},
+                )
             await self.device.write(field_name, value)
         # Keep what was just written in the settings snapshot, and confirm it
         # on the first poll after the device has settled. Both halves matter:

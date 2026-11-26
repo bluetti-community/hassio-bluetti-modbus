@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
+from homeassistant.exceptions import ConfigEntryError, HomeAssistantError
+
 from custom_components.bluetti_modbus import (
     _reconcile_config_entry_unique_id,
     _unique_id_for,
@@ -144,6 +146,19 @@ class TestAsyncSetupEntry(unittest.IsolatedAsyncioTestCase):
             kwargs["sw_version"],
             "IoT v50012.01.19, ARM v50011.01.12, DSP v50014.01.10",
         )
+
+    @patch("custom_components.bluetti_modbus.PollingCoordinator")
+    async def test_a_link_held_with_other_settings_is_a_setup_error(self, coordinator_cls):
+        # async_get_unit, in the coordinator's constructor: retrying won't help.
+        coordinator_cls.side_effect = HomeAssistantError("in use")
+        entry = MagicMock()
+        entry.data = {"address": "10.2.1.60", "port": 502, "name": "n", "type": "balco260"}
+
+        with self.assertRaises(ConfigEntryError) as raised:
+            await async_setup_entry(MagicMock(), entry)
+
+        self.assertEqual(raised.exception.translation_key, "link_settings_in_use")
+        self.assertEqual(raised.exception.translation_placeholders, {"error": "in use"})
 
     async def test_setup_with_invalid_entry_data_returns_false(self):
         entry = MagicMock()
