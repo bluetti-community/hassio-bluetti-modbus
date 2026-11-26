@@ -24,7 +24,8 @@
     "error": {
       "cannot_connect": "Verbinden met het apparaat mislukt: {error}. Controleer of Modbus TCP is ingeschakeld in de webinstellingen van het apparaat; als die pagina in een browser openstaat, sluit deze dan voor je het opnieuw probeert, want ze kan verhinderen dat deze controle de instelling leest.",
       "modbus_tcp_disabled": "Modbus TCP staat uit op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Enable aan met poort 502 en sla op, sluit dan die pagina en probeer het opnieuw.",
-      "modbus_tcp_encrypted": "Modbus TCP is versleuteld op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Crypt Enable uit en sla op, sluit dan die pagina en probeer het opnieuw."
+      "modbus_tcp_encrypted": "Modbus TCP is versleuteld op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Crypt Enable uit en sla op, sluit dan die pagina en probeer het opnieuw.",
+      "link_settings_in_use": "Home Assistant bereikt dit adres al met andere Modbus-verbindingsinstellingen. Verwijder of wijzig de andere Modbus-configuratie voor dit apparaat (bijvoorbeeld een modbus-hub in YAML) en probeer het daarna opnieuw."
     },
     "abort": {
       "no_unconfigured_devices": "Geen apparaten gevonden",
@@ -34,7 +35,8 @@
       "modbus_tcp_disabled": "Modbus TCP staat uit op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Enable aan met poort 502 en sla op, sluit dan die pagina en probeer het opnieuw.",
       "modbus_tcp_encrypted": "Modbus TCP is versleuteld op dit apparaat. Open http://{address}/ in een browser, meld je aan als admin (het wachtwoord is het Bluetooth-wachtwoord van het apparaat uit de BLUETTI-app, of leeg), ga naar Settings → Modbus TCP, zet Crypt Enable uit en sla op, sluit dan die pagina en probeer het opnieuw.",
       "wrong_device": "Op dat adres antwoordt een ander apparaat: het serienummer is niet dat van deze vermelding",
-      "reconfigure_successful": "Het adres van het apparaat is bijgewerkt"
+      "reconfigure_successful": "Het adres van het apparaat is bijgewerkt",
+      "link_settings_in_use": "Home Assistant bereikt dit apparaat al met andere Modbus-verbindingsinstellingen"
     }
   },
   "device": {
@@ -782,6 +784,12 @@
     },
     "invalid_register_request": {
       "message": "Ongeldige registeraanvraag: {error}"
+    },
+    "link_settings_in_use": {
+      "message": "Home Assistant bereikt dit apparaat al met andere Modbus-verbindingsinstellingen: {error}"
+    },
+    "device_unavailable": {
+      "message": "{device} is niet beschikbaar: er is niets geschreven"
     }
   },
   "services": {

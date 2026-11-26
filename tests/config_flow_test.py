@@ -1162,20 +1162,50 @@ class TestProbe(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(len(self.held), 1)
                 self.assertEqual(self.released, 1)
 
-    async def test_a_link_held_with_other_settings_is_a_connection_error_for_the_user(self):
+    async def test_a_link_held_with_other_settings_says_so_to_the_user(self):
         # async_get_temporary_unit raises HomeAssistantError when another
         # integration holds this host and port with other link settings.
         flow = _flow()
         with (
             _patched_probe(read_side_effect=HomeAssistantError("in use")),
-            _patched_web_page(),
+            _patched_web_page() as web_page,
             patch.object(flow, "async_show_form", return_value="form") as show_form,
         ):
             await flow.async_step_user(
                 {"address": "10.2.1.60", "port": 502, "type": "balco260"}
             )
 
-        self.assertEqual(show_form.call_args.kwargs["errors"]["base"], "cannot_connect")
+        self.assertEqual(show_form.call_args.kwargs["errors"], {"base": "link_settings_in_use"})
+        self.assertEqual(show_form.call_args.kwargs["description_placeholders"], {})
+        # Not a reachability question: the web page is not asked.
+        web_page.assert_not_awaited()
+
+    async def test_a_link_held_with_other_settings_aborts_a_meters_discovery(self):
+        flow = _flow()
+        with (
+            _patched_probe(read_side_effect=HomeAssistantError("in use")),
+            _patched_ws_query(),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_set_unique_id", new=AsyncMock()),
+            patch.object(flow, "_abort_if_discovered_unit_configured"),
+            patch.object(flow, "async_abort", return_value="aborted") as abort,
+        ):
+            await flow.async_step_zeroconf(_discovery_info())
+
+        abort.assert_called_once_with(reason="link_settings_in_use")
+
+    async def test_a_link_held_with_other_settings_aborts_a_balcos_discovery(self):
+        flow = _flow()
+        with (
+            _patched_hems_probe(read_side_effect=HomeAssistantError("in use")),
+            _patched_web_page() as web_page,
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "async_abort", return_value="aborted") as abort,
+        ):
+            await flow.async_step_zeroconf(_balco260_discovery_info())
+
+        abort.assert_called_once_with(reason="link_settings_in_use")
+        web_page.assert_not_awaited()
 
 
 
@@ -1279,6 +1309,18 @@ class TestConfigFlowReconfigureStep(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             update.call_args.kwargs["data_updates"], {"address": "10.2.1.60", "port": 1502}
         )
+
+    async def test_a_link_held_with_other_settings_shows_the_form_with_the_reason(self):
+        flow = self._flow(self._entry())
+
+        result, _, _, update, _, show_form = await self._submit(
+            flow, error=HomeAssistantError("in use")
+        )
+
+        self.assertEqual(result, "form")
+        update.assert_not_called()
+        self.assertEqual(show_form.call_args.kwargs["errors"], {"base": "link_settings_in_use"})
+        self.assertEqual(show_form.call_args.kwargs["description_placeholders"], {})
 
     async def test_an_unreachable_address_shows_the_form_with_the_reason(self):
         flow = self._flow(self._entry())

@@ -3,6 +3,7 @@ import functools
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from modbus_connection import ModbusTcpParams
 from modbus_connection.exceptions import ModbusConnectionError
@@ -273,6 +274,51 @@ class TestPollingCoordinator(unittest.IsolatedAsyncioTestCase):
         await write_task
 
         link.device.write.assert_awaited_once_with("ac_o_switch", 1)
+
+
+class TestWriteToAnUnavailableUnit(unittest.IsolatedAsyncioTestCase):
+    @_shared
+    async def test_a_write_after_a_failed_poll_is_refused(self, link):
+        link.device.write = AsyncMock()
+        coordinator = PollingCoordinator(MagicMock(), MagicMock(title="Balco 260"), _config())
+        coordinator.last_update_success = False
+
+        with self.assertRaises(HomeAssistantError) as raised:
+            await coordinator.async_write("ac_o_switch", 1)
+
+        self.assertEqual(raised.exception.translation_key, "device_unavailable")
+        self.assertEqual(raised.exception.translation_placeholders, {"device": "Balco 260"})
+        link.device.write.assert_not_awaited()
+
+    @_shared
+    async def test_a_write_waiting_for_a_poll_that_finds_another_unit_is_refused(self, link):
+        read_started = asyncio.Event()
+        release_read = asyncio.Event()
+
+        async def slow_read():
+            read_started.set()
+            await release_read.wait()
+            return {"d_serial": 9999999999999}
+
+        link.read = slow_read
+        link.device.write = AsyncMock()
+        entry = MagicMock(unique_id="1234567890123", title="Balco 260")
+        coordinator = PollingCoordinator(MagicMock(), entry, _config())
+        coordinator.data = {"d_serial": 1234567890123}
+        # Its "Error fetching" line needs a running Home Assistant to format.
+        coordinator.logger = MagicMock()
+
+        refresh = asyncio.ensure_future(coordinator.async_refresh())
+        await read_started.wait()
+        write = asyncio.ensure_future(coordinator.async_write("ac_o_switch", 1))
+        await asyncio.sleep(0)
+        release_read.set()
+        await refresh
+
+        with self.assertRaises(HomeAssistantError):
+            await write
+        self.assertFalse(coordinator.last_update_success)
+        link.device.write.assert_not_awaited()
 
 
 _EMPTY_WINDOW = {"b_ver_1": "0.00", "b_v": 0.0, "b_soc": 0, "b_soh": 0, "b_soc_total": 98}
