@@ -8,7 +8,7 @@ from typing import Any
 import probatio
 from homeassistant import config_entries
 from homeassistant.components.modbus import async_get_temporary_unit
-from homeassistant.config_entries import ConfigFlowResult
+from homeassistant.config_entries import SOURCE_IGNORE, ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS, CONF_PORT, CONF_TYPE
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -455,7 +455,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # hasn't been reconciled to this same serial yet.
         self._async_abort_entries_match({CONF_ADDRESS: host})
         await self.async_set_unique_id(serial, raise_on_progress=False)
-        self._abort_if_unique_id_configured()
+        self._abort_if_discovered_unit_configured(host)
 
         ws_info = await async_query_smeter(self.hass, host, discovery_info.port or 80)
         if ws_info.modbus_tcp_enabled is False:
@@ -527,10 +527,28 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="not_supported")
 
         await self.async_set_unique_id(str(serial) if serial is not None else host)
-        self._abort_if_unique_id_configured()
+        self._abort_if_discovered_unit_configured(host)
 
         return await self._async_zeroconf_discovered(
             host, dev_type, str(serial) if serial is not None else host
+        )
+
+    def _abort_if_discovered_unit_configured(self, host: str) -> None:
+        """Abort for a unit already set up, which takes the address it announces.
+
+        Only an entry on the Modbus port a discovery uses, and not an ignored
+        one: the discovery says nothing about another port.
+        """
+        entry = self.hass.config_entries.async_entry_for_domain_unique_id(
+            DOMAIN, str(self.unique_id)
+        )
+        follows = (
+            entry is not None
+            and entry.source != SOURCE_IGNORE
+            and entry.data.get(CONF_PORT) == 502
+        )
+        self._abort_if_unique_id_configured(
+            updates={CONF_ADDRESS: host} if follows else None
         )
 
     async def _async_zeroconf_discovered(

@@ -36,7 +36,7 @@
 ## Features
 
 - **Local.** Nothing leaves your network. It can run alongside the [cloud-based BLUETTI integration](https://github.com/bluetti-official/bluetti-home-assistant) on the same device.
-- **Set up from the UI.** The Balco 260, Balco 500 and S Meter are discovered on your network. Other models take an IP address and a device type.
+- **Set up from the UI.** The Balco 260, Balco 500 and S Meter are discovered on your network, and their entry follows them to a new IP address. Other models take an IP address and a device type.
 - **Entities from the register map.** Every field the device reports becomes an entity with the right device class, unit and precision.
 - **Controls.** Output, grid charging and feed-in switches, SoC limits, the AC charging mode and the working mode, on the models where the write is confirmed on a real unit.
 - **Device structure.** The built-in battery and each PV input are sub-devices of the station. Expansion packs and an EP2000's battery are linked devices. The S Meter's three phases are sub-devices of the meter.
