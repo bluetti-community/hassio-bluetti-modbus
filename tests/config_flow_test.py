@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from ipaddress import ip_address
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from modbus_connection import ModbusTcpParams
@@ -756,16 +757,17 @@ class TestConfigFlowZeroconfRouting(unittest.IsolatedAsyncioTestCase):
 
         balco260_step.assert_awaited_once()
 
-    async def test_routes_a_future_balco260_bluetti_tcp_name_to_the_balco260_flow(self):
-        # BLUETTI support's stated plan (2026-09-14): the Balco260 will move
-        # to "_bluetti._tcp" with an S Meter-style "Balco260 + SN" instance
-        # name. Unconfirmed on hardware, so the exact separator is unknown -
-        # only the prefix is relied on, and a name that reaches this flow
-        # under "_bluetti._tcp" must not fall through to the S Meter flow.
+    async def test_routes_a_balco_bluetti_tcp_name_to_the_hems_flow(self):
+        # Newer firmware: "Balco260<SN>" (seen on hardware), "Balco500<SN>"
+        # (announced). Only the prefix is relied on, and neither may fall
+        # through to the S Meter flow.
         for name in (
             "Balco2601234567890123._bluetti._tcp.local.",
             "Balco260-1234567890123._bluetti._tcp.local.",
             "BALCO260_1234567890123._bluetti._tcp.local.",
+            "Balco5001234567890123._bluetti._tcp.local.",
+            "Balco500-1234567890123._bluetti._tcp.local.",
+            "BALCO500_1234567890123._bluetti._tcp.local.",
         ):
             with self.subTest(name=name):
                 flow = _flow()
@@ -815,7 +817,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
             result = await flow.async_step_zeroconf(_balco260_discovery_info())
 
         abort_match.assert_called_once_with({"address": "10.2.1.128"})
-        set_uid.assert_awaited_once_with("1234567890123", raise_on_progress=False)
+        set_uid.assert_awaited_once_with("1234567890123")
         abort_check.assert_called_once()
         self.assertEqual(
             flow.context["title_placeholders"], {"name": "Balco 260 1234567890123"}
@@ -931,7 +933,35 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         ):
             await flow.async_step_zeroconf(_balco260_discovery_info())
 
-        set_uid.assert_awaited_once_with("10.2.1.128", raise_on_progress=False)
+        set_uid.assert_awaited_once_with("10.2.1.128")
+
+    async def test_a_second_announcement_of_the_same_device_aborts(self):
+        # A Balco announcing both "Bluetti HEMS._http._tcp" and
+        # "Balco260<SN>._bluetti._tcp": the second flow reaches the same
+        # serial while the first is still open, and must abort.
+        flow = _flow()
+        flow.context = {}
+        flow.flow_id = "second"
+        flow.handler = "bluetti_modbus"
+        first = {
+            "flow_id": "first",
+            "context": {"source": "zeroconf", "unique_id": "1234567890123"},
+        }
+        with (
+            _patched_hems_probe(device_values={"d_serial": 1234567890123}),
+            patch.object(flow, "_async_abort_entries_match"),
+            patch.object(flow, "_async_in_progress", return_value=[first]),
+            patch.object(flow, "async_show_form") as show_form,
+            self.assertRaises(AbortFlow) as aborted,
+        ):
+            await flow.async_step_zeroconf(
+                _discovery_info(
+                    host="10.2.1.128", name="Balco2601234567890123._bluetti._tcp.local."
+                )
+            )
+
+        self.assertEqual(aborted.exception.reason, "already_in_progress")
+        show_form.assert_not_called()
 
     async def test_a_balco_500_announcing_bluetti_hems_is_set_up_as_a_balco_500(self):
         flow = _flow()
@@ -945,7 +975,7 @@ class TestConfigFlowZeroconfBalco260Step(unittest.IsolatedAsyncioTestCase):
         ):
             await flow.async_step_zeroconf(_balco260_discovery_info())
 
-        set_uid.assert_awaited_once_with("1234567890123", raise_on_progress=False)
+        set_uid.assert_awaited_once_with("1234567890123")
         self.assertEqual(flow._discovered_dev_type, "balco500")
         self.assertEqual(
             flow.context["title_placeholders"], {"name": "Balco 500 1234567890123"}

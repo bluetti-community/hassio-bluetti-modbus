@@ -405,22 +405,18 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
           getNetworkStatusRsp's "mdns_hostname" field, over its
           WebSocket), a different thing from the mDNS *service instance
           name* zeroconf discovery actually matches on.
-        - "_bluetti._tcp" + "balco260*": a Balco260 on a future firmware.
-          BLUETTI support wrote (2026-09-14) that they will "standardize
-          the management of the Balco260's mDNS and try to keep it
-          consistent with the S Meter": instance name "Balco260 + SN",
-          service "_bluetti._tcp" instead of "_http._tcp". Declared ahead
-          of that firmware so discovery keeps working the day it ships,
-          without an integration update - NOT yet confirmed against real
-          hardware, and the exact separator between "Balco260" and the SN
-          (if any) is unknown, which is why only the prefix is relied on:
-          the balco260 flow learns the serial from the device's own
-          d_serial register over Modbus anyway, never from this name. The
-          "_http._tcp" matcher stays for every device still on today's
-          firmware.
+        - "_bluetti._tcp" + "balco260*": a Balco260 on newer firmware
+          ("Balco260<SN>", confirmed against real hardware).
+        - "_bluetti._tcp" + "balco500*": a Balco 500 once its firmware
+          follows the Balco260's naming, as BLUETTI announced. Declared
+          ahead of that firmware, not yet seen on hardware.
+
+        Only the prefix is relied on: the HEMS flow takes the device type
+        and serial from Modbus, never from the name. The "_http._tcp"
+        matcher stays for every device on older firmware.
         """
         instance_name = discovery_info.name.split(".")[0].lower()
-        if instance_name.startswith(("bluetti hems", "balco260")):
+        if instance_name.startswith(("bluetti hems", "balco260", "balco500")):
             return await self._async_step_zeroconf_hems(discovery_info)
         return await self._async_step_zeroconf_smeter(discovery_info)
 
@@ -485,10 +481,13 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle a Balco260 or a Balco 500 discovered via mDNS.
 
-        Both announce "Bluetti HEMS[-N]"; which one it is comes from the
-        Modbus read (see _async_probe_hems).
+        Older firmware announces "Bluetti HEMS[-N]" on both, newer firmware
+        "Balco260<SN>" / "Balco500<SN>"; which one it is comes from the
+        Modbus read either way (see _async_probe_hems). A device announcing
+        both names gets one discovery, not two: a second flow for the same
+        serial aborts as already in progress.
 
-        Unlike S Meter, the mDNS instance name here carries no usable
+        Unlike S Meter, the "Bluetti HEMS" instance name carries no usable
         identity of its own - "Bluetti HEMS[-N]" (confirmed against real
         hardware via Home Assistant's own network-discovery view; an
         optional "-N" suffix is ordinary mDNS conflict-resolution numbering
@@ -527,9 +526,7 @@ class BluettiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if dev_type == "balco500" and not BALCO500_CONFIRMED:
             return self.async_abort(reason="not_supported")
 
-        await self.async_set_unique_id(
-            str(serial) if serial is not None else host, raise_on_progress=False
-        )
+        await self.async_set_unique_id(str(serial) if serial is not None else host)
         self._abort_if_unique_id_configured()
 
         return await self._async_zeroconf_discovered(
