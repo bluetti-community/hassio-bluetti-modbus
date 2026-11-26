@@ -743,3 +743,167 @@ class TestSwitchNames(_RealRegistries):
                 self.assertEqual(
                     self.hass.states.get(entity_id).name, f"FridgePower {name}"
                 )
+
+
+NEW_ADDRESS = "10.2.1.61"
+
+
+class TestAddressChange(_RealRegistries):
+    """The unit is found at another address: reconfigured, or rediscovered."""
+
+    def _move(self, entry, *, unique_id=None):
+        """Point the entry at NEW_ADDRESS, then restart Home Assistant."""
+        self.hass.config_entries.async_update_entry(
+            entry,
+            data={**entry.data, "address": NEW_ADDRESS},
+            unique_id=unique_id if unique_id is not None else entry.unique_id,
+        )
+        self.devices.async_config_entry_unloaded(entry.entry_id)
+
+    def _device(self, entry, identifier):
+        found = [
+            device
+            for device in self._entry_devices(entry)
+            if (DOMAIN, identifier) in device.identifiers
+        ]
+        self.assertLessEqual(len(found), 1, identifier)
+        return found[0] if found else None
+
+    def _entry_devices(self, entry):
+        return [
+            *dr.async_entries_for_config_entry(self.devices, entry.entry_id),
+            *dr.async_child_entries_for_config_entry(self.devices, entry.entry_id),
+        ]
+
+    async def test_a_meters_phases_keep_their_devices(self):
+        entry = self._entry("smeter", "S Meter")
+        await self._setup(entry, SMETER_DATA)
+        area = ar.async_get(self.hass).async_create("Garage")
+        before = {
+            phase: self._device(entry, f"{ADDRESS}-phase-{phase}") for phase in ("a", "b", "c")
+        }
+        self.devices.async_update_child_device(before["a"].id, area_id=area.id)
+        main = self._main_device(entry)
+
+        self._move(entry)
+        await self._setup(entry, SMETER_DATA)
+
+        for phase, device in before.items():
+            with self.subTest(phase=phase):
+                after = self._device(entry, f"{NEW_ADDRESS}-phase-{phase}")
+                self.assertIsNotNone(after)
+                self.assertEqual(after.id, device.id)
+                self.assertEqual(after.identifiers, {(DOMAIN, f"{NEW_ADDRESS}-phase-{phase}")})
+                self.assertEqual(after.parent_device_id, main.id)
+        self.assertEqual(self._device(entry, f"{NEW_ADDRESS}-phase-a").area_id, area.id)
+        self.assertEqual(len(self._entry_devices(entry)), 4)
+        self.assertEqual(
+            self._device(entry, NEW_ADDRESS).identifiers,
+            {(DOMAIN, NEW_ADDRESS), (DOMAIN, str(SERIAL))},
+        )
+
+    async def test_a_meter_keyed_on_its_address_keeps_its_devices(self):
+        entry = self._entry("smeter", "S Meter")
+        self.hass.config_entries.async_update_entry(entry, unique_id=ADDRESS)
+        await self._setup(entry, SMETER_DATA)
+        main = self._main_device(entry)
+        phase_a = self._device(entry, f"{ADDRESS}-phase-a")
+
+        # The reconfigure step keys such an entry on its new address.
+        self._move(entry, unique_id=NEW_ADDRESS)
+        await self._setup(entry, SMETER_DATA)
+
+        after = self._device(entry, NEW_ADDRESS)
+        self.assertEqual(after.id, main.id)
+        self.assertEqual(after.identifiers, {(DOMAIN, NEW_ADDRESS)})
+        self.assertEqual(self._device(entry, f"{NEW_ADDRESS}-phase-a").id, phase_a.id)
+        self.assertIsNone(self._device(entry, ADDRESS))
+        self.assertEqual(len(self._entry_devices(entry)), 4)
+
+    async def test_a_stations_battery_and_inputs_keep_their_devices(self):
+        entry = self._entry()
+        await self._setup(entry, PV_DATA)
+        before = {device.id for device in self._entry_devices(entry)}
+
+        self._move(entry)
+        await self._setup(entry, PV_DATA)
+
+        self.assertEqual({device.id for device in self._entry_devices(entry)}, before)
+        battery = self._battery(entry)
+        self.assertEqual(
+            battery.identifiers,
+            {(DOMAIN, f"{NEW_ADDRESS}-battery"), (DOMAIN, f"{SERIAL}_battery")},
+        )
+        self.assertEqual(
+            self._device(entry, f"{NEW_ADDRESS}-pv-1").identifiers,
+            {(DOMAIN, f"{NEW_ADDRESS}-pv-1"), (DOMAIN, f"{SERIAL}_pv_1")},
+        )
+        # Nothing is left on the old address, which another unit may take.
+        for device in self._entry_devices(entry):
+            with self.subTest(device=device.name):
+                for _, identifier in device.identifiers:
+                    self.assertFalse(identifier.startswith(ADDRESS), identifier)
+
+    async def test_an_ep2000_battery_keeps_its_device(self):
+        entry = self._entry("ep2000", "EP2000")
+        data = {**BALCO260_DATA, "b_type": "HV800", "b_cell_count": 96, "b_ver_count": 3}
+        await self._setup(entry, data)
+        battery = self._device(entry, f"{ADDRESS}-battery")
+
+        self._move(entry)
+        await self._setup(entry, data)
+
+        after = self._device(entry, f"{NEW_ADDRESS}-battery")
+        self.assertEqual(after.id, battery.id)
+        self.assertEqual(after.via_device_id, self._device(entry, NEW_ADDRESS).id)
+        self.assertEqual(self._entity("b_v").device_id, battery.id)
+
+    async def test_an_expansion_pack_keeps_its_device(self):
+        entry = self._entry()
+        await self._setup(entry, BALCO260_DATA)
+        main = self._main_device(entry)
+        pack = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, f"{ADDRESS}-pack-2")},
+            name="Balco 260 Pack 2",
+            via_device_id=main.id,
+        )
+
+        self._move(entry)
+        await self._setup(entry, BALCO260_DATA)
+
+        self.assertEqual(self._device(entry, f"{NEW_ADDRESS}-pack-2").id, pack.id)
+
+    async def test_a_device_already_on_the_new_address_is_left_as_it_is(self):
+        # A move before this fix registered the phase again at the new address.
+        entry = self._entry("smeter", "S Meter")
+        await self._setup(entry, SMETER_DATA)
+        old = self._device(entry, f"{ADDRESS}-phase-a")
+        new = self.devices.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, f"{NEW_ADDRESS}-phase-a")},
+            name="Phase A",
+        )
+
+        self._move(entry)
+        await self._setup(entry, SMETER_DATA)
+
+        self.assertEqual(self._device(entry, f"{NEW_ADDRESS}-phase-a").id, new.id)
+        self.assertEqual(self._device(entry, f"{ADDRESS}-phase-a").id, old.id)
+
+    async def test_a_station_moved_before_drops_its_old_address(self):
+        # A move before this fix added the new address next to the old one.
+        entry = self._entry()
+        await self._setup(entry, BALCO260_DATA)
+        main = self._main_device(entry)
+        self.devices.async_update_device(
+            main.id, new_identifiers={*main.identifiers, (DOMAIN, NEW_ADDRESS)}
+        )
+
+        self._move(entry)
+        await self._setup(entry, BALCO260_DATA)
+
+        self.assertEqual(
+            self.devices.async_get(main.id).identifiers,
+            {(DOMAIN, NEW_ADDRESS), (DOMAIN, str(SERIAL))},
+        )

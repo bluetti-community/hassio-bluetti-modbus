@@ -80,6 +80,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await coordinator.network.async_refresh()
 
     _reconcile_config_entry_unique_id(hass, entry, coordinator)
+    _follow_address(hass, entry, config.address)
 
     # Registered explicitly, before the platforms below create any entity:
     # its child devices (the built-in battery, the PV inputs, an S Meter's
@@ -143,6 +144,69 @@ def _reconcile_config_entry_unique_id(
     if serial is None:
         return
     hass.config_entries.async_update_entry(entry, unique_id=str(serial))
+
+
+def _address_part(value: str) -> str | None:
+    """The part after the address in a sub-device's "<address>-<part>" identifier."""
+    head, _, tail = value.rpartition("-")
+    if head and tail == "battery":
+        return tail
+    address, _, kind = head.rpartition("-")
+    if address and (
+        (kind in ("pack", "pv") and tail.isdigit()) or (kind == "phase" and tail in ("a", "b", "c"))
+    ):
+        return f"{kind}-{tail}"
+    return None
+
+
+def _is_serial_based(value: str) -> bool:
+    """A sub-device's "<serial>_battery" or "<serial>_pv_<n>" identifier."""
+    return value.endswith("_battery") or value.rpartition("_pv_")[2].isdigit()
+
+
+def _identifier_at(identifier: tuple[str, str], address: str, unique_id: str | None) -> tuple[str, str]:
+    """identifier with the address it carries, if any, replaced by address."""
+    domain, value = identifier
+    if domain != DOMAIN or value == unique_id or value.isdigit() or _is_serial_based(value):
+        return identifier
+    if part := _address_part(value):
+        return (DOMAIN, f"{address}-{part}")
+    # The main device's own address.
+    return (DOMAIN, address)
+
+
+def _follow_address(hass: HomeAssistant, entry: ConfigEntry, address: str) -> None:
+    """Move this entry's device identifiers to the address it now reads.
+
+    Most identifiers carry the address, and the registry finds a device by
+    them: without this, a unit set up again at another address would get new
+    devices for its phases, packs and separate battery, the old ones left
+    behind with their area and name. A device whose new identifier another
+    one already has is left as it is.
+    """
+    registry = dr.async_get(hass)
+    devices = dr.async_entries_for_config_entry(registry, entry.entry_id)
+    children = dr.async_child_entries_for_config_entry(registry, entry.entry_id)
+    taken = {identifier for device in (*devices, *children) for identifier in device.identifiers}
+
+    def moved(device: dr.BaseDeviceEntry) -> set[tuple[str, str]] | None:
+        """The device's identifiers at address, None to leave it as it is."""
+        identifiers = {
+            _identifier_at(identifier, address, entry.unique_id)
+            for identifier in device.identifiers
+        }
+        added = identifiers - device.identifiers
+        if identifiers == device.identifiers or added & taken:
+            return None
+        taken.update(added)
+        return identifiers
+
+    for device in devices:
+        if (identifiers := moved(device)) is not None:
+            registry.async_update_device(device.id, new_identifiers=identifiers)
+    for child in children:
+        if (identifiers := moved(child)) is not None:
+            registry.async_update_child_device(child.id, new_identifiers=identifiers)
 
 
 _CURRENT_VERSION = 34
